@@ -35,8 +35,16 @@ NEXTAUTH_SECRET="<32+ char random string>"
 ```
 
 all the files should be there without configuring
-only thing need to change in mongodb url under .env.local, make a free atlas mongodb to connect
+only thing need to change in mongodb url under .env.local, make a free atlas mongodb to  connect
+
+To run this app:
+```
+# paste the following code in the terminal
+git clone https://github.com/atharshlakshmi/OneCDC
+
 npm install
 npm run dev
 
-# open http://localhost:3000
+# cmd / ctrl + click on http://localhost:3000 in the terminal
+
+```
