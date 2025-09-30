@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OneCDC — Frontend (Next.js + MongoDB)
 
-## Getting Started
+Mobile-first web app using **Next.js (App Router)**, **Tailwind**, **NextAuth (MongoDB adapter)**, and **Zustand** for cart state.
 
-First, run the development server:
+## Features (Lab 3 scope)
+
+- **User Management**: register, sign in/out, protected routes via NextAuth (+ middleware).
+- **Cart**: add shops from search, deduplicate by shop, **append item tags** if the same shop is added again, select/unselect shops, remove entries (Zustand + persisted storage).
+- **Pages**:
+  - `/sign-in` — sign in with email/password
+  - `/register` — create account
+  - `/cart` — protected cart page
+  - `/account` — profile & password change
+
+---
+
+## Prerequisites
+
+- Node.js **18+** (or 20+)
+- npm (or pnpm/yarn)
+- A MongoDB Atlas cluster (free M0 is fine)
+
+> If you previously used a Postgres-based template, ensure any Drizzle/Postgres code is removed/disabled. This app runs on **MongoDB**.
+
+---
+
+## 1) Environment Variables
+
+Create a file **`.env.local`** in the project root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+MONGODB_URI="mongodb+srv://<user>:<ENCODED_PASS>@<cluster>/<db>?retryWrites=true&w=majority"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="<32+ char random string>"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+all the files should be there without configuring
+only thing need to change in mongodb url under .env.local, make a free atlas mongodb to connect
+npm install
+npm run dev
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# open http://localhost:3000
