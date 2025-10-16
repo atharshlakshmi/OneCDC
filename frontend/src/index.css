@@ -1,0 +1,337 @@
+html {
+  scroll-behavior: smooth;
+  margin: 0;
+  padding: 0;
+
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: rgb(249, 250, 251); /* gray-50 */
+  color: rgb(31, 41, 55);               /* gray-800 */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Remove default underline & inherit color everywhere */
+a,
+a:visited,
+a:focus,
+a:active {
+  text-decoration: none;
+  color: inherit;
+  outline: none;
+}
+
+/* =========================
+   COMMON REUSABLE ELEMENTS
+   ========================= */
+.add-cart-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #10b981; /* green */
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.add-cart-button:hover {
+  background-color: #059669;
+}
+
+.blue-containter {
+  background-color: #1e3a8a;
+  padding-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --- SEARCH BAR (top section) --- */
+.search-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 90%;
+  margin: 1.5rem auto;
+  background-color: #f1f5f9; /* soft gray-blue background */
+  border-radius: 2rem;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+}
+
+/* Input takes up most space */
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 1rem;
+  color: #1e293b;
+  padding: 0.75rem 1rem;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Button integrated on the right side */
+.search-button {
+  background-color: #1e3a8a; /* blue */
+  color: white;
+  border: none;
+  border-radius: 2rem;
+  width: 10rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.search-button:hover {
+  background-color: #1e3a8a;
+}
+
+
+/* --- LIST CONTAINER --- */
+.list-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2rem 1rem;
+}
+
+/* --- ITEM CARD (shop/item display box) --- */
+.list-card {
+  width: 90%;
+  background-color: #fbbf24; /* amber */
+  border-radius: 1.25rem;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+}
+
+.list-card img {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 1rem;
+  object-fit: cover;
+}
+
+.list-card-content {
+  flex: 1;
+}
+
+.list-card h2 {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.list-card p {
+  color: #fff;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.status-badge {
+  background-color: #10b981;
+  color: white;
+  border-radius: 1rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  display: inline-block;
+}
+
+/* --- TOGGLE TABS --- */
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid #1e3a8a;
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.tab.active {
+  background-color: #1e3a8a;
+  color: #ffffff;
+}
+
+/* --- PAGE NAVIGATION BAR --- */
+
+.page-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center the title */
+  padding: 2rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* back button stays at far left */
+.back-button {
+  position: absolute;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.75rem;
+  background-color: #1e3a8a;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: #1e40af;
+}
+
+.page-nav-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+
+
+/* --- FOOTER NAVIGATION --- */
+.footer-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #fff;
+  border-top: 0.05rem solid #e5e7eb;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 12vh;
+  box-shadow: 0 -0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+}
+
+.footer-link {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.footer-link.active {
+  color: #facc15;
+}
+
+.footer-center-button {
+  background-color: #111827;
+  color: #facc15;
+  border-radius: 50%;
+  width: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -1.75rem;
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+}
+
+/* --- TOP NAVIGATION BAR --- */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1e3a8a; /* deep blue */
+  color: #fff;
+  padding: 1rem 1.5rem;
+  
+}
+
+/* Left: Logo */
+.navbar-left .logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* Right: Icons / Links */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem; /* consistent gap between icons */
+}
+
+/* Reusable nav link style */
+.nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  position: relative;
+  transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+.nav-link:hover {
+  transform: scale(1.05);
+  opacity: 0.85;
+}
+
+/* Optional badge (for notifications or cart counts) */
+.nav-link .badge {
+  position: absolute;
+  top: 0;
+  right: -0.3rem;
+  background-color: #facc15;
+  color: #1e3a8a;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 50%;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive tweaks */
+@media (max-width: 40rem) {
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-right {
+    gap: 0.75rem;
+  }
+}
+
