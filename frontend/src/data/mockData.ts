@@ -51,3 +51,18 @@ export const reviews = [
     { id: 2, itemId: 1, rating: 4, comment: "Good value for money." },
     { id: 3, itemId: 2, rating: 5, comment: "Loving the clicky keys!" },
 ]
+
+export const users = [
+  {
+    id: 1,
+    name: "Alice Johnson",
+    email: "alice@example.com",
+    reviewIds: [1, 3], // references to reviews
+  },
+  {
+    id: 2,
+    name: "Bob Smith",
+    email: "bob@example.com",
+    reviewIds: [2], // references to reviews
+  },
+];

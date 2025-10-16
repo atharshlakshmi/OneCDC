@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import BackButton from "../components/BackButton";
 
 const ViewCart: React.FC = () => {
   const navigate = useNavigate();
@@ -21,9 +22,7 @@ const ViewCart: React.FC = () => {
   if (cart.length === 0) {
     return (
       <div className="list-container">
-        <button className="back-button" onClick={() => navigate(-1)}>
-          ← Back
-        </button>
+        <BackButton />
         <h1>Your Cart is Empty</h1>
       </div>
     );

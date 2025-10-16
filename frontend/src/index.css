@@ -124,6 +124,7 @@ a:active {
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
 }
 
+
 .list-card img {
   width: 6rem;
   height: 6rem;
@@ -256,6 +257,8 @@ a:active {
   box-shadow: 0 -0.25rem 0.75rem rgba(0, 0, 0, 0.05);
 }
 
+
+
 .footer-link {
   text-align: center;
   color: #6b7280;
@@ -265,6 +268,10 @@ a:active {
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
+}
+
+.footer-link:hover {
+  color: #facc15;
 }
 
 .footer-link.active {
@@ -430,12 +437,12 @@ a:active {
   border: 0.1rem dashed #94a3b8;
   border-radius: 0.75rem;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
+  text-align: center;
 }
 
 .upload-box:hover {
@@ -444,8 +451,8 @@ a:active {
 }
 
 .upload-icon {
-  font-size: 1.25rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.5rem;
+  margin: 0; /* remove extra space */
 }
 
 .preview-image {
@@ -497,4 +504,165 @@ a:active {
   font-size: 0.85rem;
   color: #6b7280;
   margin-top: -0.5rem;
+}
+
+/* profile page */
+
+.profile-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.profile-card {
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  width: 250px;
+}
+
+.profile-pic {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 1rem;
+}
+
+.profile-buttons button {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+  border-radius: 5px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+.profile-buttons button:hover {
+  background-color: #0056b3;
+}
+
+
+/* =========================
+   PROFILE PAGE
+   ========================= */
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  background-color: #f9fafb;
+  min-height: 100vh;
+}
+
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.profile-avatar {
+  width: 8rem;
+  height: 8rem;
+  border-radius: 50%;
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+}
+
+.avatar-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0.15rem solid #fbbf24; /* amber outline */
+  border-radius: 50%;
+  position: relative;
+}
+
+.avatar-icon::after {
+  content: "";
+  position: absolute;
+  bottom: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2rem;
+  height: 1rem;
+  border: 0.15rem solid #fbbf24;
+  border-top: none;
+  border-radius: 0 0 1rem 1rem;
+}
+
+.profile-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  color: #1f2937;
+}
+
+.profile-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem 1rem;
+  width: 100%;
+}
+
+/* Each button takes up most of the width, like list-card */
+.profile-item {
+  width: 90%;
+  background-color: #fbbf24; /* amber */
+  border-radius: 1.25rem;
+  padding: 1rem 3rem 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  gap: 1rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.profile-item:hover {
+  background-color: #fcd34d; /* lighter amber on hover */
+}
+
+/* Icon on the left */
+.icon-circle {
+  background-color: #fff;
+  color: #fbbf24;
+  border-radius: 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* Text stays left-aligned */
+.profile-item span {
+  flex: 1;
+  text-align: left;
+}
+
+/* Arrow stays flush on right edge */
+.arrow {
+  position: absolute;
+  right: 1rem;
+  color: #fff;
+  font-size: 1.5rem;
 }

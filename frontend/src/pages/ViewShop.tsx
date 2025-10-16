@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { shops } from "../data/mockData";
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import BackButton from "../components/BackButton";
 
 const ViewShop: React.FC = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const shop = shops.find((s) => s.id === Number(id));
   const items = shop ? shop.items : [];
 
@@ -32,9 +32,7 @@ const ViewShop: React.FC = () => {
     <div >
       {/* Nav Bar */}
       <div className="page-nav">
-        <button className="back-button" onClick={() => navigate(-1)}>
-          ←
-        </button>
+        <BackButton />
         <h1 className="page-nav-title">{shop.name}</h1>
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { createContext, useState } from "react";
 import './index.css'
 import { shops } from "./data/mockData";
 import NavBar from './components/NavBar';
@@ -11,10 +11,16 @@ import ItemSearch from './pages/itemSearch';
 import SearchBar from "./components/SearchBar";
 import AddReview from "./pages/AddReview";
 import ActionSuccess from "./pages/ActionSuccess";
+import Profile from "./pages/Profile";
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 
+export const UserContext = createContext({
+  username: "",
+  setUsername: (name: string) => {}
+});
 
 function App() {
+  const [username, setUsername] = useState("");
   const Home = () => (
     <>
       <SearchBar />
@@ -31,6 +37,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <UserContext.Provider value={{ username, setUsername }}>
       <NavBar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -41,9 +48,11 @@ function App() {
         <Route path="/itemSearch" element={<ItemSearch />} />
         <Route path="/AddReview" element={<AddReview />} />
         <Route path="/ActionSuccess" element={<ActionSuccess />} />
+        <Route path="/profile" element={<Profile />} />
 
       </Routes>
       <Footer />
+      </UserContext.Provider>
     </BrowserRouter>
   );
 }

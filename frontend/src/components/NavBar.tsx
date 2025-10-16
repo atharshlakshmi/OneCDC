@@ -15,10 +15,6 @@ function NavBar() {
         <Link to="/ViewCart" className="nav-link">
           <ShoppingCart size="1.5rem" />
         </Link>
-
-        <Link to="/profile" className="nav-link">
-          <User size="1.5rem" />
-        </Link>
       </div>
     </nav>
   );

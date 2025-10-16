@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { items } from "../data/mockData"; // adjust path if needed
 import "../index.css";
+import BackButton from "../components/BackButton";
 
 const AddReview: React.FC = () => {
   const navigate = useNavigate();
@@ -42,9 +43,7 @@ const AddReview: React.FC = () => {
     <div className="review-page">
       {/* Page Navigation */}
       <div className="page-nav">
-        <button className="back-button" onClick={() => navigate(-1)}>
-          ←
-        </button>
+        <BackButton />
         <h1 className="page-nav-title">Add New Review</h1>
       </div>
 
@@ -102,7 +101,6 @@ const AddReview: React.FC = () => {
                     hidden
                   />
                   <div className="upload-icon">⬆</div>
-                  <p>Add</p>
                 </label>
               )}
             </div>
