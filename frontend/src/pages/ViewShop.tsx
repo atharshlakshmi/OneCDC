@@ -1,45 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import type { Shop } from '../types/api';
+import { shops } from "../data/mockData";
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 
 const ViewShop: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const shop = shops.find((s) => s.id === Number(id));
+  const items = shop ? shop.items : [];
 
-  const [shop, setShop] = useState<Shop | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"info" | "catalogue">("info");
 
-  useEffect(() => {
-    if (!id) return;
-
-    // Fetch shop details from API
-    api.getShop(id)
-      .then((data) => {
-        setShop(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Failed to fetch shop:', err);
-        setError(err.message || 'Failed to load shop details');
-        setLoading(false);
-      });
-  }, [id]);
-
-  if (loading) {
-    return <p style={{ textAlign: 'center', padding: '20px' }}>Loading shop details...</p>;
-  }
-
-  if (error || !shop) {
-    return <p style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
-      {error || 'Shop not found.'}
-    </p>;
-  }
-
-  const items = shop.items || [];
+  if (!shop) return <p>Shop not found.</p>;
 
   // Function to add shop to cart
   const addShopToCart = () => {
@@ -106,7 +78,7 @@ const ViewShop: React.FC = () => {
         <div className = "list-container">
           {items.map((item) => (
           <Link to={`/ViewItem/${item.id}`} key={item.id} className="list-card">
-            <h3>{item.name}</h3>
+            <h2>{item.name}</h2>
             <p>{item.price}</p>
           </Link>))}
         </div>

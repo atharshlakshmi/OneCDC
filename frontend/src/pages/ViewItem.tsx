@@ -1,47 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { api } from '../services/api';
-import type { Item, Review } from '../types/api';
+import React, { useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { items, reviews } from "../data/mockData";
 
 const ViewItem: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const [item, setItem] = useState<Item | null>(null);
-  const [itemReviews, setItemReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const item = items.find((i) => i.id === Number(id));
+  const itemReviews = reviews.filter((r) => r.itemId === Number(id)); // Use filter, not find
   const [activeTab, setActiveTab] = useState<"info" | "reviews">("info");
 
-  useEffect(() => {
-    if (!id) return;
-
-    // Fetch both item details and reviews in parallel
-    Promise.all([
-      api.getItem(id),
-      api.getItemReviews(id)
-    ])
-      .then(([itemData, reviewsData]) => {
-        setItem(itemData);
-        setItemReviews(reviewsData);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Failed to fetch item:', err);
-        setError(err.message || 'Failed to load item details');
-        setLoading(false);
-      });
-  }, [id]);
-
-  if (loading) {
-    return <p style={{ textAlign: 'center', padding: '20px' }}>Loading item details...</p>;
-  }
-
-  if (error || !item) {
-    return <p style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
-      {error || 'Item not found.'}
-    </p>;
-  }
+  if (!item) return <p>Item not found.</p>;
+  if (!item) return <p className="item-not-found">Item not found.</p>;
 
   return (
     <div>
@@ -59,7 +28,7 @@ const ViewItem: React.FC = () => {
           className={activeTab === "info" ? "tab active" : "tab"}
           onClick={() => setActiveTab("info")}
         >
-          Info
+          Information
         </button>
         <button
           className={activeTab === "reviews" ? "tab active" : "tab"}
@@ -78,7 +47,11 @@ const ViewItem: React.FC = () => {
             <strong>Price:</strong> {item.price}
           </p>
           </div>
-          <button className="add-cart-button">Review Item</button>
+          <button className="add-cart-button">
+  <Link to="/AddReview" state={{ itemId: item.id }}>
+    Review Item
+  </Link>
+</button>
         </div>
       )}
 
@@ -86,7 +59,7 @@ const ViewItem: React.FC = () => {
         <div className = "list-container">
           {itemReviews.map((review) => (
           <div key={review.id} className="list-card">
-            <h3>{review.rating}</h3>
+            <h2>{review.rating}</h2>
             <p>{review.comment}</p>
           </div>))}
         </div>

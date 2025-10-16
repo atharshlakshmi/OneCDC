@@ -159,29 +159,50 @@ a:active {
   display: inline-block;
 }
 
-/* --- TOGGLE TABS --- */
-
+/* --- TABS SECTION (modern underline style) --- */
 .tabs {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  justify-content: space-around;
+  align-items: center;
+  width: 90%;
+  margin: 0 auto 1rem auto; /* smaller bottom margin */
+  padding-top: 0; /* remove top gap */
+  border-bottom: 0.05rem solid #e5e7eb; /* subtle divider line */
 }
 
 .tab {
-  padding: 0.5rem 1rem;
-  border: 1px solid #1e3a8a;
-  border-radius: 0.75rem;
-  background-color: #ffffff;
-  cursor: pointer;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 1.1rem;
   font-weight: 500;
-  transition: background-color 0.2s, color 0.2s;
+  color: #1f2937; /* neutral gray text */
+  cursor: pointer;
+  padding: 0.75rem 1rem 0.5rem 1rem; /* reduced padding */
+  position: relative;
+  transition: color 0.2s ease-in-out;
+}
+
+.tab:hover {
+  color: #fbbf24; /* hover amber */
 }
 
 .tab.active {
-  background-color: #1e3a8a;
-  color: #ffffff;
+  color: #fbbf24; /* amber for active tab */
+  font-weight: 700;
 }
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -0.1rem; /* slightly closer underline */
+  left: 0;
+  width: 100%;
+  height: 0.15rem;
+  background-color: #fbbf24; /* amber underline */
+  border-radius: 0.25rem;
+}
+
 
 /* --- PAGE NAVIGATION BAR --- */
 
@@ -335,3 +356,145 @@ a:active {
   }
 }
 
+/* =========================
+   ADD REVIEW PAGE
+   ========================= */
+
+.review-page {
+  padding: 1rem;
+  padding-bottom: 6rem; /* space above footer */
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background-color: #ffffff;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.item-name {
+  font-weight: 500;
+  color: #1e3a8a;
+}
+
+.status-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.status-btn {
+  flex: 1;
+  border: 0.1rem solid #1e3a8a;
+  border-radius: 1.5rem;
+  background-color: #fff;
+  color: #1e3a8a;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.status-btn.active {
+  background-color: #10b981;
+  color: #fff;
+  border: none;
+}
+
+.status-btn.active-unavailable {
+  background-color: #9ca3af;
+  color: #fff;
+  border: none;
+}
+
+/* Upload box */
+.upload-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.upload-box {
+  width: 7rem;
+  height: 7rem;
+  border: 0.1rem dashed #94a3b8;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.upload-box:hover {
+  border-color: #1e3a8a;
+  color: #1e3a8a;
+}
+
+.upload-icon {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.preview-image {
+  width: 7rem;
+  height: 7rem;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}
+
+/* Textarea */
+.review-textarea {
+  width: 100%;
+  min-height: 6rem;
+  border: 0.1rem solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+}
+
+.review-textarea:focus {
+  border-color: #1e3a8a;
+}
+
+/* Submit Button */
+.submit-review-btn {
+  background-color: #1e3a8a;
+  color: #fff;
+  border: none;
+  border-radius: 1.5rem;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.submit-review-btn:hover {
+  background-color: #1e40af;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.required-note {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: -0.5rem;
+}
