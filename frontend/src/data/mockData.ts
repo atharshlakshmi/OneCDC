@@ -57,12 +57,14 @@ export const users = [
     id: 1,
     name: "Alice Johnson",
     email: "alice@example.com",
+    password: "password123",
     reviewIds: [1, 3], // references to reviews
   },
   {
     id: 2,
     name: "Bob Smith",
     email: "bob@example.com",
+    password: "password123",
     reviewIds: [2], // references to reviews
   },
 ];
