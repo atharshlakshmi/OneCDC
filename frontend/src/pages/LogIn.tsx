@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 
+
 // If you are not using react-router, you can replace useNavigate with window.location.assign
 // and remove useLocation bits.
 
@@ -169,7 +170,7 @@ export default function Login() {
               </p>
             ) : null}
           </div>
-
+  
           {/* Password */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">

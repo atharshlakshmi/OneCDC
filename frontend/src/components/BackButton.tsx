@@ -1,6 +1,7 @@
 // BackButton.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button"
 
 interface BackButtonProps {
   to?: string; // optional path to navigate
@@ -18,9 +19,7 @@ const BackButton: React.FC<BackButtonProps> = ({ to }) => {
   };
 
   return (
-    <button className="back-button" onClick={handleClick}>
-      ← Back
-    </button>
+    <Button variant="outline" onClick = {handleClick}> Back</Button>
   );
 };
 

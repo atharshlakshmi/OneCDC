@@ -2,14 +2,19 @@ import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { shops } from "../data/mockData";
 import { Link } from 'react-router-dom';
-import BackButton from "../components/BackButton";
+import BackButton from "@/components/BackButton"
+
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 
 const ViewShop: React.FC = () => {
   const { id } = useParams();
   const shop = shops.find((s) => s.id === Number(id));
   const items = shop ? shop.items : [];
-
-  const [activeTab, setActiveTab] = useState<"info" | "catalogue">("info");
 
   if (!shop) return <p>Shop not found.</p>;
 
@@ -29,32 +34,25 @@ const ViewShop: React.FC = () => {
   };
 
   return (
+    
     <div >
       {/* Nav Bar */}
-      <div className="page-nav">
+      <div className="flex items-center m-4 relative">
         <BackButton />
-        <h1 className="page-nav-title">{shop.name}</h1>
+        <h1 className="absolute left-1/2 transform -translate-x-1/2">{shop.name}</h1>
       </div>
 
-      {/* Tabs */}
-      <div className="tabs">
-        <button
-          className={activeTab === "info" ? "tab active" : "tab"}
-          onClick={() => setActiveTab("info")}
-        >
-          Shop Info
-        </button>
-        <button
-          className={activeTab === "catalogue" ? "tab active" : "tab"}
-          onClick={() => setActiveTab("catalogue")}
-        >
-          Catalogue
-        </button>
-      </div>
 
-      {/* Content */}
-      {activeTab === "info" && (
-        <div className = "list-container">
+      <div className="flex justify-center w-full">
+       <Tabs defaultValue="Details" className="w-[600px]">
+
+        <TabsList>
+          <TabsTrigger value="Details">Details</TabsTrigger>
+          <TabsTrigger value="Catalogue">Catalogue</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="Details">
+          <div className = "list-container">
         <div className="list-card">
           <p>{shop.details}</p>
           <p>
@@ -69,20 +67,20 @@ const ViewShop: React.FC = () => {
         </div>
             <button className="add-cart-button" onClick={addShopToCart}>Add Shop to Cart</button>
         </div>
+        </TabsContent>
         
-      )}
-
-      {activeTab === "catalogue" && (
-        <div className = "list-container">
+        <TabsContent value="Catalogue">
+          <div className = "list-container">
           {items.map((item) => (
           <Link to={`/ViewItem/${item.id}`} key={item.id} className="list-card">
             <h2>{item.name}</h2>
             <p>{item.price}</p>
           </Link>))}
         </div>
-      
-      )
-    }
+          </TabsContent>
+    
+    </Tabs>
+    </div>
     </div>
   );
 }
