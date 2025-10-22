@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { shops } from "../data/mockData";
 import { Link } from 'react-router-dom';
-import BackButton from "../components/BackButton";
+import BackButton from "@/components/BackButton"
 
 import {
   Tabs,
@@ -37,14 +37,15 @@ const ViewShop: React.FC = () => {
     
     <div >
       {/* Nav Bar */}
-      <div className="page-nav">
+      <div className="flex items-center m-4 relative">
         <BackButton />
-        <h1 className="page-nav-title">{shop.name}</h1>
+        <h1 className="absolute left-1/2 transform -translate-x-1/2">{shop.name}</h1>
       </div>
 
-      <div>
-      <Tabs defaultValue="Details" className="w-[400px] justify-center">
-       
+
+      <div className="flex justify-center w-full">
+       <Tabs defaultValue="Details" className="w-[600px]">
+
         <TabsList>
           <TabsTrigger value="Details">Details</TabsTrigger>
           <TabsTrigger value="Catalogue">Catalogue</TabsTrigger>
