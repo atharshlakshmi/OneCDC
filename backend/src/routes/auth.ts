@@ -2,13 +2,18 @@ import express from "express";
 import { body } from "express-validator";
 import * as authController from "../controllers/authController";
 import { authenticate, validate, authLimiter } from "../middleware";
+import { googleLogin } from "../controllers/googleAuthController";
 
 console.log("[AUTH ROUTER] loaded"); // <— should print on server start
+
 const router = express.Router();
 
 router.get("/_debug", (_req, res) => {
   res.json({ ok: true, where: "auth router" });
 });
+
+//Google Login
+router.post("/google/login", googleLogin); // <-- add this
 /**
  * POST /api/auth/register/shopper
  * Register new shopper

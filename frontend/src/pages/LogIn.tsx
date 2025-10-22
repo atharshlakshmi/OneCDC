@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import GoogleLoginButton from "../components/GoogleLoginButton";
 
 // If you are not using react-router, you can replace useNavigate with window.location.assign
 // and remove useLocation bits.
@@ -51,7 +52,9 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from || "/dashboard"; // change to your post-login route
+  // If user came from a protected route, go back there after login
+  // Otherwise, just go to home page
+  const from = (location.state && (location.state as any).from) || document.referrer || "/";
 
   const [values, setValues] = useState<LoginRequestBody>({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -250,6 +253,18 @@ export default function Login() {
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
+        {/* Divider + Google Sign-In */}
+        <div className="my-6">
+          <div className="relative flex items-center my-4">
+            <div className="flex-grow h-px bg-gray-200"></div>
+            <span className="px-3 text-xs uppercase text-gray-500">or</span>
+            <div className="flex-grow h-px bg-gray-200"></div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLoginButton />
+          </div>
+        </div>
 
         {/* Fine print */}
         <p className="mt-6 text-center text-xs text-gray-500">

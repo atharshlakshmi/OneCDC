@@ -1,12 +1,5 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import {
-  IUser,
-  IRegisteredShopper,
-  IOwner,
-  IAdmin,
-  UserRole,
-  IWarning,
-} from '../types';
+import mongoose, { Schema, Model } from "mongoose";
+import { IUser, IRegisteredShopper, IOwner, IAdmin, UserRole, IWarning } from "../types";
 
 /**
  * Warning Sub-Schema
@@ -14,9 +7,9 @@ import {
 const WarningSchema = new Schema<IWarning>(
   {
     reason: { type: String, required: true },
-    issuedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    issuedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     issuedAt: { type: Date, default: Date.now },
-    relatedReport: { type: Schema.Types.ObjectId, ref: 'Report' },
+    relatedReport: { type: Schema.Types.ObjectId, ref: "Report" },
   },
   { _id: false }
 );
@@ -32,7 +25,7 @@ const UserSchema = new Schema<IUser>(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
+      match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
     },
     passwordHash: { type: String, required: true },
     role: {
@@ -44,7 +37,7 @@ const UserSchema = new Schema<IUser>(
     phone: {
       type: String,
       trim: true,
-      match: [/^[689]\d{7}$/, 'Please enter a valid Singapore phone number'],
+      match: [/^[689]\d{7}$/, "Please enter a valid Singapore phone number"],
     },
     isActive: { type: Boolean, default: true },
     warnings: { type: [WarningSchema], default: [] },
@@ -53,7 +46,7 @@ const UserSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
-    discriminatorKey: 'role',
+    discriminatorKey: "role",
     toJSON: {
       transform: function (_doc, ret) {
         const { passwordHash, ...rest } = ret;
@@ -73,7 +66,7 @@ UserSchema.index({ isActive: 1 });
 /**
  * Base User Model
  */
-export const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
+export const User: Model<IUser> = mongoose.model<IUser>("User", UserSchema);
 
 /**
  * Registered Shopper Schema
@@ -96,7 +89,7 @@ const OwnerSchema = new Schema<IOwner>({
     unique: true,
     trim: true,
   },
-  shops: [{ type: Schema.Types.ObjectId, ref: 'Shop' }],
+  shops: [{ type: Schema.Types.ObjectId, ref: "Shop" }],
   reportCount: { type: Number, default: 0, min: 0 },
 });
 
@@ -104,16 +97,13 @@ const OwnerSchema = new Schema<IOwner>({
  * Admin Schema
  */
 const AdminSchema = new Schema<IAdmin>({
-  moderationActions: [{ type: Schema.Types.ObjectId, ref: 'ModerationLog' }],
+  moderationActions: [{ type: Schema.Types.ObjectId, ref: "ModerationLog" }],
 });
 
 /**
  * Create Discriminators
  */
-export const RegisteredShopper = User.discriminator<IRegisteredShopper>(
-  UserRole.REGISTERED_SHOPPER,
-  RegisteredShopperSchema
-);
+export const RegisteredShopper = User.discriminator<IRegisteredShopper>(UserRole.REGISTERED_SHOPPER, RegisteredShopperSchema);
 
 export const Owner = User.discriminator<IOwner>(UserRole.OWNER, OwnerSchema);
 
