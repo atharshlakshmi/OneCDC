@@ -47,9 +47,9 @@ export const items = [
 ]
 
 export const reviews = [
-    { id: 1, itemId: 1, rating: 5, comment: "Great mouse!" },
-    { id: 2, itemId: 1, rating: 4, comment: "Good value for money." },
-    { id: 3, itemId: 2, rating: 5, comment: "Loving the clicky keys!" },
+    { id: 1, itemId: 1, reviewerId: 2, rating: 5, comment: "Great mouse!" },
+    { id: 2, itemId: 1, reviewerId: 2, rating: 4, comment: "Good value for money." },
+    { id: 3, itemId: 2, reviewerId: 2, rating: 5, comment: "Loving the clicky keys!" },
 ]
 
 export const users = [
