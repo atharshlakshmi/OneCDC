@@ -1,4 +1,4 @@
-import React, { createContext, useState } from "react";
+import { createContext, useState } from "react";
 import "./index.css";
 import { shops } from "./data/mockData";
 import NavBar from "./components/NavBar";
@@ -13,6 +13,8 @@ import AddReview from "./pages/AddReview";
 import ActionSuccess from "./pages/ActionSuccess";
 import Profile from "./pages/Profile";
 import Login from "./pages/LogIn";
+import AddReport from "./pages/ReportReview";
+import AddItem from "./pages/AddItem";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -52,6 +54,8 @@ function App() {
           <Route path="/AddReview" element={<AddReview />} />
           <Route path="/ActionSuccess" element={<ActionSuccess />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/ReportReview" element={<AddReport />} />
+          <Route path="/AddItem" element={<AddItem />} />
 
           {/* Private routes */}
           <Route element={<ProtectedRoute />}>

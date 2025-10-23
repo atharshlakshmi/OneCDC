@@ -22,7 +22,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title = "", to }) => {
   return (
     <div className="relative flex items-center justify-center m-5 h-10">
       <div className="absolute left-1">
-        <Button variant="outline" size = "lg" onClick={handleBack}>
+        <Button variant="outline" size = "sm" onClick={handleBack}>
           <ArrowLeft />
         </Button>
       </div>

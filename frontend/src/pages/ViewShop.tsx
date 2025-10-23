@@ -4,6 +4,7 @@ import { shops } from "../data/mockData";
 import { Link } from 'react-router-dom';
 import PageHeader from "@/components/PageHeader"
 import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router-dom";
 
 import {
   Tabs,
@@ -16,6 +17,8 @@ const ViewShop: React.FC = () => {
   const { id } = useParams();
   const shop = shops.find((s) => s.id === Number(id));
   const items = shop ? shop.items : [];
+  const navigate = useNavigate();
+  const currentUser = { id: 1, name: "John Doe" }
 
   if (!shop) return <p>Shop not found.</p>;
 
@@ -61,6 +64,13 @@ const ViewShop: React.FC = () => {
           </p>
           <Button onClick = {addShopToCart} variant="outline" size="lg">Add Shop to Cart</Button>
         </div>
+        <p>
+          Found an item in store that is not in this list? 
+          <br></br>
+          Add it to the catalogue to let others know!
+        </p>
+        
+        <Button onClick={() => navigate("/AddItem", { state: { userId: currentUser.id } })} variant="outline" size="lg">Add New Item</Button>
         </div>
         </TabsContent>
         
