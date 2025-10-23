@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import BackButton from "../components/BackButton";
+import BackButton from "../components/PageHeader";
 
 const ViewCart: React.FC = () => {
   const navigate = useNavigate();

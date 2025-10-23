@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { items } from "../data/mockData"; // adjust path if needed
-import "../index.css";
-import BackButton from "../components/BackButton";
+import PageHeader from "@/components/PageHeader"
+import { Button } from "@/components/ui/button"
 
 const AddReview: React.FC = () => {
   const navigate = useNavigate();
@@ -42,10 +42,7 @@ const AddReview: React.FC = () => {
   return (
     <div className="review-page">
       {/* Page Navigation */}
-      <div className="page-nav">
-        <BackButton />
-        <h1 className="page-nav-title">Add New Review</h1>
-      </div>
+      <PageHeader title="Add New Review" />
 
       {/* Form */}
       <form className="review-form" onSubmit={handleSubmit}>

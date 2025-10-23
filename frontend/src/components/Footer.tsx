@@ -1,33 +1,27 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, ShoppingBag, Search, User } from "lucide-react";
-import "../index.css";
 
 const Footer: React.FC = () => {
   const location = useLocation();
 
-  // Detect which search page you're currently on
   const isStoreSearch = location.pathname === "/storeSearch";
   const isItemSearch = location.pathname === "/itemSearch";
 
-  // Default to store search if on any other page
+  // Determine which search toggle to show
   let searchLink = {
     to: "/storeSearch",
     label: "Store Search",
     icon: <ShoppingBag size="1.5rem" />,
   };
 
-  // If currently on store search, show link to item search
   if (isStoreSearch) {
     searchLink = {
       to: "/itemSearch",
       label: "Item Search",
       icon: <Search size="1.5rem" />,
     };
-  }
-
-  // If currently on item search, show link to store search
-  else if (isItemSearch) {
+  } else if (isItemSearch) {
     searchLink = {
       to: "/storeSearch",
       label: "Store Search",
@@ -36,28 +30,33 @@ const Footer: React.FC = () => {
   }
 
   return (
-    <footer className="footer-nav">
+    <footer className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-[12vh] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-50">
       {/* Dynamic Search Toggle */}
       <Link
         to={searchLink.to}
-        className={`footer-link ${
-          isStoreSearch || isItemSearch ? "active" : ""
+        className={`flex flex-col items-center text-gray-500 text-sm gap-1 transition-colors duration-150 ${
+          isStoreSearch || isItemSearch ? "text-amber-400" : "hover:text-amber-400"
         }`}
       >
         {searchLink.icon}
         <p>{searchLink.label}</p>
       </Link>
 
-      {/* Home */}
-      <Link to="/" className="footer-center-button">
+      {/* Home Button */}
+      <Link
+        to="/"
+        className="bg-gray-900 text-amber-400 rounded-full w-14 h-14 flex items-center justify-center -mt-7 shadow-md hover:scale-105 transition-transform"
+      >
         <Home size="1.5rem" />
       </Link>
 
-      {/* Profile */}
+      {/* Profile Link */}
       <Link
         to="/profile"
-        className={`footer-link ${
-          location.pathname === "/profile" ? "active" : ""
+        className={`flex flex-col items-center text-gray-500 text-sm gap-1 transition-colors duration-150 ${
+          location.pathname === "/profile"
+            ? "text-amber-400"
+            : "hover:text-amber-400"
         }`}
       >
         <User size="1.5rem" />
