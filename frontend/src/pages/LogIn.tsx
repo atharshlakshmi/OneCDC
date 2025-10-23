@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 
-
 // If you are not using react-router, you can replace useNavigate with window.location.assign
 // and remove useLocation bits.
 
@@ -128,7 +127,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh)] w-full grid place-items-center bg-gray-50 px-4">
+    <div className="min-h-[80vh] flex items-start justify-center pt-16 bg-gray-50 px-4 sm:pt-24">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-lg p-6 sm:p-8">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
@@ -170,7 +169,7 @@ export default function Login() {
               </p>
             ) : null}
           </div>
-  
+
           {/* Password */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -238,9 +237,6 @@ export default function Login() {
               />
               Remember me
             </label>
-            <a href="/register" className="text-sm text-gray-600 hover:underline">
-              Create account
-            </a>
           </div>
 
           <button
@@ -254,6 +250,23 @@ export default function Login() {
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
+
+        {/* Register as shopper/owner */}
+        <div className="mt-6 text-sm text-gray-600 text-center space-y-1">
+          <p>
+            New here?{" "}
+            <a href="/register/shopper" className="text-indigo-600 hover:underline">
+              Register as Shopper
+            </a>
+          </p>
+          <p>
+            Business owner?{" "}
+            <a href="/register/owner" className="text-indigo-600 hover:underline">
+              Register as Owner
+            </a>
+          </p>
+        </div>
+
         {/* Divider + Google Sign-In */}
         <div className="my-6">
           <div className="relative flex items-center my-4">

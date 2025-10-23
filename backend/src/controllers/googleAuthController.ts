@@ -37,22 +37,31 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response): Pro
     let user = await User.findOne({ email: payload.email });
     if (!user) {
       // create a random secret so schema's passwordHash requirement is satisfied
-      const randomSecret = Math.random().toString(36).slice(2) + Date.now().toString();
-      const passwordHash = await bcrypt.hash(randomSecret, 10);
 
       user = await User.create({
         name: payload.name || payload.email.split("@")[0],
         email: payload.email,
         role: "registered_shopper", // ensure this is a valid discriminator in your app
         isActive: true,
+        // 👇 new verification & auth provider fields
+        authProvider: "google",
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
         singpassVerified: false,
         corppassVerified: false,
-        // satisfy required passwordHash for local-schema validation:
-        passwordHash,
         // optional: mark provider if your schema supports it:
         // authProvider: "google",
         avatarUrl: payload.picture, // optional
       });
+    } else {
+      // Existing user but unverified? Verify now.
+      if (!user.emailVerified) {
+        user.emailVerified = true;
+        user.emailVerifiedAt = new Date();
+      }
+
+      if (!user.authProvider) user.authProvider = "google"; // update if missing
+      await user.save();
     }
 
     // Generate token using your existing helper

@@ -1,74 +1,75 @@
-import { Request } from 'express';
-import { Document, Types } from 'mongoose';
+import { Request } from "express";
+import { Document, Types } from "mongoose";
 
 /**
  * User Role Types
  */
 export enum UserRole {
-  GUEST = 'guest',
-  REGISTERED_SHOPPER = 'registered_shopper',
-  OWNER = 'owner',
-  ADMIN = 'admin',
+  GUEST = "guest",
+  REGISTERED_SHOPPER = "registered_shopper",
+  OWNER = "owner",
+  ADMIN = "admin",
 }
 
 /**
  * Shop Category Types
  */
 export enum ShopCategory {
-  FOOD_BEVERAGE = 'food_beverage',
-  GROCERY = 'grocery',
-  HEALTHCARE = 'healthcare',
-  RETAIL = 'retail',
-  SERVICES = 'services',
-  ELECTRONICS = 'electronics',
-  FASHION = 'fashion',
-  OTHER = 'other',
+  FOOD_BEVERAGE = "food_beverage",
+  GROCERY = "grocery",
+  HEALTHCARE = "healthcare",
+  RETAIL = "retail",
+  SERVICES = "services",
+  ELECTRONICS = "electronics",
+  FASHION = "fashion",
+  OTHER = "other",
 }
 
 /**
  * Transport Mode for Route Planning
  */
 export enum TransportMode {
-  WALKING = 'walking',
-  DRIVING = 'driving',
-  TRANSIT = 'transit',
+  WALKING = "walking",
+  DRIVING = "driving",
+  TRANSIT = "transit",
 }
 
 /**
  * Report Category Types
  */
 export enum ReportCategory {
-  SPAM = 'spam',
-  OFFENSIVE = 'offensive',
-  MISLEADING = 'misleading',
-  FALSE_INFORMATION = 'false_information',
+  SPAM = "spam",
+  OFFENSIVE = "offensive",
+  MISLEADING = "misleading",
+  FALSE_INFORMATION = "false_information",
 }
 
 /**
  * Report Status
  */
 export enum ReportStatus {
-  PENDING = 'pending',
-  REVIEWED = 'reviewed',
-  RESOLVED = 'resolved',
-  DISMISSED = 'dismissed',
+  PENDING = "pending",
+  REVIEWED = "reviewed",
+  RESOLVED = "resolved",
+  DISMISSED = "dismissed",
 }
 
 /**
  * Moderation Action Types
  */
 export enum ModerationAction {
-  REMOVE_REVIEW = 'remove_review',
-  APPROVE_REVIEW = 'approve_review',
-  WARN_USER = 'warn_user',
-  REMOVE_USER = 'remove_user',
-  WARN_SHOP = 'warn_shop',
-  APPROVE_SHOP = 'approve_shop',
+  REMOVE_REVIEW = "remove_review",
+  APPROVE_REVIEW = "approve_review",
+  WARN_USER = "warn_user",
+  REMOVE_USER = "remove_user",
+  WARN_SHOP = "warn_shop",
+  APPROVE_SHOP = "approve_shop",
 }
 
 /**
  * Base User Interface
  */
+export type UserAuthProvider = "local" | "google";
 export interface IUser extends Document {
   email: string;
   passwordHash: string;
@@ -78,6 +79,9 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
+  authProvider: UserAuthProvider; // "local" | "google"
+  emailVerified: boolean;
+  emailVerifiedAt: Date | null;
   warnings: IWarning[];
   singpassVerified?: boolean;
   corppassVerified?: boolean;
@@ -131,7 +135,7 @@ export interface IShop extends Document {
   description: string;
   address: string;
   location: {
-    type: 'Point';
+    type: "Point";
     coordinates: [number, number]; // [longitude, latitude]
   };
   phone: string;
@@ -227,7 +231,7 @@ export interface ICartItem {
  */
 export interface IReport extends Document {
   reporter: Types.ObjectId;
-  targetType: 'review' | 'shop';
+  targetType: "review" | "shop";
   targetId: Types.ObjectId;
   category: ReportCategory;
   description: string;
@@ -244,7 +248,7 @@ export interface IReport extends Document {
 export interface IModerationLog extends Document {
   admin: Types.ObjectId;
   action: ModerationAction;
-  targetType: 'user' | 'shop' | 'review';
+  targetType: "user" | "shop" | "review";
   targetId: Types.ObjectId;
   relatedReport?: Types.ObjectId;
   reason: string;
@@ -293,11 +297,11 @@ export interface SearchFilters {
  * Sort Options
  */
 export enum SortOption {
-  RELEVANCE = 'relevance',
-  DISTANCE = 'distance',
-  ALPHABETICAL_ASC = 'name_asc',
-  ALPHABETICAL_DESC = 'name_desc',
-  RATING = 'rating',
+  RELEVANCE = "relevance",
+  DISTANCE = "distance",
+  ALPHABETICAL_ASC = "name_asc",
+  ALPHABETICAL_DESC = "name_desc",
+  RATING = "rating",
 }
 
 /**

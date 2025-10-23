@@ -40,7 +40,7 @@ export const validateDayOfWeek = (day: number): boolean => {
  * Sanitize input string
  */
 export const sanitizeInput = (input: string): string => {
-  return input.trim().replace(/[<>]/g, '');
+  return input.trim().replace(/[<>]/g, "");
 };
 
 /**
@@ -48,7 +48,14 @@ export const sanitizeInput = (input: string): string => {
  * Simplified validation for Singapore UEN format
  */
 export const validateBusinessRegistration = (uen: string): boolean => {
-  // Singapore UEN can be 9 or 10 characters
-  const uenRegex = /^[0-9]{8,10}[A-Z]$/;
-  return uenRegex.test(uen.toUpperCase());
+  if (!uen) return false;
+  const normalized = uen.trim().toUpperCase();
+
+  // Singapore UEN formats:
+  //  - Businesses: 9 digits + 1 letter  → 12345678X
+  //  - Local companies: 10 digits + 1 letter → 201912345K
+  //  - New entities: TYYPQ9999X, RYYPQ9999X, SYYPQ9999X
+  const uenRegex = /^(?:\d{8}[A-Z]|[0-9]{10}[A-Z]|[TSR]\d{2}[A-Z]{2,3}\d{4}[A-Z])$/;
+
+  return uenRegex.test(normalized);
 };

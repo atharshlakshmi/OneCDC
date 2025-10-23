@@ -15,6 +15,13 @@ import Profile from "./pages/Profile";
 import Login from "./pages/LogIn";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import RegisterShopper from "./pages/RegisterShopper";
+import RegisterOwner from "./pages/RegisterOwner";
+import VerifyEmailSent from "./pages/VerifyEmailSent";
+import VerifyEmail from "./pages/VerifyEmail";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+// inside <Routes>
 
 export const UserContext = createContext({
   username: "",
@@ -51,7 +58,12 @@ function App() {
           <Route path="/AddReview" element={<AddReview />} />
           <Route path="/ActionSuccess" element={<ActionSuccess />} />
           <Route path="/login" element={<Login />} />
-
+          <Route path="/register/shopper" element={<RegisterShopper />} />
+          <Route path="/register/owner" element={<RegisterOwner />} />
+          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* Private routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<Profile />} />

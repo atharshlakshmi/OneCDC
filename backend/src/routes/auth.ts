@@ -3,9 +3,9 @@ import { body } from "express-validator";
 import * as authController from "../controllers/authController";
 import { authenticate, validate, authLimiter } from "../middleware";
 import { googleLogin } from "../controllers/googleAuthController";
-
-console.log("[AUTH ROUTER] loaded"); // <— should print on server start
-
+import { verifyEmail, resendVerifyEmail } from "../controllers/verifyEmailController";
+import { forgotPassword, resetPassword } from "../controllers/passwordController";
+// ...
 const router = express.Router();
 
 router.get("/_debug", (_req, res) => {
@@ -37,7 +37,6 @@ router.post(
       .optional()
       .matches(/^[689]\d{7}$/)
       .withMessage("Valid Singapore phone number is required"),
-    body("nric").notEmpty().withMessage("NRIC is required for Singpass verification"),
   ]),
   authController.registerShopper
 );
@@ -65,7 +64,6 @@ router.post(
       .optional()
       .matches(/^[689]\d{7}$/)
       .withMessage("Valid Singapore phone number is required"),
-    body("businessRegistrationNumber").notEmpty().withMessage("Business registration number is required for Corppass verification"),
   ]),
   authController.registerOwner
 );
@@ -98,5 +96,12 @@ router.get("/verify", authenticate, authController.verifyToken);
  * Logout
  */
 router.post("/logout", authenticate, authController.logout);
+
+// Email verification routes
+router.get("/verify-email", verifyEmail);
+router.post("/verify-email/resend", resendVerifyEmail);
+// Password reset routes
+router.post("/password/forgot", forgotPassword);
+router.post("/password/reset", resetPassword);
 
 export default router;

@@ -28,6 +28,21 @@ const UserSchema = new Schema<IUser>(
       match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
     },
     passwordHash: { type: String, required: true },
+
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerifiedAt: {
+      type: Date,
+      default: null,
+    },
+
     role: {
       type: String,
       enum: Object.values(UserRole),

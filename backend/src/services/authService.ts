@@ -1,9 +1,10 @@
-import { User, RegisteredShopper, Owner } from '../models';
-import { hashPassword, comparePassword } from '../utils/password';
-import { generateToken } from '../utils/jwt';
-import { UserRole } from '../types';
-import { AppError } from '../middleware';
-import logger from '../utils/logger';
+import { User, RegisteredShopper, Owner } from "../models";
+import { hashPassword, comparePassword } from "../utils/password";
+import { generateToken } from "../utils/jwt";
+import { UserRole } from "../types";
+import { AppError } from "../middleware";
+import logger from "../utils/logger";
+import { validateBusinessRegistration } from "../utils/validators";
 
 /**
  * Mock Singpass Verification
@@ -30,24 +31,11 @@ const verifyCorppass = async (uen: string): Promise<boolean> => {
 /**
  * Register Shopper (Use Case #6-1)
  */
-export const registerShopper = async (data: {
-  email: string;
-  password: string;
-  name: string;
-  phone?: string;
-  nric: string;
-  address?: string;
-}) => {
+export const registerShopper = async (data: { email: string; password: string; name: string; phone?: string; address?: string }) => {
   // Check if user already exists
   const existingUser = await User.findOne({ email: data.email });
   if (existingUser) {
-    throw new AppError('User with this email already exists', 409);
-  }
-
-  // Verify with Singpass (mock)
-  const singpassVerified = await verifySingpass(data.nric);
-  if (!singpassVerified) {
-    throw new AppError('Singpass verification failed', 400);
+    throw new AppError("User with this email already exists", 409);
   }
 
   // Hash password
@@ -62,6 +50,9 @@ export const registerShopper = async (data: {
     role: UserRole.REGISTERED_SHOPPER,
     address: data.address,
     singpassVerified: true,
+    authProvider: "local",
+    emailVerified: false,
+    emailVerifiedAt: null,
   });
 
   // Generate token
@@ -82,17 +73,14 @@ export const registerShopper = async (data: {
 /**
  * Register Owner (Use Case #6-2)
  */
-export const registerOwner = async (data: {
-  email: string;
-  password: string;
-  name: string;
-  phone?: string;
-  businessRegistrationNumber: string;
-}) => {
+export const registerOwner = async (data: { email: string; password: string; name: string; phone?: string; businessRegistrationNumber: string }) => {
   // Check if user already exists
   const existingUser = await User.findOne({ email: data.email });
   if (existingUser) {
-    throw new AppError('User with this email already exists', 409);
+    throw new AppError("User with this email already exists", 409);
+  }
+  if (!validateBusinessRegistration(data.businessRegistrationNumber)) {
+    throw new AppError("Invalid UEN format. Please use a valid Singapore UEN (e.g. 201912345K or T12LP3456A).", 400);
   }
 
   // Check if UEN already registered
@@ -100,13 +88,13 @@ export const registerOwner = async (data: {
     businessRegistrationNumber: data.businessRegistrationNumber,
   });
   if (existingOwner) {
-    throw new AppError('Business registration number already registered', 409);
+    throw new AppError("Business registration number already registered", 409);
   }
 
   // Verify with Corppass (mock)
   const corppassVerified = await verifyCorppass(data.businessRegistrationNumber);
   if (!corppassVerified) {
-    throw new AppError('Corppass verification failed', 400);
+    throw new AppError("Corppass verification failed", 400);
   }
 
   // Hash password
@@ -121,6 +109,9 @@ export const registerOwner = async (data: {
     role: UserRole.OWNER,
     businessRegistrationNumber: data.businessRegistrationNumber,
     corppassVerified: true,
+    authProvider: "local",
+    emailVerified: false,
+    emailVerifiedAt: null,
   });
 
   // Generate token
@@ -145,13 +136,19 @@ export const login = async (email: string, password: string) => {
   // Find user
   const user = await User.findOne({ email, isActive: true });
   if (!user) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError("Invalid email or password", 401);
   }
 
   // Compare password
   const isPasswordValid = await comparePassword(password, user.passwordHash);
   if (!isPasswordValid) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError("Invalid email or password", 401);
+  }
+
+  // 3) Block unverified LOCAL accounts; allow Google users to pass
+  // (If you didn't add authProvider, just check !user.emailVerified)
+  if ((user as any).authProvider === "local" && !user.emailVerified) {
+    throw new AppError("Please verify your email before logging in.", 403);
   }
 
   // Generate token
@@ -173,9 +170,9 @@ export const login = async (email: string, password: string) => {
  * Get User Profile
  */
 export const getUserProfile = async (userId: string) => {
-  const user = await User.findById(userId).select('-passwordHash');
+  const user = await User.findById(userId).select("-passwordHash");
   if (!user) {
-    throw new AppError('User not found', 404);
+    throw new AppError("User not found", 404);
   }
   return user;
 };
