@@ -29,6 +29,7 @@ import SeeReports from "./pages/SeeReports";
 import SeeViolations from "./pages/SeeViolations";
 import { useAuth } from "./context/AuthContext";
 import { userContext } from "./contexts/userContext";
+import Layout from "./components/Layout";
 
 // Guard: redirects authenticated users away from /login and /register
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
@@ -64,6 +65,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <userContext.Provider value={{ username, setUsername }}>
+        <Layout>
         <NavBar />
         <Routes>
           {/* Public routes */}
@@ -119,6 +121,7 @@ export default function App() {
           </Route>
         </Routes>
         <Footer />
+        </Layout>
       </userContext.Provider>
     </BrowserRouter>
   );

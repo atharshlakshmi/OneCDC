@@ -93,7 +93,7 @@ const Profile: React.FC = () => {
   return (
     <div className="profile-page">
       <div className="profile-header text-center py-6 ">
-        <div className="profile-avatar mx-auto mb-3">
+        <div className="profile-avatar flex justify-center mx-auto mb-3">
           {user.name ? (
             <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-indigo-100 text-indigo-600 text-3xl font-bold">
               {user.name.charAt(0).toUpperCase()}
