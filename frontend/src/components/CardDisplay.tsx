@@ -33,7 +33,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
 
   return (
     <div
-      className={`w-full sm:w-3/4 rounded-2xl shadow-lg p-8 sm:p-10 flex flex-col gap-3 items-center text-center transition-all duration-200 ${highlightColor}`}
+      className={`w-full sm:w-3/4 rounded-2xl shadow-lg p-4 sm:p-10 flex flex-col gap-3 items-center text-center transition-all duration-200 ${highlightColor}`}
     >
       <h2 className="text-lg font-semibold">{title}</h2>
       {subtitle && <p className="text-gray-500 text-sm">{subtitle}</p>}

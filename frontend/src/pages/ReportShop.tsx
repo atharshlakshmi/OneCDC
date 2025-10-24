@@ -59,6 +59,7 @@ const ReportShop: React.FC = () => {
             title={shop.name}
             content={shop.details}
             details={`Address: ${shop.address}`}
+            disableActions
           />
         </div>
 

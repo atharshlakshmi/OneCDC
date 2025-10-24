@@ -61,6 +61,7 @@ const ReportReview: React.FC = () => {
               title={item?.name || "Unknown Item"}
               rating={review.rating}
               content={review.comment}
+              disableActions
             />
         </div>
         {/* --- Reason for Reporting --- */}
