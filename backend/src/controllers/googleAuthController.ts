@@ -3,7 +3,6 @@ import asyncHandler from "express-async-handler";
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../models/User";
 import { generateToken } from "../utils/jwt";
-import bcrypt from "bcryptjs";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -36,8 +35,6 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response): Pro
     // Check or create user
     let user = await User.findOne({ email: payload.email });
     if (!user) {
-      // create a random secret so schema's passwordHash requirement is satisfied
-
       user = await User.create({
         name: payload.name || payload.email.split("@")[0],
         email: payload.email,

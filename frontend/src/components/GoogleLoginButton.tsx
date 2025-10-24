@@ -16,17 +16,15 @@ export default function GoogleLoginButton() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  // If user came from a protected route, go back there after login
-  // Otherwise, just go to home page
-  const from = (location.state && (location.state as any).from) || document.referrer || "/";
+
+  // ✅ Only accept a relative pathname from router state; default to '/'
+  const from = (location.state as any)?.from || "/";
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
-    // SDK not loaded yet or container missing
     if (!window.google || !containerRef.current || !clientId) return;
 
-    // Initialize the Google Identity Services client
     window.google.accounts.id.initialize({
       client_id: clientId,
       callback: async (res: GoogleCredentialResponse) => {
@@ -36,7 +34,6 @@ export default function GoogleLoginButton() {
           return;
         }
         try {
-          // Send Google ID token to your backend to exchange for your JWT
           const data = await apiFetch<{ success: boolean; data: { user: any; token: string } }>("/auth/google/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -44,8 +41,8 @@ export default function GoogleLoginButton() {
           });
 
           const { user, token } = data.data;
-          login(user, token, true); // remember by default
-          navigate(from, { replace: true });
+          login(user, token, true);
+          navigate(from, { replace: true }); // ✅ safe redirect
         } catch (err) {
           console.error("Google login failed:", err);
           alert("Google login failed. Please try again.");
@@ -55,7 +52,6 @@ export default function GoogleLoginButton() {
       context: "signin",
     });
 
-    // Render the button
     window.google.accounts.id.renderButton(containerRef.current, {
       theme: "outline",
       size: "large",
@@ -65,9 +61,8 @@ export default function GoogleLoginButton() {
       logo_alignment: "left",
       width: 320,
     });
-  }, [login, navigate, location.state]);
+  }, [login, navigate, from]);
 
-  // ✨ Center the button horizontally
   return (
     <div className="flex justify-center mt-6 mb-2">
       <div ref={containerRef} />

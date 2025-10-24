@@ -3,58 +3,39 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 
-// If you are not using react-router, you can replace useNavigate with window.location.assign
-// and remove useLocation bits.
-
-// ---- Types ----
 interface LoginRequestBody {
   email: string;
   password: string;
 }
-
 interface UserShape {
   _id?: string;
   name?: string;
   email: string;
   role?: string;
 }
-
-interface LoginSuccess {
-  token?: string;
-  user?: UserShape;
-}
-
 interface ApiError {
   message?: string;
   errors?: Record<string, string>;
 }
 
-// ---- Helpers ----
 const API_BASE: string = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api";
-
 const EMAIL_RE = /^(?:[a-zA-Z0-9_'^&amp;+%`{}~|-]+(?:\.[a-zA-Z0-9_'^&amp;+%`{}~|-]+)*)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
 
 function validate(values: LoginRequestBody) {
   const errors: Partial<LoginRequestBody> = {};
-  if (!values.email) {
-    errors.email = "Email is required";
-  } else if (!EMAIL_RE.test(values.email)) {
-    errors.email = "Enter a valid email";
-  }
-  if (!values.password) {
-    errors.password = "Password is required";
-  }
+  if (!values.email) errors.email = "Email is required";
+  else if (!EMAIL_RE.test(values.email)) errors.email = "Enter a valid email";
+  if (!values.password) errors.password = "Password is required";
   return errors;
 }
 
-// ---- Component ----
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  // If user came from a protected route, go back there after login
-  // Otherwise, just go to home page
-  const from = (location.state && (location.state as any).from) || document.referrer || "/";
+
+  // ✅ Only accept a relative pathname pushed by ProtectedRoute; default to '/'
+  const from = (location.state as any)?.from || "/";
 
   const [values, setValues] = useState<LoginRequestBody>({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -64,7 +45,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const emailInputRef = useRef<HTMLInputElement | null>(null);
-
   useEffect(() => {
     emailInputRef.current?.focus();
   }, []);
@@ -114,8 +94,8 @@ export default function Login() {
       const { user, token } = resp?.data || {};
 
       if (user && token) {
-        login(user, token, remember); // ✅ use context
-        navigate(from, { replace: true }); // ✅ redirect after login
+        login(user, token, remember);
+        navigate(from, { replace: true }); // ✅ go back where we came from (or '/')
       } else {
         throw new Error("Invalid login response");
       }
@@ -223,7 +203,7 @@ export default function Login() {
             ) : null}
           </div>
 
-          {/* Remember me &amp; submit */}
+          {/* Remember me & submit */}
           <div className="flex items-center justify-between">
             <label className="inline-flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -251,7 +231,7 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Register as shopper/owner */}
+        {/* Register */}
         <div className="mt-6 text-sm text-gray-600 text-center space-y-1">
           <p>
             New here?{" "}
@@ -267,20 +247,18 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Divider + Google Sign-In */}
+        {/* Divider + Google */}
         <div className="my-6">
           <div className="relative flex items-center my-4">
             <div className="flex-grow h-px bg-gray-200"></div>
             <span className="px-3 text-xs uppercase text-gray-500">or</span>
             <div className="flex-grow h-px bg-gray-200"></div>
           </div>
-
           <div className="flex justify-center">
             <GoogleLoginButton />
           </div>
         </div>
 
-        {/* Fine print */}
         <p className="mt-6 text-center text-xs text-gray-500">
           By continuing, you agree to our{" "}
           <a href="/terms" className="underline">

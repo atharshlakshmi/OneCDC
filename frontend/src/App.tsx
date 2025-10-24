@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { useState } from "react";
 import "./index.css";
 import { shops } from "./data/mockData";
 import NavBar from "./components/NavBar";
@@ -15,7 +15,7 @@ import Profile from "./pages/Profile";
 import Login from "./pages/LogIn";
 import AddReport from "./pages/ReportReview";
 import AddItem from "./pages/AddItem";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RegisterShopper from "./pages/RegisterShopper";
 import RegisterOwner from "./pages/RegisterOwner";
@@ -23,15 +23,26 @@ import VerifyEmailSent from "./pages/VerifyEmailSent";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-// inside <Routes>
+import { useAuth } from "./context/AuthContext";
+import { userContext } from "./contexts/userContext";
 
-export const UserContext = createContext({
-  username: "",
-  setUsername: (name: string) => {},
-});
+// Guard: redirects authenticated users away from /login and /register
+function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
+  const { isAuthed, checked } = useAuth();
+  const location = useLocation();
 
-function App() {
+  if (!checked) return <div style={{ padding: 16 }}>Checking session…</div>;
+
+  if (isAuthed) {
+    const from = (location.state as any)?.from || "/";
+    return <Navigate to={from} replace />;
+  }
+  return <>{children}</>;
+}
+
+export default function App() {
   const [username, setUsername] = useState("");
+
   const Home = () => (
     <>
       <SearchBar />
@@ -48,7 +59,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <UserContext.Provider value={{ username, setUsername }}>
+      <userContext.Provider value={{ username, setUsername }}>
         <NavBar />
         <Routes>
           {/* Public routes */}
@@ -59,9 +70,33 @@ function App() {
           <Route path="/itemSearch" element={<ItemSearch />} />
           <Route path="/AddReview" element={<AddReview />} />
           <Route path="/ActionSuccess" element={<ActionSuccess />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register/shopper" element={<RegisterShopper />} />
-          <Route path="/register/owner" element={<RegisterOwner />} />
+
+          {/* Auth routes (redirect authed users away) */}
+          <Route
+            path="/login"
+            element={
+              <RedirectIfAuthed>
+                <Login />
+              </RedirectIfAuthed>
+            }
+          />
+          <Route
+            path="/register/shopper"
+            element={
+              <RedirectIfAuthed>
+                <RegisterShopper />
+              </RedirectIfAuthed>
+            }
+          />
+          <Route
+            path="/register/owner"
+            element={
+              <RedirectIfAuthed>
+                <RegisterOwner />
+              </RedirectIfAuthed>
+            }
+          />
+
           <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -69,18 +104,14 @@ function App() {
           <Route path="/ReportReview" element={<AddReport />} />
           <Route path="/AddItem" element={<AddItem />} />
 
-          {/* Private routes */}
+          {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<Profile />} />
             <Route path="/ViewCart" element={<ViewCart />} />
-            {/* add more private routes here */}
           </Route>
         </Routes>
-
         <Footer />
-      </UserContext.Provider>
+      </userContext.Provider>
     </BrowserRouter>
   );
 }
-
-export default App;
