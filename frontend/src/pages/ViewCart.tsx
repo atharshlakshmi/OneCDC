@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import BackButton from "../components/PageHeader";
+import PageHeader from "@/components/PageHeader"
+import { Button } from "@/components/ui/button"
 
 const ViewCart: React.FC = () => {
   const navigate = useNavigate();
@@ -21,9 +22,12 @@ const ViewCart: React.FC = () => {
 
   if (cart.length === 0) {
     return (
-      <div className="list-container">
-        <BackButton />
-        <h1>Your Cart is Empty</h1>
+      <div>
+        <PageHeader title = "Your Cart" />
+      <div className = "flex flex-col gap-5 items-center m-5 align-center justify-center">
+        
+        <h2 className="text-xl text-amber-400">Your cart is empty!</h2>
+      </div>
       </div>
     );
   }
@@ -31,29 +35,19 @@ const ViewCart: React.FC = () => {
   return (
     <div>
       {/* Nav Bar */}
-      <div className="page-nav">
-        <button className="back-button" onClick={() => navigate(-1)}>
-          ← Back
-        </button>
-        <h1 className="page-nav-title">Shopping Cart</h1>
-      </div>
+      <PageHeader title = "Your Cart" />
 
       {/* Cart List */}
-      <div className="list-container">
+      <div className = "flex flex-col gap-5 items-center m-5 align-center justify-center">
           {cart.map((shop) => (
-          <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="list-card">
-              {shop.name}
-              <button
-                className="add-cart-button"
-                style={{ marginLeft: "1rem" }}
-                onClick={(e) => {
+
+          <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto">
+              <h2 className="text-xl text-amber-400">{shop.name}</h2>
+              <Button onClick={(e) => {
                   e.preventDefault();  // prevent default link navigation
                   e.stopPropagation(); // stop the click from reaching the Link
                   removeFromCart(shop.id);
-                }}
-              >
-                Remove
-              </button>
+                }} variant="outline" size="lg">Remove</Button>
             </Link>
           ))}
       </div>

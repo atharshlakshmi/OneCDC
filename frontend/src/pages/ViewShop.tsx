@@ -62,15 +62,19 @@ const ViewShop: React.FC = () => {
           <p>
             <strong>Operating Hours:</strong> {shop.operating_hours}
           </p>
-          <Button onClick = {addShopToCart} variant="outline" size="lg">Add Shop to Cart</Button>
+          <div className = "flex gap-4">
+            <Button onClick = {addShopToCart} variant="outline" size="lg">Add Shop to Cart</Button>
+            <Button
+                onClick={() =>
+                  navigate("/ReportShop", { state: { shopId: shop.id, reporterId: currentUser.id } })
+                }
+                variant="destructive"
+                size="lg"
+              >
+                Report Shop
+            </Button>
+          </div>
         </div>
-        <p>
-          Found an item in store that is not in this list? 
-          <br></br>
-          Add it to the catalogue to let others know!
-        </p>
-        
-        <Button onClick={() => navigate("/AddItem", { state: { userId: currentUser.id } })} variant="outline" size="lg">Add New Item</Button>
         </div>
         </TabsContent>
         
@@ -81,6 +85,14 @@ const ViewShop: React.FC = () => {
             <h2>{item.name}</h2>
             <p>{item.price}</p>
           </Link>))}
+          <p>
+          Found an item in store that is not in this list? 
+          <br></br>
+          Add it to the catalogue to let others know!
+        </p>
+        
+        <Button onClick={() => navigate("/AddItem", { state: { userId: currentUser.id } })} variant="outline" size="lg">Add New Item</Button>
+        
         </div>
           </TabsContent>
     

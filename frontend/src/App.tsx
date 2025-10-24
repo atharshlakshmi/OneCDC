@@ -14,6 +14,7 @@ import ActionSuccess from "./pages/ActionSuccess";
 import Profile from "./pages/Profile";
 import Login from "./pages/LogIn";
 import AddReport from "./pages/ReportReview";
+import ReportShop from "./pages/ReportShop";
 import AddItem from "./pages/AddItem";
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -23,6 +24,9 @@ import VerifyEmailSent from "./pages/VerifyEmailSent";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import SeeReviews from "./pages/SeeReviews";
+import SeeReports from "./pages/SeeReports";
+import SeeViolations from "./pages/SeeViolations";
 import { useAuth } from "./context/AuthContext";
 import { userContext } from "./contexts/userContext";
 
@@ -68,7 +72,6 @@ export default function App() {
           <Route path="/ViewItem/:id" element={<ViewItem />} />
           <Route path="/storeSearch" element={<StoreSearch />} />
           <Route path="/itemSearch" element={<ItemSearch />} />
-          <Route path="/AddReview" element={<AddReview />} />
           <Route path="/ActionSuccess" element={<ActionSuccess />} />
 
           {/* Auth routes (redirect authed users away) */}
@@ -101,13 +104,18 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/ReportReview" element={<AddReport />} />
-          <Route path="/AddItem" element={<AddItem />} />
-
+          
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<Profile />} />
             <Route path="/ViewCart" element={<ViewCart />} />
+            <Route path="/SeeReviews" element={<SeeReviews />} />
+            <Route path="/SeeReports" element={<SeeReports />} />
+            <Route path="/SeeViolations" element={<SeeViolations />} />
+            <Route path="/AddReview" element={<AddReview />} />
+            <Route path="/ReportShop" element={<ReportShop />} />
+            <Route path="/ReportReview" element={<AddReport />} />
+            <Route path="/AddItem" element={<AddItem />} />
           </Route>
         </Routes>
         <Footer />

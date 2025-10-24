@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { reviews, items } from "../data/mockData"; // or wherever your reviews are stored
-import { Star } from "lucide-react";
+import CardDisplay from "@/components/CardDisplay";
 
 const ReportReview: React.FC = () => {
   const navigate = useNavigate();
@@ -47,31 +47,22 @@ const ReportReview: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-24 ">
       <PageHeader title="Report Review" />
 
       <form
         onSubmit={handleSubmit}
         className="max-w-xl mx-auto bg-white shadow-md rounded-2xl p-6 mt-6 space-y-6"
       >
+        <div className = "flex flex-col items-center">
         {/* --- Review Summary --- */}
-        <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 flex flex-col gap-2 justify-center items-center align-center">
-            <h2 className="font-semibold text-gray-900 text-xl">You are reporting this review:</h2>
-            <h3 className="text-sm">{item?.name}</h3>
-            <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={16}
-                    className={
-                      i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-                    }
-                  />
-                ))}
-            </div>
-            <p className="text-sm">{review.comment}</p>
+        <CardDisplay
+              key={review.id}
+              title={item?.name || "Unknown Item"}
+              rating={review.rating}
+              content={review.comment}
+            />
         </div>
-
         {/* --- Reason for Reporting --- */}
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-gray-800">
