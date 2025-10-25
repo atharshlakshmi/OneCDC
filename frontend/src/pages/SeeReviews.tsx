@@ -1,13 +1,19 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import CardDisplay from "@/components/CardDisplay";
 import { reviews, items, shops, users } from "../data/mockData";
 
 const SeeReviews: React.FC = () => {
+  const navigate = useNavigate();
   const currentUser = users.find((u) => u.id === 1);
   const userReviews = reviews.filter((r) => currentUser?.reviewIds.includes(r.id));
 
-  const handleEdit = (id: number) => alert(`Editing review #${id}`);
+  const handleEdit = (id: number) => {
+    navigate("/EditReview", { state: { reviewId: id, userId: currentUser?.id } });
+  };
+
+
   const handleDelete = (id: number) =>
     confirm("Are you sure you want to delete this review?") && alert(`Deleted review #${id}`);
 

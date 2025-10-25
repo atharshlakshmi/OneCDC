@@ -10,11 +10,13 @@ import StoreSearch from "./pages/storeSearch";
 import ItemSearch from "./pages/itemSearch";
 import SearchBar from "./components/SearchBar";
 import AddReview from "./pages/AddReview";
+import EditReview from "./pages/EditReview";
 import ActionSuccess from "./pages/ActionSuccess";
 import Profile from "./pages/Profile";
 import Login from "./pages/LogIn";
 import AddReport from "./pages/ReportReview";
 import ReportShop from "./pages/ReportShop";
+import EditReport from "./pages/EditReport";
 import AddItem from "./pages/AddItem";
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -118,6 +120,8 @@ export default function App() {
             <Route path="/ReportShop" element={<ReportShop />} />
             <Route path="/ReportReview" element={<AddReport />} />
             <Route path="/AddItem" element={<AddItem />} />
+            <Route path="/EditReview" element={<EditReview />} />
+            <Route path="/EditReport" element={<EditReport />} />
           </Route>
         </Routes>
         <Footer />

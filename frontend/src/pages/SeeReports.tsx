@@ -1,11 +1,12 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import CardDisplay from "@/components/CardDisplay";
 import { reviews, items, shops, users } from "../data/mockData";
 
 const SeeReports: React.FC = () => {
   const currentUser = users.find((u) => u.id === 1);
-
+  const navigate = useNavigate();
   const reports = [
     {
       id: 1,
@@ -29,7 +30,9 @@ const SeeReports: React.FC = () => {
 
   const userReports = reports.filter((r) => r.reporterId === currentUser?.id);
 
-  const handleEdit = (id: number) => alert(`Editing report #${id}`);
+  const handleEditReport = (reportId: number) => {
+    navigate("/EditReport", { state: { reportId, userId: currentUser?.id } });
+  };
   const handleDelete = (id: number) =>
     confirm("Are you sure you want to delete this report?") && alert(`Deleted report #${id}`);
 
@@ -57,7 +60,7 @@ const SeeReports: React.FC = () => {
               details={report.details}
               status={report.status}
               date={report.date}
-              onEdit={() => handleEdit(report.id)}
+              onEdit={() => handleEditReport(report.id)}
               onDelete={() => handleDelete(report.id)}
             />
           );
