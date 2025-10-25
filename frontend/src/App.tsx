@@ -9,7 +9,6 @@ import ViewCart from "./pages/ViewCart";
 import Footer from "./components/Footer";
 import StoreSearch from "./pages/storeSearch";
 import ItemSearch from "./pages/itemSearch";
-import SearchBar from "./components/SearchBar";
 import AddReview from "./pages/AddReview";
 import EditReview from "./pages/EditReview";
 import ActionSuccess from "./pages/ActionSuccess";
@@ -55,7 +54,6 @@ export default function App() {
 
   const Home = () => (
     <>
-      <SearchBar />
       <div className="flex flex-col gap-5 items-center m-5 align-center justify-center">
         {shops.map((shop) => (
           <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto">

@@ -1,16 +1,19 @@
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 
-const SearchBar: React.FC = () => {
+interface SearchBarProps {
+  onSearch: (query: string) => void;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [query, setQuery] = useState("");
   const location = useLocation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Search query:", query);
+    onSearch(query); // pass query to parent
   };
 
-  // Determine placeholder dynamically
   const placeholder =
     location.pathname === "/storeSearch"
       ? "Search for stores..."
