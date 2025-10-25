@@ -91,7 +91,7 @@ const ViewShop: React.FC = () => {
           Add it to the catalogue to let others know!
         </p>
         
-        <Button onClick={() => navigate("/AddItem", { state: { userId: currentUser.id } })} variant="outline" size="lg">Add New Item</Button>
+        <Button onClick={() => navigate("/AddItem", { state: { userId: currentUser.id, shopID: shop.id} })} variant="outline" size="lg">Add New Item</Button>
         
         </div>
           </TabsContent>
