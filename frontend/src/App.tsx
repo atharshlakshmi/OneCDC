@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BadgeCheck } from "lucide-react";
 import "./index.css";
 import { shops } from "./data/mockData";
 import NavBar from "./components/NavBar";
@@ -56,7 +57,16 @@ export default function App() {
       <div className="flex flex-col gap-5 items-center m-5 align-center justify-center">
         {shops.map((shop) => (
           <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto">
-            <h2 className="text-xl text-amber-400">{shop.name}</h2>
+            
+            <div className = "flex flex-row">
+              <h2 className="text-xl text-amber-400">{shop.name}</h2>
+              {shop.ownerVerified  ? (
+                <p className="text-green-700 font-medium absolute right-10"><BadgeCheck /></p>
+              ) : (
+                <></>
+              )}
+            </div>
+              
             <p>{shop.address}</p>
           </Link>
         ))}

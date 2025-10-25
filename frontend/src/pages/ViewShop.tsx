@@ -84,6 +84,11 @@ const ViewShop: React.FC = () => {
           <Link to={`/ViewItem/${item.id}`} key={item.id} className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto">
             <h2>{item.name}</h2>
             <p>{item.price}</p>
+            {item.status == "Not available" ? (
+                <p className="text-red-700 font-medium">{item.status}</p>
+              ) : (
+                <p className="text-green-700 font-medium">{item.status}</p>
+              )}
           </Link>))}
           <p>
           Found an item in store that is not in this list? 

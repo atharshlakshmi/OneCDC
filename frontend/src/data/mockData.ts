@@ -6,9 +6,10 @@ export const shops = [
     address: "123 Tech Street",
     contact_number: "123-456-7890",
     operating_hours: "9 AM - 9 PM",
+    ownerVerified: true, 
     items: [
-      { id: 1, name: "Wireless Mouse", price: "$25" },
-      { id: 2, name: "Mechanical Keyboard", price: "$80" },
+    { id: 1, name: "Wireless Mouse", price: "$25", shopId: 1, status: "Available" },
+    { id: 2, name: "Mechanical Keyboard", price: "$80" , shopId:1, status: "Available"},
     ],
   },
   {
@@ -18,9 +19,10 @@ export const shops = [
     address: "456 Gadget Avenue",
     contact_number: "123-456-7890",
     operating_hours: "9 AM - 9 PM",
+    ownerVerified: false,
     items: [
-      { id: 3, name: "Wireless Mouse", price: "$27" },
-      { id: 4, name: "Smartwatch", price: "$120" },
+    { id: 3, name: "Wireless Mouse", price: "$27", shopId: 2, status: "Available"},
+    { id: 4, name: "Smartwatch", price: "$120", shopId: 2 , status: "Available"},
     ],
   },
   {
@@ -30,20 +32,21 @@ export const shops = [
     address: "789 Office Blvd",
     contact_number: "123-456-7890",
     operating_hours: "9 AM - 9 PM",
+    ownerVerified: true, 
     items: [
-      { id: 5, name: "Notebook", price: "$5" },
-      { id: 6, name: "Pen", price: "$1" },
+    { id: 5, name: "Notebook", price: "$5", shopId: 3, status: "Available" },
+    { id: 6, name: "Pen", price: "$1",shopId: 3, status: "Not available"},
     ],
   },
 ];
 
 export const items = [
-    { id: 1, name: "Wireless Mouse", price: "$25", shopId: 1 },
-    { id: 2, name: "Mechanical Keyboard", price: "$80" , shopId:1},
-    { id: 3, name: "Wireless Mouse", price: "$27", shopId: 2 },
-    { id: 4, name: "Smartwatch", price: "$120", shopId: 2 },
-    { id: 5, name: "Notebook", price: "$5", shopId: 3 },
-    { id: 6, name: "Pen", price: "$1",shopId: 3 },
+    { id: 1, name: "Wireless Mouse", price: "$25", shopId: 1, status: "Available" },
+    { id: 2, name: "Mechanical Keyboard", price: "$80" , shopId:1, status: "Available"},
+    { id: 3, name: "Wireless Mouse", price: "$27", shopId: 2, status: "Available"},
+    { id: 4, name: "Smartwatch", price: "$120", shopId: 2 , status: "Available"},
+    { id: 5, name: "Notebook", price: "$5", shopId: 3, status: "Available" },
+    { id: 6, name: "Pen", price: "$1",shopId: 3, status: "Not available"},
 ]
 
 export const reviews = [
