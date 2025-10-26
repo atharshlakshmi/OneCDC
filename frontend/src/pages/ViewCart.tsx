@@ -27,15 +27,17 @@ const ViewCart: React.FC = () => {
     setSelectedShops((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   };
 
-  // ✅ Generate MER handler
   const generateMER = () => {
-    if (selectedShops.length === 0) {
-      alert("Please select at least one shop to generate a path.");
-      return;
-    }
-    console.log("Generating MER for shops:", selectedShops);
-    // TODO: Replace this with your real MER generation logic
-  };
+  if (selectedShops.length === 0) {
+    alert("Please select at least one shop to generate a path.");
+    return;
+  }
+
+  // find full shop info for selected shops
+  const selectedShopObjects = cart.filter((s) => selectedShops.includes(s.id));
+
+  navigate("/MER", { state: { selectedShops: selectedShopObjects } });
+};
 
   if (cart.length === 0) {
     return (

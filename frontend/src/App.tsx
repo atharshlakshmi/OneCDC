@@ -6,6 +6,7 @@ import NavBar from "./components/NavBar";
 import ViewShop from "./pages/ViewShop";
 import ViewItem from "./pages/ViewItem";
 import ViewCart from "./pages/ViewCart";
+import MER from "./pages/MER";
 import Footer from "./components/Footer";
 import StoreSearch from "./pages/storeSearch";
 import ItemSearch from "./pages/itemSearch";
@@ -134,6 +135,7 @@ export default function App() {
             <Route path="/EditReport" element={<EditReport />} />
             <Route path="/EditItem" element={<EditItem />} />
             <Route path="/EditShop" element={<EditShop />} />
+            <Route path="/MER" element={<MER />} />
           </Route>
         </Routes>
         <Footer />
