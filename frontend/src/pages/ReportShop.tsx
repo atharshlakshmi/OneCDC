@@ -65,7 +65,7 @@ const ReportShop: React.FC = () => {
 
         {/* --- Reason for Reporting --- */}
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-800">
+          <label className="block font-medium text-gray-800">
             Reason for Reporting <span className="text-red-500">*</span>
           </label>
 

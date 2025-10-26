@@ -1,13 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "react-feather";
 import { apiFetch, getToken } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
+
+type UserType = "Owner" | "Shopper"; // 👈 define roles
 
 function NavBar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isLoggedIn = !!getToken();
-  const isAdmin = user?.role === "admin";
+
+  // 👇 temporary role variable (replace with your user state later)
+  const userType: UserType = "Shopper"; // change to "Owner" to test owner view
 
   const handleLogout = async () => {
     try {
@@ -35,25 +38,15 @@ function NavBar() {
 
       {/* Right: Icons / Links */}
       <div className="flex items-center gap-6">
-        {isAdmin && (
+        {/* 👇 Only show cart for shoppers */}
+        {userType === "Shopper" && (
           <Link
-            to="/admin-dashboard"
-            className="flex items-center justify-center text-white font-medium text-base transition-transform duration-200 ease-in-out hover:scale-105 hover:opacity-85"
+            to="/ViewCart"
+            className="relative flex items-center justify-center text-white font-medium text-base transition-transform duration-200 ease-in-out hover:scale-105 hover:opacity-85"
           >
-            Admin
+            <ShoppingCart size="1.5rem" />
           </Link>
         )}
-
-        <Link
-          to="/ViewCart"
-          className="relative flex items-center justify-center text-white font-medium text-base transition-transform duration-200 ease-in-out hover:scale-105 hover:opacity-85"
-        >
-          <ShoppingCart size="1.5rem" />
-          {/* Example badge (optional, remove if not needed) */}
-          {/* <span className="absolute top-0 right-[-0.3rem] bg-amber-400 text-blue-900 text-[0.7rem] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-            3
-          </span> */}
-        </Link>
 
         {isLoggedIn && (
           <button

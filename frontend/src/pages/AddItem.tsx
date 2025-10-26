@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { shops } from "../data/mockData";
 
 const AddItem: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userId } = location.state || {}; // Capture logged-in user ID
+  const { userId, shopID } = location.state || {}; 
+  const shop = shops.find((s) => s.id === Number(shopID));
 
   // Form state
   const [itemName, setItemName] = useState("");
@@ -50,6 +52,12 @@ const AddItem: React.FC = () => {
         {/* Item Name */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">
+            You are adding an item to:
+          </label>
+          <p className="text-gray-900 font-semibold mb-2">{shop.name}</p>
+
+
+          <label className="block text-gray-700 font-medium mb-2">
             Item Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -64,7 +72,7 @@ const AddItem: React.FC = () => {
 
         {/* Category */}
         <div className="relative">
-          <label className="block text-sm font-semibold text-gray-800">
+          <label className="block font-medium text-gray-800">
             Category <span className="text-red-500">*</span>
           </label>
           <select

@@ -27,27 +27,18 @@ const SeeViolations: React.FC = () => {
     (v) => v.status === "Resolved"
   ).length;
 
-  const handleEdit = (violationId: number) => {
-    console.log(`Edit violation ${violationId}`);
-  };
-
-  const handleDelete = (violationId: number) => {
-    if (window.confirm("Are you sure you want to delete this violation?")) {
-      console.log(`Delete violation ${violationId}`);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <PageHeader title="Reports Against Me" />
 
       {/* Confirmed count */}
-      <div className="text-center text-gray-600 text-sm mt-2">
-        Confirmed Violations: <span className="font-medium">{confirmedCount}</span>
+      <div className="text-center text-gray-600 text-sm font-semibold mt-2">
+        Confirmed Violations:{" "}
+        <span className="font-medium">{confirmedCount}</span>
       </div>
 
       {/* Violations List */}
-      <div className="flex flex-col gap-5 items-center m-5 justify-center">
+      <div className="flex flex-col gap-6 items-center m-5 justify-center">
         {violations.map((violation) => {
           const review = reviews.find((r) => r.id === violation.reviewId);
           const item = review ? items.find((i) => i.id === review.itemId) : null;
@@ -56,34 +47,47 @@ const SeeViolations: React.FC = () => {
             : null;
 
           return (
-            <div key={violation.id} className="w-full flex flex-col items-center">
-              <CardDisplay
-                title={`Reported for: ${violation.reason}`}
-                subtitle={`Reported by: ${violation.reportedBy}`}
-                status={violation.status}
-                highlightColor="bg-white"
-                disableActions
-                content={
-                  review ? (
-                    <div className="p-5 bg-gray-100 rounded-xl mt-4 flex flex-col items-center text-center">
-                      <p className="font-semibold text-gray-800">
-                        {shop?.name || "Unknown Shop"}
-                      </p>
-                      <p className="text-gray-500 text-sm mb-2">
-                        {item?.name || "Unknown Item"}
-                      </p>
-                      <p className="text-gray-700 italic mb-3">
+            <div
+              key={violation.id}
+              className="w-full sm:w-3/4 bg-white shadow-lg rounded-2xl p-6 flex flex-col gap-4 border border-gray-200"
+            >
+              {/* Outer Card Header */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Reported for: {violation.reason}
+                </h2>
+
+                <span
+                  className={`text-sm font-medium mt-1 sm:mt-0 ${
+                    violation.status === "Resolved"
+                      ? "text-green-600"
+                      : "text-yellow-600"
+                  }`}
+                >
+                  {violation.status}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-3 align-center justify-center items-center">
+                <CardDisplay
+                  key={`inner-${violation.id}`}
+                  title={shop?.name || "Unknown Shop"}
+                  subtitle={item ? `Item: ${item.name}` : ""}
+                  content={
+                    review ? (
+                      <div className="text-center text-gray-700 italic">
                         “{review.comment}”
-                      </p>
-                      <p className="text-gray-600">⭐ {review.rating}/5</p>
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 italic mt-2">
-                      Review content unavailable.
-                    </p>
-                  )
-                }
-              />
+                      </div>
+                    ) : (
+                      "Review content unavailable."
+                    )
+                  }
+                  disableActions
+                  highlightColor="bg-gray-100"
+                />
+              </div>
+
+              
             </div>
           );
         })}
