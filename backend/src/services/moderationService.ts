@@ -1,12 +1,11 @@
 import { Report, ModerationLog, User, Shop, Catalogue } from '../models';
-import { ModerationAction, ReportStatus, UserRole } from '../types';
+import { ModerationAction, ReportStatus, UserRole, IReport, IModerationLog, IUser } from '../types';
 import { AppError } from '../middleware';
 import logger from '../utils/logger';
+import config from '../config';
 
-const SHOPPER_WARNING_THRESHOLD = parseInt(
-  process.env.SHOPPER_WARNING_THRESHOLD || '3'
-);
-const OWNER_REPORT_THRESHOLD = parseInt(process.env.OWNER_REPORT_THRESHOLD || '5');
+const SHOPPER_WARNING_THRESHOLD = config.moderation.shopper.warningThreshold;
+const OWNER_REPORT_THRESHOLD = config.moderation.owner.reportThreshold;
 
 /**
  * Moderate Review (Use Case #5-1)
@@ -257,8 +256,12 @@ export const removeUser = async (
 /**
  * Get Pending Reports
  */
-export const getPendingReports = async (targetType?: 'review' | 'shop') => {
-  const query: any = { status: ReportStatus.PENDING };
+export const getPendingReports = async (
+  targetType?: 'review' | 'shop'
+): Promise<IReport[]> => {
+  const query: { status: ReportStatus; targetType?: 'review' | 'shop' } = {
+    status: ReportStatus.PENDING,
+  };
   if (targetType) {
     query.targetType = targetType;
   }
@@ -274,7 +277,9 @@ export const getPendingReports = async (targetType?: 'review' | 'shop') => {
 /**
  * Get Moderation Logs
  */
-export const getModerationLogs = async (limit: number = 100) => {
+export const getModerationLogs = async (
+  limit: number = 100
+): Promise<IModerationLog[]> => {
   const logs = await ModerationLog.find()
     .sort({ timestamp: -1 })
     .limit(limit)
@@ -286,7 +291,9 @@ export const getModerationLogs = async (limit: number = 100) => {
 /**
  * Get Users with Warnings
  */
-export const getUsersWithWarnings = async (minWarnings: number = 1) => {
+export const getUsersWithWarnings = async (
+  minWarnings: number = 1
+): Promise<IUser[]> => {
   const users = await User.find({
     isActive: true,
     'warnings.0': { $exists: true },

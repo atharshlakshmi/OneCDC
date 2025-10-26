@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import PageHeader from "@/components/PageHeader"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import {
   Tabs,
@@ -31,9 +32,9 @@ const ViewShop: React.FC = () => {
     if (!cart.find((s: any) => s.id === shop.id)) {
       cart.push({ id: shop.id, name: shop.name });
       localStorage.setItem("cart", JSON.stringify(cart));
-      alert(`${shop.name} added to cart!`);
+      toast.success(`${shop.name} added to cart!`);
     } else {
-      alert(`${shop.name} is already in your cart.`);
+      toast.info(`${shop.name} is already in your cart.`);
     }
   };
 
