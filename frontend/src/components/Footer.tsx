@@ -1,12 +1,11 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, User, ShoppingBag, Search } from "lucide-react";
-
-type UserType = "Owner" | "Shopper"; // 👈 define roles
+import { useAuth } from "../context/AuthContext";
 
 const Footer: React.FC = () => {
   const location = useLocation();
-   const userType: UserType = "Shopper";
+  const { user } = useAuth();
 
 
   const isStoreSearch = location.pathname === "/storeSearch";
@@ -35,8 +34,8 @@ const Footer: React.FC = () => {
   return (
     <footer className="fixed bottom-0 left-0 w-full bg-transparent z-50 flex justify-center">
       <div className="relative w-full bg-white rounded-t-3xl shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex justify-between items-center px-10 pt-4 pb-6">
-        {/* Left side content (only for shoppers) */}
-        {userType === "Shopper" && (
+        {/* Left side content (for all shoppers - guest and registered) */}
+        {(user?.role === "registered_shopper" || user?.role === "guest" || !user) && (
           <Link
             to={searchLink.to}
             className={`flex flex-col items-center text-sm gap-1 transition-all ${
@@ -52,7 +51,7 @@ const Footer: React.FC = () => {
 
         {/* Floating Home Button */}
         <Link
-          to={userType === "Owner" ? "/shop/1" : "/"}
+          to={user?.role === "owner" ? "/shop/1" : "/"}
           className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 w-20 h-20 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
         >
           <Home size="1.75rem" className="text-amber-400" />

@@ -1,40 +1,37 @@
-import { useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import "./index.css";
 import { shops } from "./data/mockData";
 import NavBar from "./components/NavBar";
-import ViewShop from "./pages/ViewShop";
-import ViewItem from "./pages/ViewItem";
-import ViewCart from "./pages/ViewCart";
-import MER from "./pages/MER";
+import ViewShop from "./pages/ShopperUI/ViewShop";
+import ViewItem from "./pages/ShopperUI/ViewItem";
+import ViewCart from "./pages/ShopperUI/ViewCart";
+import MER from "./pages/ShopperUI/MER";
 import Footer from "./components/Footer";
-import StoreSearch from "./pages/storeSearch";
-import ItemSearch from "./pages/itemSearch";
-import AddReview from "./pages/AddReview";
-import EditReview from "./pages/EditReview";
-import ActionSuccess from "./pages/ActionSuccess";
-import Profile from "./pages/Profile";
-import Login from "./pages/LogIn";
-import AddReport from "./pages/ReportReview";
-import ReportShop from "./pages/ReportShop";
-import EditReport from "./pages/EditReport";
-import AddItem from "./pages/AddItem";
-import EditItem from "./pages/EditItem";
-import EditShop from "./pages/EditShop";
+import StoreSearch from "./pages/ShopperUI/StoreSearch";
+import ItemSearch from "./pages/ShopperUI/ItemSearch";
+import AddReview from "./pages/ShopperUI/AddReview";
+import EditReview from "./pages/ShopperUI/EditReview";
+import Profile from "./pages/AuthUI/Profile";
+import Login from "./pages/AuthUI/LogIn";
+import AddReport from "./pages/ShopperUI/ReportReview";
+import ReportShop from "./pages/ShopperUI/ReportShop";
+import EditReport from "./pages/ShopperUI/EditReport";
+import AddItem from "./pages/OwnerUI/AddItem";
+import EditItem from "./pages/OwnerUI/EditItem";
+import EditShop from "./pages/OwnerUI/EditShop";
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import RegisterShopper from "./pages/RegisterShopper";
-import RegisterOwner from "./pages/RegisterOwner";
-import VerifyEmailSent from "./pages/VerifyEmailSent";
-import VerifyEmail from "./pages/VerifyEmail";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import SeeReviews from "./pages/SeeReviews";
-import SeeReports from "./pages/SeeReports";
-import SeeViolations from "./pages/SeeViolations";
-import AdminDashboard from "./pages/AdminDashboard";
+import RegisterShopper from "./pages/AuthUI/RegisterShopper";
+import RegisterOwner from "./pages/AuthUI/RegisterOwner";
+import VerifyEmailSent from "./pages/AuthUI/VerifyEmailSent";
+import VerifyEmail from "./pages/AuthUI/VerifyEmail";
+import ForgotPassword from "./pages/AuthUI/ForgotPassword";
+import ResetPassword from "./pages/AuthUI/ResetPassword";
+import SeeReviews from "./pages/AdminUI/SeeReviews";
+import SeeReports from "./pages/AdminUI/SeeReports";
+import SeeViolations from "./pages/AdminUI/SeeViolations";
+import AdminDashboard from "./pages/AdminUI/AdminDashboard";
 import { useAuth } from "./context/AuthContext";
-import { userContext } from "./contexts/userContext";
 import Layout from "./components/Layout";
 
 // Guard: redirects authenticated users away from /login and /register
@@ -76,8 +73,6 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const [username, setUsername] = useState("");
-
   const Home = () => (
     <>
       <div className="flex flex-col gap-5 items-center m-5 align-center justify-center">
@@ -102,8 +97,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <userContext.Provider value={{ username, setUsername }}>
-        <Layout>
+      <Layout>
         <NavBar />
         <Routes>
           {/* Public routes */}
@@ -112,7 +106,6 @@ export default function App() {
           <Route path="/ViewItem/:id" element={<ViewItem />} />
           <Route path="/storeSearch" element={<StoreSearch />} />
           <Route path="/itemSearch" element={<ItemSearch />} />
-          <Route path="/ActionSuccess" element={<ActionSuccess />} />
 
           {/* Auth routes (redirect authed users away) */}
           <Route
@@ -174,8 +167,7 @@ export default function App() {
           />
         </Routes>
         <Footer />
-        </Layout>
-      </userContext.Provider>
+      </Layout>
     </BrowserRouter>
   );
 }
