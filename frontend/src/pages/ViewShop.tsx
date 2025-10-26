@@ -23,9 +23,9 @@ const ViewShop: React.FC = () => {
     if (!cart.find((s: any) => s.id === shop.id)) {
       cart.push({ id: shop.id, name: shop.name });
       localStorage.setItem("cart", JSON.stringify(cart));
-      toast.success(`${shop.name} added to cart!`);
+      alert(`${shop.name} added to cart!`);
     } else {
-      toast.info(`${shop.name} is already in your cart.`);
+      alert(`${shop.name} is already in your cart.`);
     }
   };
 
