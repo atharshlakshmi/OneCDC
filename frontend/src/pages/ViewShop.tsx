@@ -3,12 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { shops } from "../data/mockData";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ViewShop: React.FC = () => {
   const { id } = useParams();
@@ -78,13 +73,7 @@ const ViewShop: React.FC = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button
-                    onClick={() =>
-                      navigate("/EditShop", { state: { shopId: shop.id } })
-                    }
-                    className="bg-blue-900 text-white hover:bg-blue-800"
-                    size="lg"
-                  >
+                  <Button onClick={() => navigate("/EditShop", { state: { shopId: shop.id } })} className="bg-blue-900 text-white hover:bg-blue-800" size="lg">
                     Edit Shop Details
                   </Button>
                 )}
@@ -97,18 +86,10 @@ const ViewShop: React.FC = () => {
         <TabsContent value="Catalogue">
           <div className="flex flex-col gap-5 items-center m-5 justify-center">
             {items.map((item) => (
-              <Link
-                to={`/ViewItem/${item.id}`}
-                key={item.id}
-                className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto"
-              >
+              <Link to={`/ViewItem/${item.id}`} key={item.id} className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto">
                 <h2>{item.name}</h2>
                 <p>{item.price}</p>
-                {item.status === "Not available" ? (
-                  <p className="text-red-700 font-medium">{item.status}</p>
-                ) : (
-                  <p className="text-green-700 font-medium">{item.status}</p>
-                )}
+                {item.status === "Not available" ? <p className="text-red-700 font-medium">{item.status}</p> : <p className="text-green-700 font-medium">{item.status}</p>}
               </Link>
             ))}
 
@@ -122,16 +103,16 @@ const ViewShop: React.FC = () => {
               </>
             )}
             <Button
-                  onClick={() =>
-                    navigate("/AddItem", {
-                      state: { userId: currentUser.id, shopID: shop.id },
-                    })
-                  }
-                  variant="outline"
-                  size="lg"
-                >
-                  Add New Item
-                </Button>
+              onClick={() =>
+                navigate("/AddItem", {
+                  state: { userId: currentUser.id, shopID: shop.id },
+                })
+              }
+              variant="outline"
+              size="lg"
+            >
+              Add New Item
+            </Button>
           </div>
         </TabsContent>
       </Tabs>
@@ -140,4 +121,3 @@ const ViewShop: React.FC = () => {
 };
 
 export default ViewShop;
-

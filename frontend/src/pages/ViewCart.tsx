@@ -24,9 +24,7 @@ const ViewCart: React.FC = () => {
 
   // Toggle selection
   const toggleSelectShop = (id: number) => {
-    setSelectedShops((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setSelectedShops((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   };
 
   // ✅ Generate MER handler
@@ -66,18 +64,10 @@ const ViewCart: React.FC = () => {
               }`}
             >
               {/* Checkbox on the right corner */}
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => toggleSelectShop(shop.id)}
-                className="absolute top-5 right-5 w-5 h-5 accent-amber-400 cursor-pointer"
-              />
+              <input type="checkbox" checked={isSelected} onChange={() => toggleSelectShop(shop.id)} className="absolute top-5 right-5 w-5 h-5 accent-amber-400 cursor-pointer" />
 
               {/* Shop Name */}
-              <Link
-                to={`/ViewShop/${shop.id}`}
-                className="text-xl text-amber-400 hover:underline"
-              >
+              <Link to={`/ViewShop/${shop.id}`} className="text-xl text-amber-400 hover:underline">
                 {shop.name}
               </Link>
 
@@ -100,13 +90,9 @@ const ViewCart: React.FC = () => {
         {/* ✅ Generate Path Button */}
         <Button
           onClick={generateMER}
-          size = "lg"
+          size="lg"
           disabled={selectedShops.length === 0}
-          className={`mt-6 px-8 py-3 rounded-lg shadow-md text-white ${
-            selectedShops.length === 0
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-amber-400 hover:bg-amber-500"
-          }`}
+          className={`mt-6 px-8 py-3 rounded-lg shadow-md text-white ${selectedShops.length === 0 ? "bg-gray-300 cursor-not-allowed" : "bg-amber-400 hover:bg-amber-500"}`}
         >
           Generate Path
         </Button>

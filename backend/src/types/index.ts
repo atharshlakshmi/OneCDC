@@ -85,6 +85,10 @@ export interface IUser extends Document {
   warnings: IWarning[];
   singpassVerified?: boolean;
   corppassVerified?: boolean;
+
+  avatarUrl?: string;
+  gender?: "male" | "female" | "other" | "";
+  address?: string;
 }
 
 /**

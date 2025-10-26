@@ -5,11 +5,30 @@ import { authenticate, validate, authLimiter } from "../middleware";
 import { googleLogin } from "../controllers/googleAuthController";
 import { verifyEmail, resendVerifyEmail } from "../controllers/verifyEmailController";
 import { forgotPassword, resetPassword } from "../controllers/passwordController";
+import { changePassword } from "../controllers/authController";
+
 // ...
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 const router = express.Router();
 
 router.get("/_debug", (_req, res) => {
   res.json({ ok: true, where: "auth router" });
+});
+// ---- Multer setup for avatars (disk) ----
+const avatarsDir = path.join(process.cwd(), "uploads", "avatars");
+fs.mkdirSync(avatarsDir, { recursive: true });
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, avatarsDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname) || ".jpg";
+      const name = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+      cb(null, name);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
 
 //Google Login
@@ -80,10 +99,21 @@ router.post(
 );
 
 /**
- * GET /api/auth/profile
- * Get user profile
+ * GET/PUT /api/auth/profile
  */
 router.get("/profile", authenticate, authController.getProfile);
+router.put(
+  "/profile",
+  authenticate,
+  upload.single("avatar"), // ✅ accept multipart form-data with avatar field
+  authController.updateProfile
+);
+
+/**
+ * POST /api/auth/profile/avatar
+ * multipart form-data field: "avatar"
+ */
+router.post("/profile/avatar", authenticate, upload.single("avatar"), authController.uploadAvatar);
 
 /**
  * GET /api/auth/verify
@@ -91,6 +121,23 @@ router.get("/profile", authenticate, authController.getProfile);
  */
 router.get("/verify", authenticate, authController.verifyToken);
 
+router.post(
+  "/password/change",
+  authenticate,
+  validate([
+    body("currentPassword").notEmpty().withMessage("Current password is required"),
+    body("newPassword")
+      .isLength({ min: 8 })
+      .withMessage("New password must be at least 8 characters")
+      .matches(/[A-Z]/)
+      .withMessage("Must contain at least one uppercase letter")
+      .matches(/[a-z]/)
+      .withMessage("Must contain at least one lowercase letter")
+      .matches(/[0-9]/)
+      .withMessage("Must contain at least one number"),
+  ]),
+  changePassword
+);
 /**
  * POST /api/auth/logout
  * Logout

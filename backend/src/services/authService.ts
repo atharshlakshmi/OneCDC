@@ -176,3 +176,12 @@ export const getUserProfile = async (userId: string) => {
   }
   return user;
 };
+
+/**
+ * Update User Profile
+ */
+export async function updateUserProfile(userId: string, patch: Partial<{ name: string; gender: string; phone: string; address: string; avatarUrl: string }>) {
+  const updated = await User.findByIdAndUpdate(userId, { $set: patch }, { new: true, runValidators: true }).select("-password").lean();
+
+  return updated;
+}
