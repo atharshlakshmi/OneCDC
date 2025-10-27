@@ -1,6 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
-import * as shopController from '../controllers/shopController';
+import * as ownerController from '../controllers/ownerController';
 import { authenticate, authorize, validate } from '../middleware';
 import { UserRole } from '../types';
 
@@ -13,7 +13,7 @@ router.use(authenticate, authorize(UserRole.OWNER));
  * GET /api/owner/shops
  * Get owner's shops
  */
-router.get('/shops', shopController.getOwnerShops);
+router.get('/shops', ownerController.getOwnerShops);
 
 /**
  * POST /api/owner/shops
@@ -37,26 +37,26 @@ router.post(
       .isArray()
       .withMessage('Operating hours must be an array'),
   ]),
-  shopController.createShop
+  ownerController.createShop
 );
 
 /**
  * PUT /api/owner/shops/:id
  * Update shop
  */
-router.put('/shops/:id', shopController.updateShop);
+router.put('/shops/:id', ownerController.updateShop);
 
 /**
  * DELETE /api/owner/shops/:id
  * Delete shop
  */
-router.delete('/shops/:id', shopController.deleteShop);
+router.delete('/shops/:id', ownerController.deleteShop);
 
 /**
  * GET /api/owner/shops/:id/catalogue
  * Get shop catalogue
  */
-router.get('/shops/:id/catalogue', shopController.getCatalogue);
+router.get('/shops/:id/catalogue', ownerController.getCatalogue);
 
 /**
  * POST /api/owner/shops/:id/catalogue
@@ -77,19 +77,31 @@ router.post(
       .isBoolean()
       .withMessage('CDC voucher accepted must be a boolean'),
   ]),
-  shopController.addCatalogueItem
+  ownerController.addCatalogueItem
 );
 
 /**
  * PUT /api/owner/shops/:id/catalogue/:itemId
  * Update catalogue item
  */
-router.put('/shops/:id/catalogue/:itemId', shopController.updateCatalogueItem);
+router.put('/shops/:id/catalogue/:itemId', ownerController.updateCatalogueItem);
 
 /**
  * DELETE /api/owner/shops/:id/catalogue/:itemId
  * Delete catalogue item
  */
-router.delete('/shops/:id/catalogue/:itemId', shopController.deleteCatalogueItem);
+router.delete('/shops/:id/catalogue/:itemId', ownerController.deleteCatalogueItem);
+
+/**
+ * GET /api/owner/reviews
+ * Get reviews for owner's items
+ */
+router.get('/reviews', ownerController.getOwnerItemReviews);
+
+/**
+ * GET /api/owner/shops/:id/stats
+ * Get shop statistics
+ */
+router.get('/shops/:id/stats', ownerController.getShopStats);
 
 export default router;

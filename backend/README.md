@@ -30,10 +30,12 @@ backend/
 │   ├── controllers/         # Request handlers
 │   │   ├── authController.ts
 │   │   ├── searchController.ts
+│   │   ├── shopperController.ts
 │   │   ├── cartController.ts
 │   │   ├── reviewController.ts
 │   │   ├── shopController.ts
 │   │   ├── reportController.ts
+│   │   ├── ownerController.ts
 │   │   └── adminController.ts
 │   ├── routes/              # API routes
 │   │   ├── auth.ts
@@ -45,7 +47,7 @@ backend/
 │   │   ├── admin.ts
 │   │   └── index.ts
 │   ├── services/            # Business logic
-│   │   ├── authService.ts   # ✓ Singpass/Corppass integration (mock)
+│   │   ├── authService.ts   # ✓ Username + Password / Google OAuth2
 │   │   ├── searchService.ts # ✓ Search & ranking algorithms
 │   │   ├── cartService.ts   # Cart management
 │   │   ├── shopService.ts   # Shop CRUD operations
@@ -91,16 +93,52 @@ npm install
 
 ### 2. Configure Environment Variables
 
-Copy `.env.example` to `.env` and update with your values:
-
-```bash
-cp .env.example .env
+Generate `JWT_SECRET` key using: 
+```
+# 32 bytes (256 bits) hex secret
+openssl rand -hex 32
+# put the output into .env
 ```
 
-Required environment variables:
-- `MONGODB_URI`: Your MongoDB connection string
-- `JWT_SECRET`: Secret key for JWT signing
-- `GOOGLE_MAPS_API_KEY`: Google Maps API key (for route generation)
+Create `/backend/.env` file:
+
+```env
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# Database
+MONGODB_URI="mongodb+srv://kchen031_db_user:c0TUOXEcXo1eRLwn@cluster0.yg9wbmw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-min-32-characters-change-in-production (copy from above)
+JWT_EXPIRE=7d
+
+# CORS
+FRONTEND_URL=http://localhost:5173the 
+
+# Google Client ID
+GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=...
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Warning Thresholds 
+SHOPPER_WARNING_THRESHOLD=3
+OWNER_REPORT_THRESHOLD=5
+
+# File size limit
+MAX_FILE_SIZE=5242880
+
+# Default Location (Singapore)
+DEFAULT_LAT=1.3521
+DEFAULT_LNG=103.8198
+
+# Google Maps API (not implemented yet)
+# GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+```
 
 ### 3. Create Uploads Directory
 
@@ -108,9 +146,13 @@ Required environment variables:
 mkdir uploads
 ```
 
-### 4. Seed Database (Optional)
+### 4. Seed Database (Required for First-Time Setup)
 
 ```bash
+# Comprehensive seed with shops, items, reviews, users
+npm run seed:frontend
+
+# Alternative basic seed
 npm run seed
 ```
 
@@ -137,10 +179,13 @@ npm start
 |--------|----------|-------------|------|------------|
 | POST | `/register/shopper` | Register new shopper (UC #6-1) | No | 5/15min |
 | POST | `/register/owner` | Register new owner (UC #6-2) | No | 5/15min |
-| POST | `/login` | Login (UC #6-3) | No | 5/15min |
+| POST | `/login` | Login with email/password (UC #6-3) | No | 5/15min |
+| POST | `/google` | Login/Register with Google OAuth | No | 5/15min |
 | POST | `/logout` | Logout | Yes | No |
 | GET | `/verify` | Verify JWT token | Yes | No |
 | GET | `/profile` | Get user profile | Yes | No |
+| PUT | `/profile` | Update user profile | Yes | 10/15min |
+| POST | `/change-password` | Change password | Yes | 5/15min |
 
 ### Search Routes (`/api/search`)
 
@@ -255,6 +300,35 @@ Content-Type: application/json
     "user": {
       "_id": "...",
       "email": "john@example.com",
+      "name": "John Doe",
+      "role": "registered_shopper"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+### Login with Google OAuth
+
+**Request:**
+```bash
+POST /api/auth/google
+Content-Type: application/json
+
+{
+  "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU5N...",
+  "role": "registered_shopper"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "_id": "...",
+      "email": "user@gmail.com",
       "name": "John Doe",
       "role": "registered_shopper"
     },
@@ -428,14 +502,28 @@ npm run lint
 
 ### Database Seeding
 
-The seed script creates:
+The seed scripts populate the database with sample data:
+
+**`npm run seed:frontend` (Recommended)**
+Creates:
+- Sample shops with geolocation data (Marine Parade area)
+- Complete catalogues with items and pricing
+- Sample reviews with ratings
+- Test user accounts (check console output for credentials)
+
+**`npm run seed` (Alternative)**
+Creates:
 - 1 admin user
-- 5 shoppers
-- 3 owners with shops
+- 5 registered shoppers
+- 3 shop owners with their shops
 - Sample catalogues with items
-- Sample reviews
+- Sample reviews and ratings
 
 ```bash
+# Use the frontend seed for immediate testing
+npm run seed:frontend
+
+# Or use the basic seed
 npm run seed
 ```
 
@@ -485,14 +573,125 @@ Logs include:
 - User actions
 - Error stack traces
 
+## Troubleshooting
+
+### MongoDB Connection Issues
+
+**Error: "MongooseServerSelectionError: connect ECONNREFUSED"**
+- Check MongoDB Atlas connection string in `.env`
+- Verify your IP address is whitelisted in MongoDB Atlas
+- Ensure network security settings allow outbound connections
+- Test connection: `mongosh "your-connection-string"`
+
+**Error: "Authentication failed"**
+- Verify MongoDB username and password in connection string
+- Check database user has proper permissions
+- Ensure password is URL-encoded if it contains special characters
+
+### Port Already in Use
+
+**Error: "EADDRINUSE: address already in use :::5000"**
+```bash
+# Find process using port 5000
+lsof -ti:5000
+
+# Kill the process
+lsof -ti:5000 | xargs kill -9
+```
+
+### JWT Token Issues
+
+**Error: "jwt malformed" or "invalid signature"**
+- Ensure `JWT_SECRET` is set and matches between environments
+- JWT_SECRET must be at least 32 characters
+- Check token is being sent in Authorization header as "Bearer <token>"
+
+### Google OAuth Not Working
+
+**Error: "Invalid Google token"**
+- Verify `GOOGLE_CLIENT_ID` matches the one from Google Console
+- Check Google Console has correct authorized JavaScript origins
+- Ensure credentials are for OAuth 2.0 Web Application type
+- Frontend must send valid Google credential token
+
+### Rate Limiting Issues
+
+**Error: "Too many requests"**
+- Default: 100 requests per 15 minutes
+- Adjust `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_MS` in `.env`
+- Clear rate limit cache by restarting server
+
+### File Upload Errors
+
+**Error: "File too large" or "Invalid file type"**
+- Max file size: 5MB per file
+- Allowed types: JPEG, PNG, GIF
+- Check `uploads/` directory exists and has write permissions
+
+### CORS Errors from Frontend
+
+**Error: "CORS policy: No 'Access-Control-Allow-Origin' header"**
+- Verify `FRONTEND_URL` in backend `.env` matches frontend URL
+- Check frontend is running on port 5173 (or update FRONTEND_URL)
+- Restart backend after changing CORS settings
+
+### Database Not Seeding
+
+**Error: "Duplicate key error" when seeding**
+- Database already has data with same IDs
+- Drop database and re-seed:
+```bash
+# In MongoDB Atlas or mongosh
+db.dropDatabase()
+
+# Then re-seed
+npm run seed:frontend
+```
+
+### TypeScript Compilation Errors
+
+**Error: Type checking failed**
+```bash
+# Clear build cache
+rm -rf dist/
+
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install
+
+# Rebuild
+npm run build
+```
+
+### Environment Variables Not Loading
+
+**Error: "undefined" for environment variables**
+- Ensure `.env` file exists in backend root directory
+- Check `.env` file has no syntax errors
+- Verify `dotenv` is loaded before accessing `process.env`
+- Restart server after changing `.env`
+
+### Server Crashes on Startup
+
+**Check logs for specific errors:**
+```bash
+# Run with verbose logging
+NODE_ENV=development npm run dev
+```
+
+Common causes:
+- Missing environment variables
+- MongoDB connection failure
+- Port already in use
+- Syntax errors in code
+
 ## Support
 
 For issues or questions:
-1. Check this README
-2. Review API endpoint documentation
-3. Check server logs
-4. Contact development team
+1. Check this README and troubleshooting section
+2. Review server logs for error details
+3. Verify all environment variables are set correctly
+4. Check MongoDB Atlas connection and network settings
+5. Ensure frontend `.env.local` matches backend configuration
+6. Review API endpoint documentation above
 
-## License
-
-ISC
