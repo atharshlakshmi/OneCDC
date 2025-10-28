@@ -175,18 +175,17 @@ export const searchShops = async (
     queryObj.verifiedByOwner = ownerVerified;
   }
 
-  console.log(queryObj);
+  console.log("Shop query object:", queryObj);
+  console.log("User location:", userLocation);
+  console.log("Filters:", filters);
+  console.log("Sort by:", sortBy);
 
   // Find shops
   let shopsQuery = Shop.find(queryObj);
 
-  console.log(shopsQuery.getQuery);
-
-
   // Get all shops to calculate distance
   const allShops = await shopsQuery.lean();
 
-  console.log(allShops);
 
   // Calculate distances and filter
   const shopsWithDistance = allShops
@@ -201,7 +200,7 @@ export const searchShops = async (
     })
     .filter((shop) => !maxDistance || shop.distance <= maxDistance);
 
-  console.log(shopsWithDistance);
+
 
   // Filter by openNow if requested
   let filteredShops = shopsWithDistance;
@@ -212,6 +211,7 @@ export const searchShops = async (
       .getMinutes()
       .toString()
       .padStart(2, '0')}`;
+
 
     filteredShops = shopsWithDistance.filter((shop) => {
       const todayHours = shop.operatingHours?.find(
@@ -224,7 +224,6 @@ export const searchShops = async (
     });
   }
 
-  console.log(filteredShops);
 
   // Sort
   switch (sortBy) {

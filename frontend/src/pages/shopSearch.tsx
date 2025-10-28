@@ -36,7 +36,7 @@ export interface Shop {
 }
 
 
-const StoreSearch: React.FC = () => {
+const ShopSearch: React.FC = () => {
   const [results, setResults] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +44,8 @@ const StoreSearch: React.FC = () => {
   const [filters, setFilters] = useState<string[]>(["all"]); // array of selected filters
   const [sortBy, setSortBy] = useState<string>("distance");
   const [query, setQuery] = useState("");
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationString, setLocationString] = useState<string>("Getting location...");
 
   const availableFilters = ["verified", "open"]; // list of all selectable filters
 
@@ -72,10 +74,37 @@ const StoreSearch: React.FC = () => {
     }
   };
 
+    // Get user's current location
+    useEffect(() => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            console.log("Got position:", location);
+            setCurrentLocation(location);
+            setLocationString(`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`);
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+            setLocationString("Location unavailable");
+            setCurrentLocation({ lat: 1.3521, lng: 103.8198 });
+          }
+        );
+      } else {
+        console.log("Geolocation not supported");
+        setLocationString("Location not supported");
+        setCurrentLocation({ lat: 1.3521, lng: 103.8198 });
+      }
+    }, []);
+
+
   // Trigger search whenever query, filters, or sortBy changes
   useEffect(() => {
     fetchShops(query);
-  }, [query, filters, sortBy]);
+  }, [currentLocation, query, filters, sortBy]);
 
   const toggleFilter = (filter: string) => {
     if (filter === "all") {
@@ -97,6 +126,7 @@ const StoreSearch: React.FC = () => {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <MapPin size={16} />
+            <span>{locationString}</span>
           </div>
 
           <div className="flex gap-2">
@@ -174,4 +204,4 @@ const StoreSearch: React.FC = () => {
   );
 };
 
-export default StoreSearch;
+export default ShopSearch;

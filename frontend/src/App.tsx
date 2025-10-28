@@ -6,7 +6,7 @@ import ViewItem from "./pages/ViewItem";
 import ViewCart from "./pages/ViewCart";
 import MER from "./pages/MER";
 import Footer from "./components/Footer";
-import StoreSearch from "./pages/storeSearch";
+import ShopSearch from "./pages/shopSearch";
 import ItemSearch from "./pages/itemSearch";
 import AddReview from "./pages/AddReview";
 import EditReview from "./pages/EditReview";
@@ -92,7 +92,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/ViewShop/:id" element={<ViewShop />} />
           <Route path="/ViewItem/:id" element={<ViewItem />} />
-          <Route path="/storeSearch" element={<StoreSearch />} />
+          <Route path="/storeSearch" element={<ShopSearch />} />
           <Route path="/itemSearch" element={<ItemSearch />} />
           <Route path="/ActionSuccess" element={<ActionSuccess />} />
 

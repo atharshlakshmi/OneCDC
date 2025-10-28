@@ -33,6 +33,7 @@ const Footer: React.FC = () => {
   }
 
   return (
+    
     <footer className="fixed bottom-0 left-0 w-full bg-transparent z-50 flex justify-center">
       <div className="relative w-full bg-white rounded-t-3xl shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex justify-between items-center px-10 pt-4 pb-6">
         {/* Left side content (only for shoppers) */}
