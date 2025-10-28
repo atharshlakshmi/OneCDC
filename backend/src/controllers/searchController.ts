@@ -1,3 +1,6 @@
+// searchController.ts
+// contains logic for handling search
+
 import { Response } from 'express';
 import { AuthRequest, SearchFilters, SortOption } from '../types';
 import { asyncHandler } from '../middleware';
@@ -72,7 +75,7 @@ export const searchShops = asyncHandler(
     const filters: SearchFilters = {
       query: query as string,
       category: category as any,
-      ownerVerified: ownerVerified === 'true',
+      ownerVerified: ownerVerified === 'true' || ownerVerified === undefined ? undefined : ownerVerified === 'false' ? false : true,
       openNow: openNow === 'true',
       location:
         lat && lng
