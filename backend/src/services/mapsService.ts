@@ -1,7 +1,7 @@
-import axios from 'axios';
-import { TransportMode } from '../types';
-import { AppError } from '../middleware';
-import logger from '../utils/logger';
+import axios from "axios";
+import { TransportMode } from "../types";
+import { AppError } from "../middleware";
+import logger from "../utils/logger";
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -11,146 +11,99 @@ const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
  */
 export const generateMostEfficientRoute = async (
   origin: { lat: number; lng: number },
-  destinations: Array<{ lat: number; lng: number; shopId: string; shopName: string }>,
+  destinations: Array<{ lat: number; lng: number; shopId: string; shopName: string; address?: string }>,
   mode: TransportMode = TransportMode.WALKING
 ) => {
   if (!GOOGLE_MAPS_API_KEY) {
-    logger.warn('Google Maps API key not configured, using mock route');
-    // Return mock route when API key not available
-    return generateMockRoute(origin, destinations, mode);
+    throw new AppError("Google Maps API key not configured", 500);
   }
 
   try {
-    // Convert destinations to waypoints
-    const waypoints = destinations
-      .map((dest) => `${dest.lat},${dest.lng}`)
-      .join('|');
+    // Use new Routes API (v2)
+    const url = `https://routes.googleapis.com/directions/v2:computeRoutes`;
 
-    const url = `https://maps.googleapis.com/maps/api/directions/json`;
-    const params = {
-      origin: `${origin.lat},${origin.lng}`,
-      destination: `${origin.lat},${origin.lng}`, // Return to origin
-      waypoints: `optimize:true|${waypoints}`,
-      mode: mode.toLowerCase(),
-      key: GOOGLE_MAPS_API_KEY,
+    // Build waypoints for the new API format
+    const intermediates = destinations.map((dest) => ({
+      location: {
+        latLng: {
+          latitude: dest.lat,
+          longitude: dest.lng,
+        },
+      },
+    }));
+
+    // Map transport mode to new API format
+    const travelModeMap: Record<string, string> = {
+      [TransportMode.WALKING]: "WALK",
+      [TransportMode.DRIVING]: "DRIVE",
+      [TransportMode.TRANSIT]: "TRANSIT",
     };
 
-    const response = await axios.get(url, { params });
+    // For one-way route: origin -> shops -> last shop (no return)
+    // Remove the last destination from intermediates to make it the final destination
+    const lastShop = intermediates[intermediates.length - 1];
+    const intermediateWaypoints = intermediates.slice(0, -1);
 
-    if (response.data.status !== 'OK') {
-      logger.error(`Google Maps API error: ${response.data.status}`);
-      throw new AppError('Failed to generate route', 500);
+    const requestBody = {
+      origin: {
+        location: {
+          latLng: {
+            latitude: origin.lat,
+            longitude: origin.lng,
+          },
+        },
+      },
+      destination: lastShop, // End at the last shop instead of returning to origin
+      intermediates: intermediateWaypoints,
+      travelMode: travelModeMap[mode] || "WALK",
+      optimizeWaypointOrder: true,
+      computeAlternativeRoutes: false,
+      routeModifiers: {
+        avoidTolls: false,
+        avoidHighways: false,
+        avoidFerries: false,
+      },
+      languageCode: "en-US",
+      units: "METRIC",
+    };
+
+    const response = await axios.post(url, requestBody, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.optimizedIntermediateWaypointIndex",
+      },
+    });
+
+    if (!response.data.routes || response.data.routes.length === 0) {
+      throw new AppError("No routes found", 500);
     }
 
     const route = response.data.routes[0];
-    const optimizedOrder = route.waypoint_order;
+    const optimizedIndices = route.optimizedIntermediateWaypointIndex || [];
 
     // Reorder destinations based on optimized order
-    const optimizedDestinations = optimizedOrder.map(
-      (index: number) => destinations[index]
-    );
+    // Note: optimizedIntermediateWaypointIndex only includes intermediate waypoints (not the final destination)
+    const optimizedDestinations = optimizedIndices.map((index: number) => destinations[index]);
+
+    // Add the last shop (which is the destination) to the end of the optimized order
+    const lastShopIndex = destinations.length - 1;
+    optimizedDestinations.push(destinations[lastShopIndex]);
 
     return {
-      totalDistance: route.legs.reduce(
-        (sum: number, leg: any) => sum + leg.distance.value,
-        0
-      ), // in meters
-      totalDuration: route.legs.reduce(
-        (sum: number, leg: any) => sum + leg.duration.value,
-        0
-      ), // in seconds
+      totalDistance: route.distanceMeters || 0,
+      totalDuration: parseInt(route.duration?.replace("s", "") || "0"),
       optimizedOrder: optimizedDestinations,
-      polyline: route.overview_polyline.points,
-      legs: route.legs,
+      polyline: route.polyline?.encodedPolyline || "",
+      legs: route.legs || [],
       mode,
     };
   } catch (error: any) {
     logger.error(`Route generation error: ${error.message}`);
-
-    // Fallback to mock route if API fails
-    if (error.response?.status === 401 || error.code === 'ENOTFOUND') {
-      logger.warn('Using mock route due to API error');
-      return generateMockRoute(origin, destinations, mode);
+    if (error.response) {
+      logger.error(`Google API Response: ${JSON.stringify(error.response.data)}`);
     }
-
-    throw new AppError('Failed to generate route', 500);
+    throw error;
   }
 };
 
-/**
- * Generate Mock Route (fallback when Google Maps API unavailable)
- */
-const generateMockRoute = (
-  origin: { lat: number; lng: number },
-  destinations: Array<{ lat: number; lng: number; shopId: string; shopName: string }>,
-  mode: TransportMode
-) => {
-  // Simple greedy algorithm: nearest neighbor
-  const optimizedOrder: typeof destinations = [];
-  const remaining = [...destinations];
-  let current = origin;
-
-  while (remaining.length > 0) {
-    // Find nearest destination
-    let nearestIndex = 0;
-    let minDistance = Infinity;
-
-    remaining.forEach((dest, index) => {
-      const distance = Math.sqrt(
-        Math.pow(dest.lat - current.lat, 2) + Math.pow(dest.lng - current.lng, 2)
-      );
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestIndex = index;
-      }
-    });
-
-    const nearest = remaining.splice(nearestIndex, 1)[0];
-    optimizedOrder.push(nearest);
-    current = nearest;
-  }
-
-  // Calculate mock distances (simplified)
-  let totalDistance = 0;
-  let prevPoint = origin;
-
-  optimizedOrder.forEach((dest) => {
-    const dist = Math.sqrt(
-      Math.pow(dest.lat - prevPoint.lat, 2) + Math.pow(dest.lng - prevPoint.lng, 2)
-    );
-    totalDistance += dist * 111000; // Rough conversion to meters
-    prevPoint = dest;
-  });
-
-  // Add return to origin
-  totalDistance += Math.sqrt(
-    Math.pow(origin.lat - prevPoint.lat, 2) + Math.pow(origin.lng - prevPoint.lng, 2)
-  ) * 111000;
-
-  // Estimate duration based on mode
-  const speedMap = {
-    [TransportMode.WALKING]: 5, // km/h
-    [TransportMode.DRIVING]: 40, // km/h
-    [TransportMode.TRANSIT]: 25, // km/h
-  };
-
-  const speed = speedMap[mode];
-  const totalDuration = (totalDistance / 1000 / speed) * 3600; // in seconds
-
-  logger.info(`Mock route generated: ${optimizedOrder.length} stops, ${Math.round(totalDistance)}m`);
-
-  return {
-    totalDistance: Math.round(totalDistance),
-    totalDuration: Math.round(totalDuration),
-    optimizedOrder,
-    polyline: 'mock_polyline',
-    legs: optimizedOrder.map((dest, index) => ({
-      start: index === 0 ? origin : optimizedOrder[index - 1],
-      end: dest,
-      distance: { value: Math.round(totalDistance / optimizedOrder.length) },
-      duration: { value: Math.round(totalDuration / optimizedOrder.length) },
-    })),
-    mode,
-    isMockRoute: true,
-  };
-};

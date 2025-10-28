@@ -108,6 +108,7 @@ export const generateRoute = asyncHandler(
       lng: shop.location.coordinates[0],
       shopId: (shop._id as any).toString(),
       shopName: shop.name,
+      address: shop.address,
     }));
 
     // Generate route
