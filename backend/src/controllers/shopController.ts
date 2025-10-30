@@ -21,6 +21,41 @@ export const getOwnerShops = asyncHandler(
 );
 
 /**
+ * Get Single Shop
+ * GET /api/owner/shops/:id
+ */
+export const getOwnerShop = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const ownerId = req.user!.id;
+    const { id } = req.params;
+
+    const shop = await shopService.getOwnerShop(id, ownerId);
+
+    res.status(200).json({
+      success: true,
+      data: shop,
+    });
+  }
+);
+
+/**
+ * Get Flagged Shops
+ * GET /api/owner/flagged-shops
+ */
+export const getFlaggedShops = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const ownerId = req.user!.id;
+
+    const shops = await shopService.getFlaggedShops(ownerId);
+
+    res.status(200).json({
+      success: true,
+      data: shops,
+    });
+  }
+);
+
+/**
  * Create Shop
  * POST /api/owner/shops
  */

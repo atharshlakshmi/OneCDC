@@ -10,7 +10,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts",
     "seed": "ts-node src/utils/seed.ts",
-    "seed:frontend": "ts-node src/utils/seedFrontend.ts"
+    "seed:frontend": "ts-node src/utils/seedFrontend.ts",
+    "assign-shop": "ts-node src/utils/assignShop.ts",
+    "flag-store": "ts-node src/utils/flagStore.ts"
   },
   "keywords": [
     "cdc",

@@ -1,6 +1,7 @@
-import { Shop, Catalogue, Owner } from '../models';
+import { Shop, Catalogue, Owner, ModerationLog } from '../models';
 import { AppError } from '../middleware';
 import logger from '../utils/logger';
+import * as mapsService from './mapsService';
 
 /**
  * Get Owner's Shops
@@ -14,6 +15,51 @@ export const getOwnerShops = async (ownerId: string) => {
 };
 
 /**
+ * Get Single Owner's Shop
+ */
+export const getOwnerShop = async (shopId: string, ownerId: string) => {
+  const shop = await Shop.findOne({ _id: shopId, owner: ownerId, isActive: true });
+
+  if (!shop) {
+    throw new AppError('Shop not found or unauthorized', 404);
+  }
+
+  return shop;
+};
+
+/**
+ * Get Owner's Flagged Shops (with warnings > 0)
+ */
+export const getFlaggedShops = async (ownerId: string) => {
+  // Find all shops with warnings > 0
+  const shops = await Shop.find({
+    owner: ownerId,
+    warnings: { $gt: 0 },
+  }).sort({ warnings: -1, createdAt: -1 });
+
+  // For each shop, get the moderation logs (warning reasons)
+  const shopsWithWarnings = await Promise.all(
+    shops.map(async (shop) => {
+      const moderationLogs = await ModerationLog.find({
+        targetType: 'shop',
+        targetId: shop._id,
+        action: 'warn_shop',
+      })
+        .populate('admin', 'name email')
+        .sort({ timestamp: -1 })
+        .lean();
+
+      return {
+        ...shop.toObject(),
+        moderationLogs,
+      };
+    })
+  );
+
+  return shopsWithWarnings;
+};
+
+/**
  * Create Shop
  */
 export const createShop = async (ownerId: string, shopData: any) => {
@@ -21,6 +67,26 @@ export const createShop = async (ownerId: string, shopData: any) => {
   const owner = await Owner.findById(ownerId);
   if (!owner) {
     throw new AppError('Owner not found', 404);
+  }
+
+  // If location coordinates are not provided, geocode the address
+  if (!shopData.location || !shopData.location.coordinates) {
+    if (!shopData.address) {
+      throw new AppError('Address is required when coordinates are not provided', 400);
+    }
+
+    try {
+      const coordinates = await mapsService.geocodeAddress(shopData.address);
+      shopData.location = {
+        type: 'Point',
+        coordinates: [coordinates.lng, coordinates.lat], // MongoDB uses [lng, lat] order
+      };
+    } catch (error: any) {
+      throw new AppError(
+        error.message || 'Failed to geocode address. Please verify the address is correct.',
+        400
+      );
+    }
   }
 
   // Create shop
@@ -57,6 +123,22 @@ export const updateShop = async (
 
   if (!shop) {
     throw new AppError('Shop not found or unauthorized', 404);
+  }
+
+  // If address is being updated without coordinates, geocode it
+  if (updates.address && updates.address !== shop.address && (!updates.location || !updates.location.coordinates)) {
+    try {
+      const coordinates = await mapsService.geocodeAddress(updates.address);
+      updates.location = {
+        type: 'Point',
+        coordinates: [coordinates.lng, coordinates.lat],
+      };
+    } catch (error: any) {
+      throw new AppError(
+        error.message || 'Failed to geocode address. Please verify the address is correct.',
+        400
+      );
+    }
   }
 
   // Update allowed fields

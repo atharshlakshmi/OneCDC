@@ -15,6 +15,8 @@ import ProfileHome from "./pages/ProfileHome";
 import ProfileDetails from "./pages/ProfileDetails";
 import ProfileReviews from "./pages/ProfileReviews";
 import ProfileReports from "./pages/ProfileReports";
+import ProfileStores from "./pages/ProfileStores";
+import ProfileFlaggedStores from "./pages/ProfileFlaggedStores";
 import ViewRoute from "./pages/ViewRoute";
 import Login from "./pages/LogIn";
 import AddReport from "./pages/ReportReview";
@@ -23,6 +25,7 @@ import EditReport from "./pages/EditReport";
 import AddItem from "./pages/AddItem";
 import EditItem from "./pages/EditItem";
 import EditShop from "./pages/EditShop";
+import AddShop from "./pages/AddShop";
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RegisterShopper from "./pages/RegisterShopper";
@@ -106,6 +109,8 @@ export default function App() {
             <Route path="/profile/details" element={<ProfileDetails />} />
             <Route path="/profile/reviews" element={<ProfileReviews />} />
             <Route path="/profile/reports" element={<ProfileReports />} />
+            <Route path="/profile/stores" element={<ProfileStores />} />
+            <Route path="/profile/flagged-stores" element={<ProfileFlaggedStores />} />
             <Route path="/ViewCart" element={<ViewCart />} />
             <Route path="/route" element={<ViewRoute />} />
             <Route path="/SeeReviews" element={<SeeReviews />} />
@@ -119,6 +124,7 @@ export default function App() {
             <Route path="/EditReport" element={<EditReport />} />
             <Route path="/EditItem" element={<EditItem />} />
             <Route path="/EditShop" element={<EditShop />} />
+            <Route path="/AddShop" element={<AddShop />} />
           </Route>
         </Routes>
         <Footer />

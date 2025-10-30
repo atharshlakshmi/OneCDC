@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { Store, MapPin, Phone, Mail, Clock, Image as ImageIcon, X } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
@@ -32,29 +32,10 @@ interface OperatingHours {
   isClosed: boolean;
 }
 
-interface Shop {
-  _id: string;
-  name: string;
-  description: string;
-  address: string;
-  phone: string;
-  email?: string;
-  category: string;
-  images: string[];
-  operatingHours: OperatingHours[];
-  isActive: boolean;
-  verifiedByOwner: boolean;
-}
-
-export default function EditShop() {
-  const location = useLocation();
+export default function AddShop() {
   const navigate = useNavigate();
-  const shopId = location.state?.shopId;
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shop, setShop] = useState<Shop | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -77,67 +58,6 @@ export default function EditShop() {
 
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Fetch shop data
-  useEffect(() => {
-    const fetchShop = async () => {
-      if (!shopId) {
-        setError("No shop ID provided");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const response = await apiFetch<{ success: boolean; data: Shop }>(
-          `/owner/shops/${shopId}`,
-          { method: "GET" }
-        );
-
-        if (response?.success && response?.data) {
-          const shopData = response.data;
-          setShop(shopData);
-
-          // Populate form data
-          setFormData({
-            name: shopData.name,
-            description: shopData.description,
-            address: shopData.address,
-            phone: shopData.phone,
-            email: shopData.email || "",
-            category: shopData.category,
-            images: shopData.images || []
-          });
-
-          // Populate operating hours
-          if (shopData.operatingHours && shopData.operatingHours.length > 0) {
-            const hoursMap = new Map(
-              shopData.operatingHours.map(oh => [oh.dayOfWeek, oh])
-            );
-
-            const allHours = DAYS_OF_WEEK.map(day => {
-              const existing = hoursMap.get(day.value);
-              return existing || {
-                dayOfWeek: day.value,
-                openTime: "09:00",
-                closeTime: "18:00",
-                isClosed: true
-              };
-            });
-
-            setOperatingHours(allHours);
-          }
-        }
-      } catch (err: any) {
-        console.error("Error fetching shop:", err);
-        setError(err?.message || "Failed to load shop details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchShop();
-  }, [shopId]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -155,6 +75,7 @@ export default function EditShop() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // Check if adding these files would exceed the limit
     if (formData.images.length + files.length > 10) {
       setError("Maximum 10 images allowed");
       return;
@@ -168,6 +89,7 @@ export default function EditShop() {
         const uploadFormData = new FormData();
         uploadFormData.append("image", file);
 
+        // Use fetch directly for multipart/form-data
         const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
         const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
@@ -202,6 +124,7 @@ export default function EditShop() {
       setError(err?.message || "Failed to upload images. Please try again.");
     } finally {
       setUploadingImage(false);
+      // Reset the file input
       e.target.value = "";
     }
   };
@@ -235,19 +158,21 @@ export default function EditShop() {
       return;
     }
 
+    // Validate phone format (Singapore phone number)
     const phoneRegex = /^[689]\d{7}$/;
     if (!phoneRegex.test(formData.phone)) {
       setError("Please enter a valid Singapore phone number (8 digits starting with 6, 8, or 9)");
       return;
     }
 
+    // Validate email format if provided
     if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
       setError("Please enter a valid email address");
       return;
     }
 
     try {
-      setSaving(true);
+      setLoading(true);
 
       const shopData = {
         name: formData.name.trim(),
@@ -262,9 +187,9 @@ export default function EditShop() {
       };
 
       const response = await apiFetch<{ success: boolean; data: any; message: string }>(
-        `/owner/shops/${shopId}`,
+        "/owner/shops",
         {
-          method: "PUT",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(shopData)
         }
@@ -273,48 +198,24 @@ export default function EditShop() {
       if (response?.success) {
         navigate("/profile/stores", { replace: true });
       } else {
-        setError("Failed to update shop. Please try again.");
+        setError("Failed to create shop. Please try again.");
       }
     } catch (err: any) {
-      console.error("Error updating shop:", err);
-      setError(err?.message || "Failed to update shop. Please try again.");
+      console.error("Error creating shop:", err);
+      setError(err?.message || "Failed to create shop. Please try again.");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-gray-600">
-        Loading shop details…
-      </div>
-    );
-  }
-
-  if (error && !shop) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center text-gray-600">
-          <p className="text-lg font-medium text-red-600">{error}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="mt-3 text-blue-600 hover:underline"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <PageHeader title="Edit Store" />
+      <PageHeader title="Add New Store" />
 
       <div className="max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
         <div className="flex items-center gap-3 mb-6">
           <Store size={32} className="text-purple-600" />
-          <h2 className="text-2xl font-bold text-gray-800">Update Your Store</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Create Your Store</h2>
         </div>
 
         {error && (
@@ -397,7 +298,7 @@ export default function EditShop() {
                 required
               />
               <p className="text-sm text-gray-500 mt-1">
-                We'll automatically update coordinates if you change the address
+                We'll automatically convert your address to coordinates
               </p>
             </div>
           </div>
@@ -473,6 +374,7 @@ export default function EditShop() {
             {formData.images.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {formData.images.map((img, index) => {
+                  // Convert relative URL to absolute URL
                   const imageUrl = img.startsWith('/')
                     ? `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${img}`
                     : img;
@@ -548,16 +450,16 @@ export default function EditShop() {
               type="button"
               onClick={() => navigate(-1)}
               className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-300 transition"
-              disabled={saving}
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={loading}
               className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-medium transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {saving ? "Saving..." : "Save Changes"}
+              {loading ? "Creating..." : "Create Store"}
             </button>
           </div>
         </form>

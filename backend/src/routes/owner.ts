@@ -16,6 +16,18 @@ router.use(authenticate, authorize(UserRole.OWNER));
 router.get('/shops', shopController.getOwnerShops);
 
 /**
+ * GET /api/owner/flagged-shops
+ * Get owner's flagged shops (with warnings)
+ */
+router.get('/flagged-shops', shopController.getFlaggedShops);
+
+/**
+ * GET /api/owner/shops/:id
+ * Get single shop
+ */
+router.get('/shops/:id', shopController.getOwnerShop);
+
+/**
  * POST /api/owner/shops
  * Create shop
  */
@@ -26,6 +38,7 @@ router.post(
     body('description').notEmpty().withMessage('Description is required'),
     body('address').notEmpty().withMessage('Address is required'),
     body('location.coordinates')
+      .optional()
       .isArray({ min: 2, max: 2 })
       .withMessage('Valid coordinates [lng, lat] are required'),
     body('phone')
