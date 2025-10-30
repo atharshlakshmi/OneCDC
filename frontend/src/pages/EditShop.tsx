@@ -555,7 +555,7 @@ export default function EditShop() {
             <button
               type="submit"
               disabled={saving}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-medium transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="bg-amber-400 hover:bg-amber-500 text-white px-8 py-3 rounded-lg font-medium transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>

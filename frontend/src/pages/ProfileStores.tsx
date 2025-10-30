@@ -85,7 +85,7 @@ export default function ProfileStores() {
         </div>
         <button
           onClick={() => navigate("/AddShop")}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+          className="flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-white px-6 py-3 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
         >
           <Plus size={20} />
           Add New Store
@@ -105,7 +105,7 @@ export default function ProfileStores() {
           <p className="text-gray-500 mb-6">Create your first store to get started</p>
           <button
             onClick={() => navigate("/AddShop")}
-            className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors duration-200"
+            className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-white px-6 py-3 rounded-lg transition-colors duration-200"
           >
             <Plus size={20} />
             Add Your First Store
@@ -195,7 +195,7 @@ export default function ProfileStores() {
                   </button>
                   <button
                     onClick={() => navigate("/EditShop", { state: { shopId: shop._id } })}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2"
+                    className="flex-1 bg-amber-400 hover:bg-amber-500 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2"
                   >
                     <Edit size={16} />
                     Edit
