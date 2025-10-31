@@ -1,62 +1,42 @@
 import "dotenv/config";
 import express from "express";
-import cors, { CorsOptions } from "cors";
+import cors from "cors";
 import path from "path";
 import connect from "./utils/connect";
 import logger from "./utils/logger";
 import routes from "./routes";
+
 import { errorHandler, notFoundHandler, generalLimiter } from "./middleware";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Frontend origins (env + local dev)
-const FRONTEND_URL = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
-const LOCAL_DEV = "http://localhost:5173";
-
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 /**
  * Middleware
  */
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-// If you run behind a proxy/load balancer and use cookies, keep this:
-app.set("trust proxy", 1);
-
-// CORS with credentials and tight origin check
-const corsOptions: CorsOptions = {
-  origin(origin, callback) {
-    // Allow same-origin (server-to-server) or no Origin (curl/Postman)
-    if (!origin) return callback(null, true);
-
-    const allowed = [FRONTEND_URL, LOCAL_DEV];
-    if (allowed.includes(origin)) return callback(null, true);
-
-    // You can log here to diagnose unexpected origins:
-    // logger.warn({ origin }, "Blocked CORS origin");
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-app.use(cors(corsOptions));
-// Fast preflight
-app.options("*", cors(corsOptions));
-// upload of avatar files
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-// Body parsers
-app.use(express.json({ limit: "20mb" })); // increase if needed for large JSON
-app.use(express.urlencoded({ extended: true, limit: "20mb" }));
-
-// Global rate limiter
+// Handle preflight fast
+app.options("*", cors({ origin: FRONTEND_URL, credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(generalLimiter);
+
+app.use("/api", routes);
+
+// Serve uploaded files
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 /**
  * Routes
  */
-app.use("/api", routes);
-
-// Basic root & health
 app.get("/", (_req, res) => {
   res.status(200).json({
     success: true,
@@ -85,16 +65,16 @@ app.use(errorHandler);
  */
 const startServer = async () => {
   try {
+    // Connect to MongoDB
     await connect();
 
+    // Start listening
     app.listen(PORT, () => {
       logger.info(`========================================`);
       logger.info(`Server is running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
       logger.info(`API URL: http://localhost:${PORT}/api`);
-      logger.info(`Uploads: http://localhost:${PORT}/uploads`);
       logger.info(`Health Check: http://localhost:${PORT}/healthcheck`);
-      logger.info(`Allowed Frontend: ${FRONTEND_URL}`);
       logger.info(`========================================`);
     });
   } catch (error: unknown) {
@@ -103,15 +83,19 @@ const startServer = async () => {
   }
 };
 
-// Unhandleds/Signals
+// Handle unhandled promise rejections
 process.on("unhandledRejection", (err: Error) => {
   logger.error({ err }, "Unhandled Promise Rejection");
   process.exit(1);
 });
+
+// Handle uncaught exceptions
 process.on("uncaughtException", (err: Error) => {
   logger.error({ err }, "Uncaught Exception");
   process.exit(1);
 });
+
+// Graceful shutdown
 process.on("SIGTERM", () => {
   logger.info("SIGTERM received. Shutting down gracefully...");
   process.exit(0);

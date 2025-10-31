@@ -1,282 +1,156 @@
-import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { apiFetch, authHeaders } from "../lib/api";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PasswordField from "../components/PasswordField";
+import { FaClipboardList, FaFileAlt, FaExclamationCircle, FaSignOutAlt } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
+import { apiFetch } from "../lib/api";
+import { FaUserCircle } from "react-icons/fa";
 
 type User = {
-  _id?: string;
-  name?: string;
+  _id: string;
   email: string;
-  authProvider?: string;
-  role?: string;
-  gender?: string;
-  phone?: string;
-  address?: string;
-  avatarUrl?: string;
-  businessRegistrationNumber?: string; // owner-only
+  role: string;
+  name: string;
+  isActive?: boolean;
+  singpassVerified?: boolean;
+  corppassVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api";
-const resolveUrl = (u?: string) => (u && /^https?:\/\//i.test(u) ? u : u ? `${API_BASE.replace(/\/api$/, "")}${u}` : "");
-
-export default function Profile() {
-  const { logout, user: ctxUser } = useAuth();
+const Profile: React.FC = () => {
   const navigate = useNavigate();
+  const { user, logout, verify, isAuthed } = useAuth();
 
-  const [user, setUser] = useState<User | null>(ctxUser ?? null);
-  const [name, setName] = useState(user?.name ?? "");
-  const [gender, setGender] = useState(user?.gender ?? "");
-  const [phone, setPhone] = useState(user?.phone ?? "");
-  const [address, setAddress] = useState(user?.address ?? "");
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? "");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl ? resolveUrl(user.avatarUrl) : "");
-  const [businessRegistrationNumber, setBusinessRegistrationNumber] = useState(user?.businessRegistrationNumber ?? "");
+  const [refreshing, setRefreshing] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const didRun = useRef(false);
 
-  // password fields
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [apiSuccess, setApiSuccess] = useState<string | null>(null);
-
-  const isGoogleUser = /^google/i.test(user?.authProvider || "");
-
-  const canSave = useMemo(() => {
-    const changed =
-      name.trim() !== (user?.name ?? "") ||
-      gender !== (user?.gender ?? "") ||
-      phone.trim() !== (user?.phone ?? "") ||
-      address.trim() !== (user?.address ?? "") ||
-      !!avatarFile ||
-      (!isGoogleUser && (currentPassword.length > 0 || newPassword.length > 0));
-    return changed && !saving;
-  }, [name, gender, phone, address, avatarFile, user, saving, isGoogleUser, currentPassword, newPassword]);
-
-  // fetch profile
+  // ✅ verify only once per visit
   useEffect(() => {
-    let active = true;
+    if (!isAuthed) return; // ProtectedRoute already handles redirect
+    if (didRun.current) return;
+    didRun.current = true;
+
     (async () => {
       try {
-        const resp = await apiFetch("/auth/profile", { method: "GET" });
-        const data: any = resp?.data?.user ?? resp?.data ?? resp;
-
-        if (!active) return;
-
-        setUser(data);
-        setName(data.name ?? "");
-        setGender(data.gender ?? "");
-        setPhone(data.phone ?? "");
-        setAddress(data.address ?? "");
-        setAvatarUrl(data.avatarUrl ?? "");
-        setAvatarPreview(resolveUrl(data.avatarUrl ?? ""));
-        setBusinessRegistrationNumber(data.businessRegistrationNumber ?? "");
-      } catch (err: any) {
-        if (err?.status === 401) {
-          await logout();
-          navigate("/login", { replace: true });
-          return;
-        }
-        setApiError(err?.message || "Failed to load profile");
+        setRefreshing(true);
+        await verify();
+      } catch (e: any) {
+        setErr(e?.message || "Failed to refresh profile");
       } finally {
-        if (active) setLoading(false);
+        setRefreshing(false);
       }
     })();
-    return () => {
-      active = false;
-    };
-  }, [logout, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthed]);
 
-  function onAvatarChange(file: File | null) {
-    setAvatarFile(file);
-    if (file) setAvatarPreview(URL.createObjectURL(file));
-    else setAvatarPreview(resolveUrl(avatarUrl) || "");
-  }
-
-  async function uploadAvatarIfNeeded(): Promise<string | undefined> {
-    if (!avatarFile) return;
-    const fd = new FormData();
-    fd.append("avatar", avatarFile);
-    const res = await fetch(`${API_BASE}/auth/profile/avatar`, {
-      method: "POST",
-      credentials: "include",
-      headers: { ...authHeaders() }, // do NOT set Content-Type manually
-      body: fd,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.message || "Avatar upload failed");
-    return data?.data?.url || data?.data?.avatarUrl || data?.url;
-  }
-
-  async function save() {
-    setSaving(true);
-    setApiError(null);
-    setApiSuccess(null);
+  const handleLogout = async () => {
     try {
-      // 1) Change password first (if provided and local account)
-      if (!isGoogleUser && (currentPassword || newPassword)) {
-        if (!currentPassword || !newPassword) throw new Error("Please enter both current and new passwords");
-        if (newPassword.length < 8) throw new Error("New password must be at least 8 characters");
-        await apiFetch("/auth/password/change", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ currentPassword, newPassword }),
-        });
-        setCurrentPassword("");
-        setNewPassword("");
-      }
-
-      // 2) Upload avatar if needed
-      const uploadedUrl = await uploadAvatarIfNeeded();
-
-      // 3) Save profile
-      const body = {
-        name: name.trim(),
-        gender,
-        phone: phone.trim(),
-        address: address.trim(),
-        avatarUrl: uploadedUrl ?? avatarUrl,
-      };
-
-      const resp = await apiFetch("/auth/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data: any = resp?.data?.user ?? resp?.data ?? resp;
-      setUser(data);
-      setName(data.name ?? "");
-      setGender(data.gender ?? "");
-      setPhone(data.phone ?? "");
-      setAddress(data.address ?? "");
-      setAvatarUrl(data.avatarUrl ?? "");
-      setAvatarPreview(resolveUrl(data.avatarUrl ?? "") || "");
-      setBusinessRegistrationNumber(data.businessRegistrationNumber ?? "");
-      setAvatarFile(null);
-
-      setApiSuccess("Changes saved successfully!");
-    } catch (err: any) {
-      if (err?.status === 401) {
-        await logout();
-        navigate("/login", { replace: true });
-        return;
-      }
-      setApiError(err?.message || "Failed to save changes");
+      await apiFetch("/auth/logout", { method: "POST" }).catch(() => {});
     } finally {
-      setSaving(false);
+      await logout();
+      navigate("/login", { replace: true });
     }
+  };
+
+  const goToReviews = () => navigate("/SeeReviews");
+  const goToReports = () => navigate("/SeeReports");
+  const goToViolations = () => navigate("/SeeViolations");
+
+  if (refreshing) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <div className="animate-pulse text-gray-700">
+          <p className="text-lg font-medium mb-2">Refreshing your profile…</p>
+          <p className="text-sm text-gray-500">Please wait a moment</p>
+        </div>
+      </div>
+    );
   }
 
-  if (loading) {
-    return <div className="min-h-[60vh] flex items-center justify-center text-gray-600">Loading profile…</div>;
+  if (err) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <p className="text-lg font-medium text-red-600 mb-2">⚠️ {err}</p>
+        <button className="rounded-lg bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700" onClick={() => navigate("/login")}>
+          Go to Login
+        </button>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <p className="text-gray-700">No user data found</p>
+        <button className="rounded-lg bg-indigo-600 text-white px-4 py-2 mt-3 hover:bg-indigo-700" onClick={() => navigate("/login")}>
+          Login
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow mt-8">
-      <h1 className="text-2xl font-semibold mb-6">Profile</h1>
-
-      {apiError && <div className="mb-4 border border-red-200 bg-red-50 text-red-700 rounded-lg px-4 py-3 text-sm">{apiError}</div>}
-      {apiSuccess && <div className="mb-4 border border-green-200 bg-green-50 text-green-700 rounded-lg px-4 py-3 text-sm">{apiSuccess}</div>}
-
-      <div className="flex items-start gap-6 flex-wrap">
-        {/* Avatar */}
-        <div className="flex flex-col items-center">
-          <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-200 shadow">
-            {avatarPreview ? (
-              <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 text-2xl">{name ? name[0].toUpperCase() : "?"}</div>
-            )}
-          </div>
-          <label className="mt-3 text-sm text-gray-600">
-            <input type="file" accept="image/*" onChange={(e) => onAvatarChange(e.target.files ? e.target.files[0] : null)} className="hidden" />
-            <span className="cursor-pointer border rounded-lg px-3 py-1 hover:bg-gray-50">Upload new</span>
-          </label>
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-            <input className="w-full border rounded-lg px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-500" value={user?.email || ""} disabled />
-          </div>
-
-          {/* Owner’s BRN (read-only) */}
-          {businessRegistrationNumber && (
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Business Registration Number</label>
-              <input className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-500" value={businessRegistrationNumber} disabled />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-            <select className="w-full border rounded-lg px-3 py-2" value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="">Prefer not to say</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input className="w-full border rounded-lg px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+65 9123 4567" />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <textarea
-              className="w-full border rounded-lg px-3 py-2"
-              rows={3}
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Street, City, Postal Code"
-            />
-          </div>
-
-          {/* Change password (local accounts only) */}
-          {!isGoogleUser && (
-            <>
-              <PasswordField
-                id="currentPassword"
-                name="currentPassword"
-                label="Current Password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-              <PasswordField
-                id="newPassword"
-                name="newPassword"
-                label="New Password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-              />
-            </>
+    <div className="profile-page">
+      <div className="profile-header text-center py-6 ">
+        <div className="profile-avatar flex justify-center mx-auto mb-3">
+          {user.name ? (
+            <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-indigo-100 text-indigo-600 text-3xl font-bold">
+              {user.name.charAt(0).toUpperCase()}
+            </span>
+          ) : (
+            <FaUserCircle className="text-gray-400" size={80} />
           )}
         </div>
+
+        <h2 className="profile-name text-2xl font-semibold">{user.name}</h2>
+        {user.email && <p className="text-gray-600">{user.email}</p>}
+        {user.role && <p className="text-sm text-gray-500">Role: {user.role}</p>}
       </div>
 
-      <div className="flex items-center gap-4 mt-6">
-        <button
-          onClick={save}
-          disabled={!canSave}
-          className={`px-5 py-2 rounded-xl font-medium text-white shadow ${canSave ? "bg-indigo-600 hover:bg-indigo-700" : "bg-gray-400 cursor-not-allowed"}`}
-        >
-          {saving ? "Saving..." : "Save Changes"}
+      <div className="profile-menu max-w-md mx-auto space-y-3 mt-6">
+        <button className="profile-item flex items-center justify-between w-full p-3 rounded-lg bg-gray-50 hover:bg-gray-100" onClick={goToReviews}>
+          <div className="flex items-center gap-3">
+            <div className="icon-circle bg-indigo-100 text-indigo-600 p-2 rounded-full">
+              <FaClipboardList />
+            </div>
+            <span>My Reviews</span>
+          </div>
+          <span className="arrow">›</span>
+        </button>
+
+        <button className="profile-item flex items-center justify-between w-full p-3 rounded-lg bg-gray-50 hover:bg-gray-100" onClick={goToReports}>
+          <div className="flex items-center gap-3">
+            <div className="icon-circle bg-indigo-100 text-indigo-600 p-2 rounded-full">
+              <FaFileAlt />
+            </div>
+            <span>My Reports</span>
+          </div>
+          <span className="arrow">›</span>
+        </button>
+
+        <button className="profile-item flex items-center justify-between w-full p-3 rounded-lg bg-gray-50 hover:bg-gray-100" onClick={goToViolations}>
+          <div className="flex items-center gap-3">
+            <div className="icon-circle bg-yellow-100 text-yellow-600 p-2 rounded-full">
+              <FaExclamationCircle />
+            </div>
+            <span>Violations</span>
+          </div>
+          <span className="arrow">›</span>
+        </button>
+
+        <button className="profile-item flex items-center justify-between w-full p-3 rounded-lg bg-red-50 hover:bg-red-100" onClick={handleLogout}>
+          <div className="flex items-center gap-3">
+            <div className="icon-circle bg-red-200 text-red-600 p-2 rounded-full">
+              <FaSignOutAlt />
+            </div>
+            <span>Log Out</span>
+          </div>
+          <span className="arrow">›</span>
         </button>
       </div>
     </div>
   );
-}
+};
+
+export default Profile;

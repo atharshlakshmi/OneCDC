@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { BadgeCheck } from "lucide-react";
 import "./index.css";
 import { shops } from "./data/mockData";
 import NavBar from "./components/NavBar";
 import ViewShop from "./pages/ViewShop";
 import ViewItem from "./pages/ViewItem";
 import ViewCart from "./pages/ViewCart";
-import MER from "./pages/MER";
 import Footer from "./components/Footer";
 import StoreSearch from "./pages/storeSearch";
 import ItemSearch from "./pages/itemSearch";
+import SearchBar from "./components/SearchBar";
 import AddReview from "./pages/AddReview";
 import EditReview from "./pages/EditReview";
 import ActionSuccess from "./pages/ActionSuccess";
@@ -19,8 +18,6 @@ import AddReport from "./pages/ReportReview";
 import ReportShop from "./pages/ReportShop";
 import EditReport from "./pages/EditReport";
 import AddItem from "./pages/AddItem";
-import EditItem from "./pages/EditItem";
-import EditShop from "./pages/EditShop";
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RegisterShopper from "./pages/RegisterShopper";
@@ -78,27 +75,52 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   const [username, setUsername] = useState("");
 
-  const Home = () => (
-    <>
-      <div className="flex flex-col gap-5 items-center m-5 align-center justify-center">
-        {shops.map((shop) => (
-          <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto">
-            
-            <div className = "flex flex-row">
-              <h2 className="text-xl text-amber-400">{shop.name}</h2>
-              {shop.ownerVerified  ? (
-                <p className="text-green-700 font-medium absolute right-10"><BadgeCheck /></p>
-              ) : (
-                <></>
-              )}
+  const Home = () => {
+    const { user, isAuthed } = useAuth();
+    const isShopper = user?.role === "shopper" || user?.role === "registered_shopper";
+
+    return (
+      <>
+        {/* Welcome Message for Shoppers */}
+        {isAuthed && isShopper && (
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-8 mb-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                Welcome back, {user?.name || "Shopper"}! 👋
+              </h1>
+              <p className="text-blue-100 text-sm sm:text-base">
+                Discover amazing shops and items with CDC voucher acceptance. Happy shopping!
+              </p>
             </div>
-              
-            <p>{shop.address}</p>
-          </Link>
-        ))}
-      </div>
-    </>
-  );
+          </div>
+        )}
+
+        {/* Non-authenticated welcome */}
+        {!isAuthed && (
+          <div className="bg-gradient-to-r from-amber-400 to-amber-500 text-white px-6 py-8 mb-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                Welcome to OneCDC! 🛍️
+              </h1>
+              <p className="text-amber-50 text-sm sm:text-base">
+                Find shops that accept CDC vouchers near you. Login to unlock more features!
+              </p>
+            </div>
+          </div>
+        )}
+
+        <SearchBar />
+        <div className="flex flex-col gap-5 items-center m-5 align-center justify-center">
+          {shops.map((shop) => (
+            <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="w-full rounded-3xl bg-amber-400 shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto hover:bg-amber-500 transition-colors">
+              <h2 className="text-xl text-white font-semibold">{shop.name}</h2>
+              <p className="text-white">{shop.address}</p>
+            </Link>
+          ))}
+        </div>
+      </>
+    );
+  };
 
   return (
     <BrowserRouter>
@@ -158,9 +180,6 @@ export default function App() {
             <Route path="/AddItem" element={<AddItem />} />
             <Route path="/EditReview" element={<EditReview />} />
             <Route path="/EditReport" element={<EditReport />} />
-            <Route path="/EditItem" element={<EditItem />} />
-            <Route path="/EditShop" element={<EditShop />} />
-            <Route path="/MER" element={<MER />} />
           </Route>
 
           {/* Admin-only routes */}

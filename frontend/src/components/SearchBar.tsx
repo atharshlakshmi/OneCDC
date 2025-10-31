@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
-interface SearchBarProps {
-  onSearch: (query: string) => void;
-}
-
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
+const SearchBar: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
@@ -20,9 +17,24 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(query); // pass query to parent
+
+    // Determine which search page to navigate to
+    const targetPath =
+      location.pathname === "/itemSearch"
+        ? "/itemSearch"
+        : location.pathname === "/storeSearch"
+        ? "/storeSearch"
+        : "/storeSearch"; // Default to store search
+
+    // Navigate with query parameter
+    if (query.trim()) {
+      navigate(`${targetPath}?q=${encodeURIComponent(query.trim())}`);
+    } else {
+      navigate(targetPath);
+    }
   };
 
+  // Determine placeholder dynamically
   const placeholder =
     location.pathname === "/storeSearch"
       ? "Search for stores..."

@@ -6,10 +6,9 @@ export const shops = [
     address: "123 Tech Street",
     contact_number: "123-456-7890",
     operating_hours: "9 AM - 9 PM",
-    ownerVerified: true, 
     items: [
-    { id: 1, name: "Wireless Mouse", price: "$25", shopId: 1, status: "Available" },
-    { id: 2, name: "Mechanical Keyboard", price: "$80" , shopId:1, status: "Available"},
+      { id: 1, name: "Wireless Mouse", price: "$25" },
+      { id: 2, name: "Mechanical Keyboard", price: "$80" },
     ],
   },
   {
@@ -19,10 +18,9 @@ export const shops = [
     address: "456 Gadget Avenue",
     contact_number: "123-456-7890",
     operating_hours: "9 AM - 9 PM",
-    ownerVerified: false,
     items: [
-    { id: 3, name: "Wireless Mouse", price: "$27", shopId: 2, status: "Available"},
-    { id: 4, name: "Smartwatch", price: "$120", shopId: 2 , status: "Available"},
+      { id: 3, name: "Wireless Mouse", price: "$27" },
+      { id: 4, name: "Smartwatch", price: "$120" },
     ],
   },
   {
@@ -32,27 +30,26 @@ export const shops = [
     address: "789 Office Blvd",
     contact_number: "123-456-7890",
     operating_hours: "9 AM - 9 PM",
-    ownerVerified: true, 
     items: [
-    { id: 5, name: "Notebook", price: "$5", shopId: 3, status: "Available" },
-    { id: 6, name: "Pen", price: "$1",shopId: 3, status: "Not available"},
+      { id: 5, name: "Notebook", price: "$5" },
+      { id: 6, name: "Pen", price: "$1" },
     ],
   },
 ];
 
 export const items = [
-    { id: 1, name: "Wireless Mouse", price: "$25", shopId: 1, status: "Available" },
-    { id: 2, name: "Mechanical Keyboard", price: "$80" , shopId:1, status: "Available"},
-    { id: 3, name: "Wireless Mouse", price: "$27", shopId: 2, status: "Available"},
-    { id: 4, name: "Smartwatch", price: "$120", shopId: 2 , status: "Available"},
-    { id: 5, name: "Notebook", price: "$5", shopId: 3, status: "Available" },
-    { id: 6, name: "Pen", price: "$1",shopId: 3, status: "Not available"},
+    { id: 1, name: "Wireless Mouse", price: "$25" },
+    { id: 2, name: "Mechanical Keyboard", price: "$80" },
+    { id: 3, name: "Wireless Mouse", price: "$27" },
+    { id: 4, name: "Smartwatch", price: "$120" },
+    { id: 5, name: "Notebook", price: "$5" },
+    { id: 6, name: "Pen", price: "$1" },
 ]
 
 export const reviews = [
     { id: 1, itemId: 1, reviewerId: 2, rating: 5, status: "Available", comment: "Great mouse!" },
     { id: 2, itemId: 1, reviewerId: 2, rating: 4, status: "Available", comment: "Good value for money." },
-    { id: 3, itemId: 2, reviewerId: 2, rating: 5, status: "Available", comment: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. " },
+    { id: 3, itemId: 2, reviewerId: 2, rating: 5, status: "Available", comment: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." },
 ]
 
 export const users = [

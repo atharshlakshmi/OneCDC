@@ -14,8 +14,8 @@ type User = {
 type AuthContextValue = {
   user: User | null;
   token: string | null;
-  isAuthed: boolean; // ✅ derived from user for immediate UI reaction
-  checked: boolean; // ✅ true once we’ve decided the session state
+  isAuthed: boolean;
+  checked: boolean; // ✅ true once we’ve verified/decided the session
   login: (user: User, token: string, remember: boolean) => void;
   logout: () => Promise<void>;
   verify: () => Promise<void>;
@@ -32,20 +32,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const t = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
     const u = localStorage.getItem("auth_user") || sessionStorage.getItem("auth_user");
-    if (t) setToken(t);
-    if (u) {
-      try {
-        setUser(JSON.parse(u));
-      } catch {
-        setUser(null);
-      }
-    }
-    // Kick off a verify; ALWAYS mark checked afterwards.
+    setToken(t);
+    setUser(u ? JSON.parse(u) : null);
+
+    // kick off a verify; mark checked when done (success or fail)
     verify().finally(() => setChecked(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist to chosen storage and clear the other to avoid duplicates
+  // persist to chosen storage and clear the other to avoid duplicates
   const persist = (u: User, t: string, remember: boolean) => {
     const store = remember ? localStorage : sessionStorage;
     const other = remember ? sessionStorage : localStorage;
@@ -57,70 +52,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (u: User, t: string, remember: boolean) => {
     persist(u, t, remember);
-    setUser(u); // ✅ update immediately
+    setUser(u);
     setToken(t);
-    setChecked(true); // ✅ session is now known
-  };
-
-  const clearLocalAuth = () => {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_user");
-    sessionStorage.removeItem("auth_token");
-    sessionStorage.removeItem("auth_user");
-    setUser(null);
-    setToken(null);
   };
 
   const logout = async () => {
     try {
-      // If your backend uses cookies/sessions, this invalidates them:
+      // optional: backend logout to clear cookie/session if you use one
       await apiFetch("/auth/logout", { method: "POST" });
     } catch {
-      // Ignore network errors on logout; we still clear locally.
+      // ignore errors for token-only setups
     } finally {
-      // ✅ Make UI reflect logout immediately (no refresh needed)
-      clearLocalAuth();
-      setChecked(true);
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+      sessionStorage.removeItem("auth_token");
+      sessionStorage.removeItem("auth_user");
+      setUser(null);
+      setToken(null);
     }
   };
 
   const verify = async () => {
     const t = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
-    // If no token, consider unauthenticated (works for purely cookie backends too,
-    // because /auth/verify below will just 401 and we clear user).
+    if (!t) {
+      // no token -> unauthenticated
+      setUser(null);
+      setToken(null);
+      return;
+    }
     try {
-      const resp = await apiFetch<{ success: boolean; data: { user: User } }>("/auth/verify", { method: "GET", headers: { "Content-Type": "application/json" } });
-      // Accept either {success:true,data:{user}} or looser shapes if your API differs:
-      const freshUser = resp?.data?.user as User;
-      if (freshUser) {
-        const store = localStorage.getItem("auth_token") ? localStorage : sessionStorage;
-        store.setItem("auth_user", JSON.stringify(freshUser));
-        setUser(freshUser);
-        if (t) setToken(t);
-        return;
-      }
-      // If shape unexpected, treat as unauth
-      clearLocalAuth();
+      // Your backend: GET /api/auth/verify -> { success, data: { user } }
+      const resp = await apiFetch<{ success: boolean; data: { user: User } }>("/auth/verify");
+      const freshUser = resp.data.user;
+
+      // keep storage in sync with server
+      const store = localStorage.getItem("auth_token") ? localStorage : sessionStorage;
+      store.setItem("auth_user", JSON.stringify(freshUser));
+      setUser(freshUser);
+      setToken(t);
     } catch {
-      // 401/expired/etc → clear locally (don’t call logout() to avoid extra redirects)
-      clearLocalAuth();
+      // invalid/expired token
+      await logout();
     }
   };
-
-  // ✅ Use user presence for UI gating — updates instantly on logout()
-  const isAuthed = !!user;
 
   const value = useMemo(
     () => ({
       user,
       token,
-      isAuthed,
+      isAuthed: !!token,
       checked,
       login,
       logout,
       verify,
     }),
-    [user, token, isAuthed, checked]
+    [user, token, checked]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

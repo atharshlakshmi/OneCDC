@@ -35,7 +35,7 @@ const UserSchema = new Schema<IUser>(
     passwordHash: {
       type: String,
       required: function (this: any): boolean {
-        return this.authProvider === "local";
+        return this.authProvider === "local"; // Only required if authProvider is 'local'
       },
     },
     emailVerified: {
@@ -46,6 +46,7 @@ const UserSchema = new Schema<IUser>(
       type: Date,
       default: null,
     },
+
     role: {
       type: String,
       enum: Object.values(UserRole),
@@ -55,33 +56,8 @@ const UserSchema = new Schema<IUser>(
     phone: {
       type: String,
       trim: true,
-      set: (v: string | undefined) => {
-        if (!v) return v;
-        const digits = v.replace(/\D/g, "");
-        return digits.replace(/^65/, "");
-      },
-      validate: {
-        validator: (v: string | undefined) => {
-          if (!v) return true; // allow empty
-          return /^[89]\d{7}$/.test(v); // must be 8 digits starting with 8 or 9
-        },
-        message: "Phone number not valid", // 🔹 clear message
-      },
+      match: [/^[689]\d{7}$/, "Please enter a valid Singapore phone number"],
     },
-
-    gender: {
-      type: String,
-      enum: ["male", "female", "other", ""],
-      default: "",
-    },
-    address: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    avatarUrl: { type: String, trim: true, default: "" },
-
     isActive: { type: Boolean, default: true },
     warnings: { type: [WarningSchema], default: [] },
     singpassVerified: { type: Boolean, default: false },
