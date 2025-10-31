@@ -59,10 +59,9 @@ const ShopSearch: React.FC = () => {
       
 
       // Only add filter params if filters are selected
-      if (filters.length > 0 && !filters.includes("all")) {
-        if (filters.includes("verified")) params.ownerVerified = true;
-        if (filters.includes("open")) params.openNow = true;
-      }
+      if (filters.includes("all")) params.ownerVerified = true;
+      if (filters.includes("verified")) params.ownerVerified = true;
+      if (filters.includes("open")) params.openNow = true;
 
       const res = await apiGet<{ data: Shop[] }>(
         "/search/shops?" + new URLSearchParams(params)

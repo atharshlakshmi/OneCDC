@@ -166,19 +166,11 @@ export const searchShops = async (
   const queryObj: any = { isActive: true };
 
   if (query) {
-  // Match if any word starts with the query (case-insensitive)
-  queryObj.name = {
-    $regex: new RegExp(`\\b${query}`, "i"),
-  };
-}
-  if (category) {
-    if (Array.isArray(category)) {
-      queryObj.category = { $in: category };
-    } else {
-      queryObj.category = category;
-    }
+    queryObj.$text = { $search: query };
   }
-
+  if (category) {
+    queryObj.category = category;
+  }
   if (typeof ownerVerified === "boolean") {
     queryObj.verifiedByOwner = ownerVerified;
   }
@@ -194,7 +186,6 @@ export const searchShops = async (
   // Get all shops to calculate distance
   const allShops = await shopsQuery.lean();
 
-  console.log(allShops);
 
   // Calculate distances and filter
   const shopsWithDistance = allShops
