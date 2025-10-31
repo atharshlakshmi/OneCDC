@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/timothy/Timothy/NTU/Acads/Y2S1/SC2006/Labs/Lab 3/OneCDC/**)",
+      "Read(//private/tmp/**)",
+      "Bash(cat:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

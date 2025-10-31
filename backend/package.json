@@ -1,0 +1,57 @@
+{
+  "name": "onecdc-backend",
+  "version": "1.0.0",
+  "description": "OneCDC Backend API - CDC voucher shop finder and review platform",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint . --ext .ts",
+    "seed": "ts-node src/utils/seed.ts",
+    "seed:frontend": "ts-node src/utils/seedFrontend.ts"
+  },
+  "keywords": [
+    "cdc",
+    "voucher",
+    "singapore",
+    "shop-finder"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.18",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "express-async-handler": "^1.2.0",
+    "express-rate-limit": "^7.5.0",
+    "express-validator": "^7.2.1",
+    "google-auth-library": "^10.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.20.0",
+    "mongoose": "^8.18.3",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.10",
+    "pino": "^9.12.0",
+    "pino-pretty": "^13.1.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^24.6.0",
+    "@types/nodemailer": "^7.0.2",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.2"
+  },
+  "type": "commonjs"
+}

@@ -1,0 +1,15 @@
+[33m3deddc1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32msherman[m[33m)[m HEAD@{0}: commit: added MER google maps API(hard coded for transit cause lack of API support), added the review tabs and reported reviews tab for profile, need to add edit store for owner profile page.
+[33m5ef71b3[m[33m ([m[1;32mlakshmi2[m[33m)[m HEAD@{1}: checkout: moving from master to sherman
+[33m99fd502[m[33m ([m[1;32mmaster[m[33m)[m HEAD@{2}: checkout: moving from lakshmi2 to master
+[33m5ef71b3[m[33m ([m[1;32mlakshmi2[m[33m)[m HEAD@{3}: commit: added profile page for shopper and owner, it will display accordingly to role based on account logged in, fixed also not being directed to login page when clicking on protectedRoutes after logging out (using API 401 status to navigate away) can implement on pages integreated with db as need the api call.
+[33m60d353b[m HEAD@{4}: commit: added profile page for shopper and owner, it will display accordingly to role based on account logged in, fixed also not being directed to login page when clicking on protectedRoutes after logging out (using API 401 status to navigate away) can implement on pages integreated with db as need the api call.
+[33m041c1a2[m HEAD@{5}: pull: Fast-forward
+[33mf4a6349[m HEAD@{6}: reset: moving to HEAD
+[33mf4a6349[m HEAD@{7}: commit: fixed google login error(passwordHash), fixed redirect path after login, added safeguards to prevent logged in users from accessing login/register page
+[33md0cb942[m HEAD@{8}: commit (merge): Merge branch '<branch-name>' and resolve conflicts
+[33m6aff16c[m HEAD@{9}: commit: Added Registration for shopper and owner, added UEN validator, SMTP (email) verification required for account to be active (google login do not need), added forgot password via reset link
+[33m4e554d9[m HEAD@{10}: commit: Implement Google Login, fix redirect and AuthContext integration
+[33mef1a1e2[m HEAD@{11}: pull origin lakshmi2: Merge made by the 'ort' strategy.
+[33mcb85d0c[m HEAD@{12}: commit: Implement Google Login, fix redirect and AuthContext integration
+[33mcf72a4d[m HEAD@{13}: commit: modifed api-v2, also all routes compleid under /route/index.ts. Added login page and auth via token, made a 'apifetch' function to check if user token matches logged in token store in storage. use this function when querying to db for private info.
+[33m84c0f5c[m HEAD@{14}: clone: from https://github.com/atharshlakshmi/OneCDC.git
