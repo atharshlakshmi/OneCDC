@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -8,6 +8,15 @@ interface SearchBarProps {
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [query, setQuery] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Initialize query from URL params
+  useEffect(() => {
+    const urlQuery = searchParams.get("q");
+    if (urlQuery) {
+      setQuery(urlQuery);
+    }
+  }, [searchParams]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

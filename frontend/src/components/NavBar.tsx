@@ -6,6 +6,7 @@ type UserType = "Owner" | "Shopper"; // 👈 define roles
 
 function NavBar() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isLoggedIn = !!getToken();
 
   // 👇 temporary role variable (replace with your user state later)
