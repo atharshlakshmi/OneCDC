@@ -25,7 +25,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
-    credentials: "include", // include cookies for auth
+    credentials: "include", // ✅ include cookies for auth
   });
 
   // Try parse JSON even on errors
@@ -47,7 +47,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   return data as T;
 }
 
-// Convenience wrappers
+// ✅ Convenience wrappers
 export const apiGet = <T = any>(endpoint: string, init?: RequestInit): Promise<T> =>
   apiFetch<T>(endpoint, {
     method: "GET",

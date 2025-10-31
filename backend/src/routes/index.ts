@@ -1,5 +1,3 @@
-// backend/src/routes/index.ts
-
 import express from "express";
 import authRouter from "./auth";
 import apiV2Router from "./api-v2";

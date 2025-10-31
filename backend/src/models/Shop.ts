@@ -1,7 +1,3 @@
-// backend/src/models/Shop.ts
-
-// define what a shop looks like
-
 import mongoose, { Schema, Model } from "mongoose";
 import { IShop, IOperatingHours, ShopCategory } from "../types";
 

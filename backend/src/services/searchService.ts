@@ -1,12 +1,10 @@
-// backend/src/services/searchService.ts
-
 import { Shop, Catalogue } from '../models';
 import { SearchFilters, SortOption, PaginationOptions } from '../types';
 import { calculateDistance, getDefaultLocation } from '../utils/distance';
 import { AppError } from '../middleware';
 
 /**
- * Search for Items 
+ * Search for Items (Use Case #1-1)
  */
 export const searchItems = async (
   filters: SearchFilters,
@@ -151,7 +149,7 @@ export const searchItems = async (
 };
 
 /**
- * Search for Shops
+ * Search for Shops (Use Case #1-2)
  */
 export const searchShops = async (
   filters: SearchFilters,
@@ -171,22 +169,15 @@ export const searchShops = async (
   if (category) {
     queryObj.category = category;
   }
-  if (typeof ownerVerified === "boolean") {
+  if (ownerVerified !== undefined) {
     queryObj.verifiedByOwner = ownerVerified;
   }
-
-  console.log(queryObj);
 
   // Find shops
   let shopsQuery = Shop.find(queryObj);
 
-  console.log(shopsQuery.getQuery);
-
-
   // Get all shops to calculate distance
   const allShops = await shopsQuery.lean();
-
-  console.log(allShops);
 
   // Calculate distances and filter
   const shopsWithDistance = allShops
@@ -200,8 +191,6 @@ export const searchShops = async (
       return { ...shop, distance };
     })
     .filter((shop) => !maxDistance || shop.distance <= maxDistance);
-
-  console.log(shopsWithDistance);
 
   // Filter by openNow if requested
   let filteredShops = shopsWithDistance;
@@ -223,8 +212,6 @@ export const searchShops = async (
       );
     });
   }
-
-  console.log(filteredShops);
 
   // Sort
   switch (sortBy) {

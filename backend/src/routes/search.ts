@@ -1,5 +1,3 @@
-// define endpoints for search-related operations, define what kind of requests can be made
-
 import express from 'express';
 import * as searchController from '../controllers/searchController';
 import { optionalAuth } from '../middleware';
