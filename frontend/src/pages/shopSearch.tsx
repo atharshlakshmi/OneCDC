@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
 import { apiGet } from "../lib/api";
-import { BadgeCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MapPin } from "lucide-react";
@@ -13,7 +13,7 @@ export interface OperatingHours {
   isClosed: boolean;
 }
 
-export interface ShopSearchResult{
+export interface Shop {
   _id: string;
   name: string;
   description: string;
@@ -27,23 +27,17 @@ export interface ShopSearchResult{
   category: string;
   images?: string[];
   operatingHours?: OperatingHours[];
-  owner: string; 
+  owner: string; // ObjectId as string
   verifiedByOwner: boolean;
   reportCount: number;
   warnings: number;
   isActive: boolean;
-  distance?: number; 
+  lastUpdatedBy?: string; // ObjectId as string
 }
 
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  pages: number;
-}
 
 const ShopSearch: React.FC = () => {
-  const [results, setResults] = useState<ShopSearchResult[]>([]);
+  const [results, setResults] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -52,44 +46,28 @@ const ShopSearch: React.FC = () => {
   const [query, setQuery] = useState("");
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationString, setLocationString] = useState<string>("Getting location...");
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 10,  // Changed from 20
-    total: 0,
-    pages: 0,
-  });
 
   const availableFilters = ["verified", "open"]; // list of all selectable filters
 
-  const fetchShops = async (q: string, page: number = 1) => {
+  const fetchShops = async (q: string) => {
     setLoading(true);
     setError(null);
     console.log("Selected filters:", filters);
     
     try {
-      const params: Record<string, any> = { 
-        query: q, 
-        sortBy,
-        page: page.toString(),
-        limit: "10",  // Changed from "20" - adjust this number
-      };
+      const params: Record<string, any> = { query: q, sortBy };
       
+
       // Only add filter params if filters are selected
       if (filters.length > 0 && !filters.includes("all")) {
         if (filters.includes("verified")) params.ownerVerified = true;
         if (filters.includes("open")) params.openNow = true;
       }
 
-      if (currentLocation) {
-        params.lat = currentLocation.lat.toString();
-        params.lng = currentLocation.lng.toString();
-      }
-
-      const res = await apiGet<{ data: ShopSearchResult[]; pagination: PaginationData }>(
+      const res = await apiGet<{ data: Shop[] }>(
         "/search/shops?" + new URLSearchParams(params)
       );
       setResults(res.data || []);
-      setPagination(res.pagination || { page: 1, limit: 10, total: 0, pages: 0 });
     } catch (err: any) {
       setError(err?.message || "Failed to fetch shops");
     } finally {
@@ -97,37 +75,36 @@ const ShopSearch: React.FC = () => {
     }
   };
 
-  // Get user's current location
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          console.log("Got position:", location);
-          setCurrentLocation(location);
-          setLocationString(`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`);
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          setLocationString("Location unavailable");
-          setCurrentLocation({ lat: 1.3521, lng: 103.8198 });
-        }
-      );
-    } else {
-      console.log("Geolocation not supported");
-      setLocationString("Location not supported");
-      setCurrentLocation({ lat: 1.3521, lng: 103.8198 });
-    }
-  }, []);
+    // Get user's current location
+    useEffect(() => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            console.log("Got position:", location);
+            setCurrentLocation(location);
+            setLocationString(`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`);
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+            setLocationString("Location unavailable");
+            setCurrentLocation({ lat: 1.3521, lng: 103.8198 });
+          }
+        );
+      } else {
+        console.log("Geolocation not supported");
+        setLocationString("Location not supported");
+        setCurrentLocation({ lat: 1.3521, lng: 103.8198 });
+      }
+    }, []);
 
-  // Trigger search whenever query, filters, or sortBy changes (reset to page 1)
+
+  // Trigger search whenever query, filters, or sortBy changes
   useEffect(() => {
-    if (currentLocation) {
-      fetchShops(query, 1);
-    }
+    fetchShops(query);
   }, [currentLocation, query, filters, sortBy]);
 
   const toggleFilter = (filter: string) => {
@@ -142,16 +119,8 @@ const ShopSearch: React.FC = () => {
     }
   };
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= pagination.pages) {
-      fetchShops(query, newPage);
-      // Scroll to top of results
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
   return (
-    <div className="pb-32">
+    <div>
       <SearchBar onSearch={(q) => setQuery(q)} />
 
       <div className="px-4 py-3 bg-white border-b border-gray-200">
@@ -218,77 +187,19 @@ const ShopSearch: React.FC = () => {
           <Link
             to={`/ViewShop/${shop._id}`}
             key={shop._id}
-            className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-start text-left mx-auto hover:shadow-xl transition-shadow"
+            className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto"
           >
-            {/* Shop Header */}
-            <div className="w-full">
-              
-              <div className="flex justify-between items-start mb-2 w-full">
-                {/* Left: shop name + verified */}
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-amber-500">{shop.name}</h2>
-                  {shop.verifiedByOwner && (
-                    <BadgeCheck className="text-green-700" size={20} />
-                  )}
-                </div>
-
-                {/* Right: distance */}
-                {shop.distance !== undefined && (
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
-                    {shop.distance.toFixed(2)} km away
-                  </span>
-                )}
-              </div>
-              
-              {shop.description && (
-                <p className="text-gray-600 mb-3">{shop.description}</p>
+            <div className="flex flex-row">
+              <h2 className="text-xl text-amber-400">{shop.name}</h2>
+              {shop.verifiedByOwner && (
+                <p className="text-green-700 font-medium absolute right-10">
+                  <BadgeCheck />
+                </p>
               )}
-              
-              <p className="text-sm text-gray-600">{shop.address}</p>
-              
-              
-              {shop.category && (
-                <div>
-                <span className="inline-block px-3 py-1 mt-3 bg-blue-100 text-blue-800 text-xs rounded-full">
-                  {shop.category.replace('_', ' ').charAt(0).toUpperCase() + shop.category.slice(1).replace('_', ' ')}
-                </span>
-                </div>
-              )}
-              
             </div>
+            <p>{shop.address}</p>
           </Link>
         ))}
-
-        {/* Pagination Controls */}
-        {!loading && results.length > 0 && pagination.pages > 1 && (
-          <div className="flex items-center justify-center gap-4 mt-8 mb-4">
-            <Button
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <ChevronLeft size={16} />
-              Previous
-            </Button>
-
-            <span className="text-sm text-gray-600">
-              Page {pagination.page} of {pagination.pages} ({pagination.total} results)
-            </span>
-
-            <Button
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.pages}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              Next
-              <ChevronRight size={16} />
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -10,164 +10,137 @@ import { AppError } from '../middleware';
  */
 export const searchItems = async (
   filters: SearchFilters,
-  sortBy: SortOption = SortOption.DISTANCE,
+  sortBy: SortOption = SortOption.RELEVANCE,
   pagination: PaginationOptions = { page: 1, limit: 20 }
 ) => {
-  const { query, category, availability, ownerVerified, location, maxDistance, openNow } = filters;
+  const { query, category, availability, ownerVerified, location } = filters;
   const userLocation = location || getDefaultLocation();
 
-  // Build shop query
-  const shopQuery: any = { isActive: true };
-  if (category) {
-    if (Array.isArray(category)) {
-      shopQuery.category = { $in: category };
-    } else {
-      shopQuery.category = category;
-    }
-  }
+  // Build aggregation pipeline
+  const pipeline: any[] = [];
 
-  if (typeof ownerVerified === "boolean") {
-    shopQuery.verifiedByOwner = ownerVerified;
-  }
+  // Match shops by filters
+  const shopMatch: any = { isActive: true };
+  if (category) shopMatch.category = category;
+  if (ownerVerified !== undefined) shopMatch.verifiedByOwner = ownerVerified;
 
-  console.log("Item search - Shop query object:", shopQuery);
-  console.log("User location:", userLocation);
-  console.log("Filters:", filters);
-  console.log("Sort by:", sortBy);
-  console.log("-----------------------------------");
+  pipeline.push({ $match: shopMatch });
 
-  // Find all active shops
-  const allShops = await Shop.find(shopQuery).lean();
-
-  // Get catalogues for all shops
-  const shopIds = allShops.map((shop) => shop._id);
-  const catalogues = await Catalogue.find({ shop: { $in: shopIds } }).lean();
-
-  // Create a map of shop to catalogue
-  const catalogueMap = new Map();
-  catalogues.forEach((catalogue) => {
-    catalogueMap.set(catalogue.shop.toString(), catalogue);
+  // Join with catalogues
+  pipeline.push({
+    $lookup: {
+      from: 'catalogues',
+      localField: '_id',
+      foreignField: 'shop',
+      as: 'catalogue',
+    },
   });
 
-  // Build results array with shop-item pairs
-  let results: any[] = [];
+  pipeline.push({ $unwind: '$catalogue' });
+  pipeline.push({ $unwind: '$catalogue.items' });
 
-  allShops.forEach((shop) => {
-    const catalogue = catalogueMap.get(shop._id.toString());
-    if (!catalogue || !catalogue.items || catalogue.items.length === 0) {
-      return;
-    }
+  // Filter items
+  const itemMatch: any = {};
+  if (query) {
+    itemMatch.$or = [
+      { 'catalogue.items.name': { $regex: query, $options: 'i' } },
+      { 'catalogue.items.description': { $regex: query, $options: 'i' } },
+    ];
+  }
+  if (availability !== undefined) {
+    itemMatch['catalogue.items.availability'] = availability;
+  }
 
-    // Filter items based on query and availability
-    let filteredItems = catalogue.items.filter((item: any) => {
-      // Filter by query
-      if (query) {
-        const nameMatch = item.name.toLowerCase().includes(query.toLowerCase());
-        const descMatch = item.description?.toLowerCase().includes(query.toLowerCase());
-        if (!nameMatch && !descMatch) return false;
-      }
+  if (Object.keys(itemMatch).length > 0) {
+    pipeline.push({ $match: itemMatch });
+  }
 
-      // Filter by availability
-      if (availability !== undefined && item.availability !== availability) {
-        return false;
-      }
-
-      return true;
-    });
-
-    // Add each filtered item as a result with shop info
-    filteredItems.forEach((item: any) => {
-      const distance = calculateDistance(
-        userLocation.lat,
-        userLocation.lng,
-        shop.location.coordinates[1],
-        shop.location.coordinates[0]
-      );
-
-      // Clean item name - remove shop name suffix if present
-      let cleanItemName = item.name;
-      const shopNamePattern = new RegExp(`\\s*-\\s*${shop.name}\\s*$`, 'i');
-      cleanItemName = cleanItemName.replace(shopNamePattern, '').trim();
-
-      results.push({
-        shopId: shop._id,
-        shopName: shop.name,
-        shopAddress: shop.address,
-        shopCategory: shop.category,
-        shopLocation: shop.location,
-        shopPhone: shop.phone,
-        shopEmail: shop.email,
-        verifiedByOwner: shop.verifiedByOwner,
-        operatingHours: shop.operatingHours,
-        distance,
-        item: {
-          _id: item._id,
-          name: cleanItemName,
-          description: item.description,
-          price: item.price,
-          availability: item.availability,
-          images: item.images,
-          category: item.category,
-          cdcVoucherAccepted: item.cdcVoucherAccepted,
+  // Calculate distance
+  pipeline.push({
+    $addFields: {
+      distance: {
+        $let: {
+          vars: {
+            lat: { $arrayElemAt: ['$location.coordinates', 1] },
+            lng: { $arrayElemAt: ['$location.coordinates', 0] },
+          },
+          in: {
+            $sqrt: {
+              $add: [
+                {
+                  $pow: [
+                    {
+                      $subtract: [
+                        '$$lat',
+                        userLocation.lat,
+                      ],
+                    },
+                    2,
+                  ],
+                },
+                {
+                  $pow: [
+                    {
+                      $subtract: [
+                        '$$lng',
+                        userLocation.lng,
+                      ],
+                    },
+                    2,
+                  ],
+                },
+              ],
+            },
+          },
         },
-      });
-    });
+      },
+    },
   });
 
-  // Filter by max distance if provided
-  if (maxDistance) {
-    results = results.filter((result) => result.distance <= maxDistance);
-  }
-
-  // Filter by openNow if requested
-  if (openNow) {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, '0')}`;
-
-    results = results.filter((result) => {
-      const todayHours = result.operatingHours?.find(
-        (hours: any) => hours.dayOfWeek === dayOfWeek
-      );
-      if (!todayHours || todayHours.isClosed) return false;
-      return (
-        currentTime >= todayHours.openTime && currentTime <= todayHours.closeTime
-      );
-    });
-  }
-
-  // Sort results
+  // Sort
+  let sortStage: any = {};
   switch (sortBy) {
     case SortOption.DISTANCE:
-      results.sort((a, b) => a.distance - b.distance);
+      sortStage = { distance: 1 };
       break;
     case SortOption.ALPHABETICAL_ASC:
-      results.sort((a, b) => a.item.name.localeCompare(b.item.name));
+      sortStage = { 'catalogue.items.name': 1 };
       break;
     case SortOption.ALPHABETICAL_DESC:
-      results.sort((a, b) => b.item.name.localeCompare(a.item.name));
+      sortStage = { 'catalogue.items.name': -1 };
       break;
-    case SortOption.RELEVANCE:
-      // Already filtered by query
-      break;
+    default:
+      sortStage = { distance: 1 };
   }
+  pipeline.push({ $sort: sortStage });
 
-  // Paginate
-  const total = results.length;
+  // Pagination
   const skip = (pagination.page - 1) * pagination.limit;
-  const paginatedResults = results.slice(skip, skip + pagination.limit);
+  pipeline.push({ $skip: skip });
+  pipeline.push({ $limit: pagination.limit });
 
-  // Round distances for display
-  paginatedResults.forEach((result) => {
-    result.distance = Math.round(result.distance * 100) / 100;
+  // Project final shape
+  pipeline.push({
+    $project: {
+      shopId: '$_id',
+      shopName: '$name',
+      shopAddress: '$address',
+      shopCategory: '$category',
+      distance: 1,
+      item: '$catalogue.items',
+    },
   });
 
-  console.log(paginatedResults);
+  const results = await Shop.aggregate(pipeline);
+
+  // Get total count
+  const countPipeline = pipeline.slice(0, -3); // Remove skip, limit, project
+  countPipeline.push({ $count: 'total' });
+  const countResult = await Shop.aggregate(countPipeline);
+  const total = countResult.length > 0 ? countResult[0].total : 0;
+
   return {
-    results: paginatedResults,
+    results,
     pagination: {
       page: pagination.page,
       limit: pagination.limit,
@@ -210,12 +183,10 @@ export const searchShops = async (
     queryObj.verifiedByOwner = ownerVerified;
   }
 
-
   console.log("Shop query object:", queryObj);
   console.log("User location:", userLocation);
   console.log("Filters:", filters);
   console.log("Sort by:", sortBy);
-  console.log("-----------------------------------");
 
   // Find shops
   let shopsQuery = Shop.find(queryObj);
@@ -223,6 +194,7 @@ export const searchShops = async (
   // Get all shops to calculate distance
   const allShops = await shopsQuery.lean();
 
+  console.log(allShops);
 
   // Calculate distances and filter
   const shopsWithDistance = allShops
@@ -283,7 +255,6 @@ export const searchShops = async (
   const skip = (pagination.page - 1) * pagination.limit;
   const paginatedShops = filteredShops.slice(skip, skip + pagination.limit);
 
-  console.log(pagination);
   return {
     results: paginatedShops,
     pagination: {

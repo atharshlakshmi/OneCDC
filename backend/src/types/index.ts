@@ -136,9 +136,6 @@ export interface IWarning {
 /**
  * Shop Interface
  */
-/**
- * Shop Interface
- */
 export interface IShop extends Document {
   name: string;
   description: string;
@@ -153,7 +150,6 @@ export interface IShop extends Document {
   images: string[];
   operatingHours: IOperatingHours[];
   owner: Types.ObjectId;
-  catalogue?: Types.ObjectId;  
   verifiedByOwner: boolean;
   reportCount: number;
   warnings: number;
@@ -188,7 +184,6 @@ export interface ICatalogue extends Document {
  */
 export interface IItem {
   _id: Types.ObjectId;
-  shopId: Types.ObjectId;
   name: string;
   description: string;
   price?: number;

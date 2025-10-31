@@ -2,45 +2,28 @@ import React, { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { apiGet } from "../lib/api";
 import { BadgeCheck } from "lucide-react";
 import '../index.css'
 
-export interface ItemSearchResult {
-  shopId: string;
-  shopName: string;
-  shopAddress: string;
-  shopCategory: string;
-  shopLocation: {
-    type: "Point";
-    coordinates: [number, number];
-  };
-  shopPhone: string;
-  shopEmail?: string;
-  verifiedByOwner: boolean;
-  distance: number;
-  item: {
-    _id: string;
-    name: string;
-    description: string;
-    price?: number;
-    availability: boolean;
-    images?: string[];
-    category?: string;
-    cdcVoucherAccepted?: boolean;
-  };
-}
-
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  pages: number;
+interface Item {
+  _id: string;
+  name: string;
+  description: string;
+  price?: number;
+  availability: boolean;
+  images?: [String];
+  category?: string;
+  shop: [String];
+  cdcVoucherAccepted?: boolean;
+  lastUpdatedDate?: string;
+  lastUpdatedBy?: string;
+  distance?: number;
 }
 
 const ItemSearch: React.FC = () => {
-    const [results, setResults] = useState<ItemSearchResult[]>([]);
+    const [results, setResults] = useState<Item[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showFilters, setShowFilters] = useState(false);
@@ -49,12 +32,6 @@ const ItemSearch: React.FC = () => {
     const [query, setQuery] = useState("");
     const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [locationString, setLocationString] = useState<string>("Getting location...");
-    const [pagination, setPagination] = useState<PaginationData>({
-      page: 1,
-      limit: 20,
-      total: 0,
-      pages: 0,
-    });
   
     const availableFilters = ["verified", "open"]; // list of all selectable filters
   
@@ -83,24 +60,14 @@ const ItemSearch: React.FC = () => {
   }, []);
 
   // Fetch items from backend
-  const fetchItems = async (q: string, page: number = 1) => {
+  const fetchItems = async (q: string) => {
       setLoading(true);
       setError(null);
       console.log("Selected filters:", filters);
       
       try {
-        const params: Record<string, any> = { 
-          query: q, 
-          sortBy,
-          page: page.toString(),
-          limit: "20",
-        };
+        const params: Record<string, any> = { query: q, sortBy };
         
-        // Add location if available
-        if (currentLocation) {
-          params.lat = currentLocation.lat.toString();
-          params.lng = currentLocation.lng.toString();
-        }
   
         // Only add filter params if filters are selected
         if (filters.length > 0 && !filters.includes("all")) {
@@ -108,11 +75,10 @@ const ItemSearch: React.FC = () => {
           if (filters.includes("open")) params.openNow = true;
         }
   
-        const res = await apiGet<{ data: ItemSearchResult[]; pagination: PaginationData }>(
+        const res = await apiGet<{ data: Item[] }>(
           "/search/items?" + new URLSearchParams(params)
         );
         setResults(res.data || []);
-        setPagination(res.pagination || { page: 1, limit: 20, total: 0, pages: 0 });
       } catch (err: any) {
         setError(err?.message || "Failed to fetch items");
       } finally {
@@ -121,9 +87,7 @@ const ItemSearch: React.FC = () => {
     };
 
   useEffect(() => {
-      if (currentLocation) {
-        fetchItems(query, 1);
-      }
+      fetchItems(query);
     }, [currentLocation, query, filters, sortBy]);
   
     const toggleFilter = (filter: string) => {
@@ -138,16 +102,8 @@ const ItemSearch: React.FC = () => {
       }
     };
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= pagination.pages) {
-      fetchItems(query, newPage);
-      // Scroll to top of results
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
   return (
-    <div className="pb-32">
+    <div>
       <SearchBar onSearch={(q) => setQuery(q)} />
 
       <div className="px-4 py-3 bg-white border-b border-gray-200">
@@ -210,92 +166,23 @@ const ItemSearch: React.FC = () => {
           <p className="text-center text-gray-500">No items found</p>
         )}
 
-        {results.map((result) => (
+        {results.map((shop) => (
           <Link
-            to={`/ViewShop/${result.shopId}`}
-            key={`${result.shopId}-${result.item._id}`}
-            className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-start text-left mx-auto hover:shadow-xl transition-shadow"
+            to={`/ViewShop/${shop._id}`}
+            key={shop._id}
+            className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto"
           >
-            {/* Item Info */}
-            <div className="w-full">
-              <div className="flex justify-between items-start mb-2">
-                <h2 className="text-2xl font-bold text-blue-900">{result.item.name}</h2>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  result.item.availability 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {result.item.availability ? 'Available' : 'Out of Stock'}
-                </span>
-              </div>
-              
-              {result.item.description && (
-                <p className="text-gray-600 mb-3">{result.item.description}</p>
-              )}
-              
-              {result.item.price !== undefined && (
-                <p className="text-xl font-semibold text-green-600 mb-2">
-                  ${result.item.price.toFixed(2)}
+            <div className="flex flex-row">
+              <h2 className="text-xl text-amber-400">{shop.name}</h2>
+              {shop.verifiedByOwner && (
+                <p className="text-green-700 font-medium absolute right-10">
+                  <BadgeCheck />
                 </p>
               )}
-              
-              {result.item.cdcVoucherAccepted && (
-                <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                  CDC Voucher Accepted
-                </span>
-              )}
             </div>
-
-            {/* Shop Info */}
-            <div className="w-full pt-4 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-amber-500">{result.shopName}</h3>
-                    {result.verifiedByOwner && (
-                      <BadgeCheck className="text-green-700" size={20} />
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{result.shopAddress}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">{result.distance} km away</p>
-                </div>
-              </div>
-            </div>
+            <p>{shop.address}</p>
           </Link>
         ))}
-
-        {/* Pagination Controls */}
-        {!loading && results.length > 0 && pagination.pages > 1 && (
-          <div className="flex items-center justify-center gap-4 mt-8 mb-4">
-            <Button
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <ChevronLeft size={16} />
-              Previous
-            </Button>
-
-            <span className="text-sm text-gray-600">
-              Page {pagination.page} of {pagination.pages} ({pagination.total} results)
-            </span>
-
-            <Button
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.pages}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              Next
-              <ChevronRight size={16} />
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

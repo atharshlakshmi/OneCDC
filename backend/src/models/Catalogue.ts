@@ -1,6 +1,5 @@
 import mongoose, { Schema, Model } from 'mongoose';
 import { ICatalogue, IItem, IReview } from '../types';
-import {Shop} from './Shop';
 
 /**
  * Review Sub-Schema
@@ -28,11 +27,7 @@ const ReviewSchema = new Schema<IReview>({
 /**
  * Item Sub-Schema
  */
-/**
- * Item Sub-Schema
- */
 const ItemSchema = new Schema<IItem>({
-  shopId: { type: Schema.Types.ObjectId, ref: 'Shop', required: true },  
   name: { type: String, required: true, trim: true, index: 'text' },
   description: { type: String, required: true, trim: true, maxlength: 500 },
   price: { type: Number, min: 0 },
