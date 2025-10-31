@@ -5,8 +5,7 @@ import NavBar from "./components/NavBar";
 import ViewShop from "./pages/ViewShop";
 import ViewItem from "./pages/ViewItem";
 import ViewCart from "./pages/ViewCart";
-import Footer from "./components/Footer";
-import StoreSearch from "./pages/storeSearch";
+import ShopSearch from "./pages/shopSearch";
 import ItemSearch from "./pages/itemSearch";
 import AddReview from "./pages/AddReview";
 import EditReview from "./pages/EditReview";
@@ -23,7 +22,7 @@ import EditReport from "./pages/EditReport";
 import AddItem from "./pages/AddItem";
 import EditItem from "./pages/EditItem";
 import EditShop from "./pages/EditShop";
-import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RegisterShopper from "./pages/RegisterShopper";
 import RegisterOwner from "./pages/RegisterOwner";
@@ -65,7 +64,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/ViewShop/:id" element={<ViewShop />} />
           <Route path="/ViewItem/:id" element={<ViewItem />} />
-          <Route path="/storeSearch" element={<StoreSearch />} />
+          <Route path="/shopSearch" element={<ShopSearch />} />
           <Route path="/itemSearch" element={<ItemSearch />} />
           <Route path="/ActionSuccess" element={<ActionSuccess />} />
 
@@ -121,7 +120,6 @@ export default function App() {
             <Route path="/EditShop" element={<EditShop />} />
           </Route>
         </Routes>
-        <Footer />
         </Layout>
       </userContext.Provider>
     </BrowserRouter>

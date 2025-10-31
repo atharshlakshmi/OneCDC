@@ -1,3 +1,6 @@
+// searchController.ts
+// contains logic for handling search
+
 import { Response } from 'express';
 import { AuthRequest, SearchFilters, SortOption } from '../types';
 import { asyncHandler } from '../middleware';
@@ -14,6 +17,7 @@ export const searchItems = asyncHandler(
       category,
       availability,
       ownerVerified,
+      openNow,
       lat,
       lng,
       maxDistance,
@@ -26,7 +30,15 @@ export const searchItems = asyncHandler(
       query: query as string,
       category: category as any,
       availability: availability === 'true',
-      ownerVerified: ownerVerified === 'true',
+      ownerVerified:
+        ownerVerified === undefined
+          ? undefined        
+          : ownerVerified === "true"
+          ? true              
+          : ownerVerified === "false"
+          ? false             
+          : undefined,
+      openNow: openNow === "true",
       location:
         lat && lng
           ? { lat: parseFloat(lat as string), lng: parseFloat(lng as string) }
@@ -34,7 +46,7 @@ export const searchItems = asyncHandler(
       maxDistance: maxDistance ? parseFloat(maxDistance as string) : undefined,
     };
 
-    const sort = (sortBy as SortOption) || SortOption.RELEVANCE;
+    const sort = (sortBy as SortOption) || SortOption.DISTANCE;
     const pagination = {
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 20,
@@ -72,8 +84,15 @@ export const searchShops = asyncHandler(
     const filters: SearchFilters = {
       query: query as string,
       category: category as any,
-      ownerVerified: ownerVerified === 'true',
-      openNow: openNow === 'true',
+      ownerVerified:
+        ownerVerified === undefined
+          ? undefined        
+          : ownerVerified === "true"
+          ? true              
+          : ownerVerified === "false"
+          ? false             
+          : undefined,        
+      openNow: openNow === "true",
       location:
         lat && lng
           ? { lat: parseFloat(lat as string), lng: parseFloat(lng as string) }
