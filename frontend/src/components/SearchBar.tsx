@@ -1,7 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { apiGet } from "../lib/api";
-import type { Shop } from "../pages/shopSearch"; // adjust as needed
+
+// Define interfaces locally to avoid circular dependencies
+interface Shop {
+  _id: string;
+  name: string;
+  address: string;
+  verifiedByOwner?: boolean;
+}
+
+interface ItemSearchResult {
+  shopId: string;
+  shopName: string;
+  shopAddress: string;
+  item: {
+    _id: string;
+    name: string;
+  };
+}
+
+type SearchSuggestion = Shop | ItemSearchResult;
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -9,10 +28,13 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<Shop[]>([]);
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isStoreSearch = location.pathname === "/storeSearch";
+  const isItemSearch = location.pathname === "/itemSearch";
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -34,12 +56,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
       }
 
       try {
-        const endpoint =
-          location.pathname === "/storeSearch"
-            ? "/search/shops"
-            : location.pathname === "/itemSearch"
-            ? "/search/items"
-            : "/search/items";
+        const endpoint = isStoreSearch 
+          ? "/search/shops" 
+          : isItemSearch 
+          ? "/search/items" 
+          : "/search/shops";
 
         const params = new URLSearchParams({
           query,
@@ -47,7 +68,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
           limit: "5",
         });
 
-        const res = await apiGet<{ data: Shop[] }>(`${endpoint}?${params}`);
+        const res = await apiGet<{ data: SearchSuggestion[] }>(`${endpoint}?${params}`);
         setSuggestions(res.data || []);
         setShowSuggestions(true);
       } catch (err) {
@@ -58,7 +79,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
 
     const delay = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(delay);
-  }, [query, location.pathname]);
+  }, [query, isStoreSearch, isItemSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,18 +87,56 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
     setShowSuggestions(false);
   };
 
-  const handleSelectSuggestion = (name: string) => {
-    setQuery(name);
-    onSearch(name);
+  const handleSelectSuggestion = (suggestion: SearchSuggestion) => {
+    if (isItemSearch && 'item' in suggestion) {
+      // For item search, use the item name
+      setQuery(suggestion.item.name);
+      onSearch(suggestion.item.name);
+    } else if (isStoreSearch && 'name' in suggestion) {
+      // For shop search, use the shop name
+      setQuery(suggestion.name);
+      onSearch(suggestion.name);
+    }
     setShowSuggestions(false);
   };
 
-  const placeholder =
-    location.pathname === "/storeSearch"
-      ? "Search for stores..."
-      : location.pathname === "/itemSearch"
-      ? "Search for items..."
-      : "Search...";
+  const renderSuggestion = (suggestion: SearchSuggestion) => {
+    if (isItemSearch && 'item' in suggestion) {
+      // Item search result
+      return (
+        <div className="flex flex-col">
+          <span className="font-medium truncate">{suggestion.item.name}</span>
+          <span className="text-xs text-gray-500 truncate">at {suggestion.shopName}</span>
+        </div>
+      );
+    } else if (isStoreSearch && 'name' in suggestion) {
+      // Shop search result
+      return (
+        <div className="flex flex-col">
+          <span className="font-medium truncate">{suggestion.name}</span>
+          {suggestion.address && (
+            <span className="text-xs text-gray-500 truncate">{suggestion.address}</span>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getSuggestionKey = (suggestion: SearchSuggestion): string => {
+    if ('item' in suggestion) {
+      return `${suggestion.shopId}-${suggestion.item._id}`;
+    } else if ('_id' in suggestion) {
+      return suggestion._id;
+    }
+    return Math.random().toString();
+  };
+
+  const placeholder = isStoreSearch
+    ? "Search for stores..."
+    : isItemSearch
+    ? "Search for items..."
+    : "Search...";
 
   return (
     <div className="relative flex justify-center w-full px-4 py-4" ref={dropdownRef}>
@@ -101,20 +160,18 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
 
         {/* Dropdown suggestions */}
         {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 w-full bg-white border border-gray-300 rounded-b-xl shadow-lg max-h-64 overflow-y-auto z-50">
-          {suggestions.map((shop) => (
-            <div
-              key={shop._id}
-              onClick={() => handleSelectSuggestion(shop.name)}
-              className="px-4 py-3 cursor-pointer hover:bg-blue-50 hover:text-blue-900 transition-colors duration-150 flex items-center gap-2"
-            >
-              <span className="truncate">{shop.name}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-
+          <div className="absolute top-full left-0 right-0 w-full bg-white border border-gray-300 rounded-b-xl shadow-lg max-h-64 overflow-y-auto z-50">
+            {suggestions.map((suggestion) => (
+              <div
+                key={getSuggestionKey(suggestion)}
+                onClick={() => handleSelectSuggestion(suggestion)}
+                className="px-4 py-3 cursor-pointer hover:bg-blue-50 hover:text-blue-900 transition-colors duration-150"
+              >
+                {renderSuggestion(suggestion)}
+              </div>
+            ))}
+          </div>
+        )}
       </form>
     </div>
   );

@@ -2,13 +2,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "react-feather";
 import { apiFetch, getToken } from "../lib/api";
 
-type UserType = "Owner" | "Shopper"; // 👈 define roles
+type UserType = "Owner" | "Shopper";
 
 function NavBar() {
   const navigate = useNavigate();
   const isLoggedIn = !!getToken();
 
-  // 👇 temporary role variable (replace with your user state later)
+  // temporary role variable (replace with your user state later)
   const userType: UserType = "Shopper"; // change to "Owner" to test owner view
 
   const handleLogout = async () => {
@@ -24,7 +24,7 @@ function NavBar() {
   };
 
   return (
-    <nav className="flex justify-between items-center bg-blue-900 text-white px-6 py-4 shadow-md">
+    <nav className="sticky top-0 z-50 flex justify-between items-center bg-blue-900 text-white px-6 py-4 shadow-md">
       {/* Left: Logo */}
       <div className="navbar-left">
         <Link
@@ -37,7 +37,7 @@ function NavBar() {
 
       {/* Right: Icons / Links */}
       <div className="flex items-center gap-6">
-        {/* 👇 Only show cart for shoppers */}
+        {/* Only show cart for shoppers */}
         {userType === "Shopper" && (
           <Link
             to="/ViewCart"
