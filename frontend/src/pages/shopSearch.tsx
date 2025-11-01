@@ -75,15 +75,14 @@ const ShopSearch: React.FC = () => {
       };
       
       // Only add filter params if filters are selected
-      if (filters.length > 0 && !filters.includes("all")) {
-        if (filters.includes("verified")) params.ownerVerified = true;
-        if (filters.includes("open")) params.openNow = true;
-      }
-
+      if (filters.includes("verified")) params.ownerVerified = true;
+      if (filters.includes("open")) params.openNow = true;
+      
       if (currentLocation) {
         params.lat = currentLocation.lat.toString();
         params.lng = currentLocation.lng.toString();
       }
+      console.log("Fetching shops with params:", params);
 
       const res = await apiGet<{ data: ShopSearchResult[]; pagination: PaginationData }>(
         "/search/shops?" + new URLSearchParams(params)
