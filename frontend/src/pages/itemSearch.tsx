@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { apiGet } from "../lib/api";
 import { BadgeCheck } from "lucide-react";
 import '../index.css'
@@ -32,6 +32,20 @@ export interface ItemSearchResult {
   };
 }
 
+interface Shop {
+  _id: string;
+  name: string;
+  description?: string;
+  address: string;
+  location: {
+    type: "Point";
+    coordinates: [number, number];
+  };
+  category: string;
+  verifiedByOwner: boolean;
+  distance: number;
+}
+
 interface PaginationData {
   page: number;
   limit: number;
@@ -39,24 +53,37 @@ interface PaginationData {
   pages: number;
 }
 
+interface SearchResponse {
+  results?: ItemSearchResult[];
+  data?: ItemSearchResult[];
+  suggestedShops?: Shop[];
+  fallbackMessage?: string;
+  categoryName?: string;
+  isFallback?: boolean;
+  pagination: PaginationData;
+}
+
 const ItemSearch: React.FC = () => {
     const [results, setResults] = useState<ItemSearchResult[]>([]);
+    const [suggestedShops, setSuggestedShops] = useState<Shop[]>([]);
+    const [isFallbackMode, setIsFallbackMode] = useState(false);
+    const [fallbackMessage, setFallbackMessage] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showFilters, setShowFilters] = useState(false);
-    const [filters, setFilters] = useState<string[]>(["all"]); // array of selected filters
+    const [filters, setFilters] = useState<string[]>([]);
     const [sortBy, setSortBy] = useState<string>("distance");
     const [query, setQuery] = useState("");
     const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [locationString, setLocationString] = useState<string>("Getting location...");
     const [pagination, setPagination] = useState<PaginationData>({
       page: 1,
-      limit: 20,
+      limit: 10,
       total: 0,
       pages: 0,
     });
   
-    const availableFilters = ["verified", "open"]; // list of all selectable filters
+    const availableFilters = ["verified", "open"];
   
   // Get user's current location
   useEffect(() => {
@@ -72,7 +99,6 @@ const ItemSearch: React.FC = () => {
         },
         () => {
           setLocationString("Location unavailable");
-          // Use default Singapore location if geolocation fails
           setCurrentLocation({ lat: 1.3521, lng: 103.8198 });
         }
       );
@@ -93,7 +119,7 @@ const ItemSearch: React.FC = () => {
           query: q, 
           sortBy,
           page: page.toString(),
-          limit: "20",
+          limit: "10",
         };
         
         // Add location if available
@@ -105,15 +131,45 @@ const ItemSearch: React.FC = () => {
         // Only add filter params if filters are selected
         if (filters.includes("verified")) params.ownerVerified = true;
         if (filters.includes("open")) params.openNow = true;
-      
   
-        const res = await apiGet<{ data: ItemSearchResult[]; pagination: PaginationData }>(
+        const res = await apiGet<SearchResponse>(
           "/search/items?" + new URLSearchParams(params)
         );
-        setResults(res.data || []);
-        setPagination(res.pagination || { page: 1, limit: 20, total: 0, pages: 0 });
+        
+        // Handle case where API wraps response in 'data' property
+        const actualResponse = res as SearchResponse;
+
+
+        // Check if we got a fallback response
+        if (actualResponse.isFallback === true) {
+          if (actualResponse.suggestedShops) {
+            setIsFallbackMode(true);
+            setSuggestedShops(actualResponse.suggestedShops);
+            setFallbackMessage(actualResponse.fallbackMessage || '');
+            setResults([]);
+          } else {
+            setIsFallbackMode(false);
+            setSuggestedShops([]);
+            setFallbackMessage('');
+            setResults([]);
+          }
+        } else {
+          setIsFallbackMode(false);
+          setSuggestedShops([]);
+          setFallbackMessage('');
+          // Handle both 'results' and 'data' properties
+          const itemResults = actualResponse.results || actualResponse.data || [];
+    
+          setResults(itemResults);
+        }
+        
+        setPagination(actualResponse.pagination || { page: 1, limit: 10, total: 0, pages: 0 });
       } catch (err: any) {
+        console.error('Fetch error:', err);
         setError(err?.message || "Failed to fetch items");
+        setIsFallbackMode(false);
+        setSuggestedShops([]);
+        setResults([]);
       } finally {
         setLoading(false);
       }
@@ -127,7 +183,7 @@ const ItemSearch: React.FC = () => {
   
     const toggleFilter = (filter: string) => {
       if (filter === "all") {
-        setFilters([]); // All = no filters
+        setFilters([]);
       } else {
         setFilters((prev) =>
           prev.includes(filter)
@@ -140,7 +196,6 @@ const ItemSearch: React.FC = () => {
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.pages) {
       fetchItems(query, newPage);
-      // Scroll to top of results
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -205,11 +260,33 @@ const ItemSearch: React.FC = () => {
       <div className="flex flex-col gap-5 items-center m-5">
         {loading && <p className="text-center text-gray-500">Loading...</p>}
         {error && <p className="text-center text-red-500">{error}</p>}
-        {!loading && !error && results.length === 0 && (
+        
+        {/* Debug Info - Remove this after testing */}
+        {!loading && (
+          <div className="w-full max-w-4xl p-4 bg-gray-100 rounded text-xs">
+            <p>Debug Info:</p>
+            <p>isFallbackMode: {isFallbackMode.toString()}</p>
+            <p>suggestedShops.length: {suggestedShops.length}</p>
+            <p>results.length: {results.length}</p>
+            <p>fallbackMessage: {fallbackMessage || '(empty)'}</p>
+          </div>
+        )}
+        
+        {/* Fallback Message */}
+        {!loading && isFallbackMode && fallbackMessage && (
+          <div className="w-full max-w-4xl bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+            <Info className="text-blue-600 shrink-0 mt-0.5" size={20} />
+            <p className="text-blue-800 text-sm">{fallbackMessage}</p>
+          </div>
+        )}
+
+        {/* Only show "No items found" when NOT in fallback mode AND no suggested shops */}
+        {!loading && !error && !isFallbackMode && results.length === 0 && suggestedShops.length === 0 && (
           <p className="text-center text-gray-500">No items found</p>
         )}
 
-        {results.map((result) => (
+        {/* Regular Item Results */}
+        {!isFallbackMode && results.map((result) => (
           <Link
             to={`/ViewShop/${result.shopId}`}
             key={`${result.shopId}-${result.item._id}`}
@@ -264,9 +341,55 @@ const ItemSearch: React.FC = () => {
             </div>
           </Link>
         ))}
+        {!loading && isFallbackMode && fallbackMessage && (
+          <div className="...">{fallbackMessage}</div>
+        )}
+
+
+        {/* Suggested Shops (Fallback Mode) */}
+        {!loading && isFallbackMode && suggestedShops.length > 0 && (
+        suggestedShops.map(shop => (
+          <Link
+            to={`/ViewShop/${shop._id}`}
+            key={shop._id}
+            className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-start text-left mx-auto hover:shadow-xl transition-shadow border-2 border-blue-100"
+          >
+            {/* Shop Header */}
+            <div className="w-full">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-bold text-amber-500">{shop.name}</h2>
+                  {shop.verifiedByOwner && (
+                    <BadgeCheck className="text-green-700" size={20} />
+                  )}
+                </div>
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  May have availability
+                </span>
+              </div>
+              
+              {shop.description && (
+                <p className="text-gray-600 mb-3">{shop.description}</p>
+              )}
+              
+              <p className="text-sm text-gray-600">{shop.address}</p>
+              
+              {shop.category && (
+                <span className="inline-block px-3 py-1 mt-3 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  {shop.category.replace('_', ' ').charAt(0).toUpperCase() + shop.category.slice(1).replace('_', ' ')}
+                </span>
+              )}
+            </div>
+
+            {/* Distance */}
+            <div className="w-full pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-500">{shop.distance} km away</p>
+            </div>
+          </Link>
+        )))}
 
         {/* Pagination Controls */}
-        {!loading && results.length > 0 && pagination.pages > 1 && (
+        {!loading && (results.length > 0 || suggestedShops.length > 0) && pagination.pages > 1 && (
           <div className="flex items-center justify-center gap-4 mt-8 mb-4">
             <Button
               onClick={() => handlePageChange(pagination.page - 1)}
