@@ -1,10 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "react-feather";
 import { apiFetch, getToken } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
 function NavBar() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isLoggedIn = !!getToken();
+  const isAdmin = user?.role === "admin";
 
   const handleLogout = async () => {
     try {
@@ -32,6 +35,15 @@ function NavBar() {
 
       {/* Right: Icons / Links */}
       <div className="flex items-center gap-6">
+        {isAdmin && (
+          <Link
+            to="/admin-dashboard"
+            className="flex items-center justify-center text-white font-medium text-base transition-transform duration-200 ease-in-out hover:scale-105 hover:opacity-85"
+          >
+            Admin
+          </Link>
+        )}
+
         <Link
           to="/ViewCart"
           className="relative flex items-center justify-center text-white font-medium text-base transition-transform duration-200 ease-in-out hover:scale-105 hover:opacity-85"

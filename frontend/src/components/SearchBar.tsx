@@ -1,13 +1,37 @@
-import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 const SearchBar: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Initialize query from URL params
+  useEffect(() => {
+    const urlQuery = searchParams.get("q");
+    if (urlQuery) {
+      setQuery(urlQuery);
+    }
+  }, [searchParams]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Search query:", query);
+
+    // Determine which search page to navigate to
+    const targetPath =
+      location.pathname === "/itemSearch"
+        ? "/itemSearch"
+        : location.pathname === "/storeSearch"
+        ? "/storeSearch"
+        : "/storeSearch"; // Default to store search
+
+    // Navigate with query parameter
+    if (query.trim()) {
+      navigate(`${targetPath}?q=${encodeURIComponent(query.trim())}`);
+    } else {
+      navigate(targetPath);
+    }
   };
 
   // Determine placeholder dynamically

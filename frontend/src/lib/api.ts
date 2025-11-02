@@ -57,3 +57,10 @@ export const apiPost = <T = any>(endpoint: string, json?: Json, init?: RequestIn
     body: json !== undefined ? JSON.stringify(json) : undefined,
     ...(init || {}),
   });
+
+export const apiDelete = <T = any>(endpoint: string, json?: Json, init?: RequestInit) =>
+  apiFetch<T>(endpoint, {
+    method: "DELETE",
+    body: json !== undefined ? JSON.stringify(json) : undefined,
+    ...(init || {}),
+  });

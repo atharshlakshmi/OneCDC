@@ -29,6 +29,7 @@ import ResetPassword from "./pages/ResetPassword";
 import SeeReviews from "./pages/SeeReviews";
 import SeeReports from "./pages/SeeReports";
 import SeeViolations from "./pages/SeeViolations";
+import AdminDashboard from "./pages/AdminDashboard";
 import { useAuth } from "./context/AuthContext";
 import { userContext } from "./contexts/userContext";
 import Layout from "./components/Layout";
@@ -47,22 +48,79 @@ function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Guard: admin-only access
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, isAuthed, checked } = useAuth();
+  const location = useLocation();
+
+  if (!checked) return <div style={{ padding: 16 }}>Checking session…</div>;
+
+  if (!isAuthed) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  if (user?.role !== "admin") {
+    return (
+      <div style={{ padding: 16, textAlign: "center" }}>
+        <h2>Access Denied</h2>
+        <p>You do not have permission to access this page.</p>
+        <Link to="/">Go Home</Link>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
   const [username, setUsername] = useState("");
 
-  const Home = () => (
-    <>
-      <SearchBar />
-      <div className="flex flex-col gap-5 items-center m-5 align-center justify-center">
-        {shops.map((shop) => (
-          <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto">
-            <h2 className="text-xl text-amber-400">{shop.name}</h2>
-            <p>{shop.address}</p>
-          </Link>
-        ))}
-      </div>
-    </>
-  );
+  const Home = () => {
+    const { user, isAuthed } = useAuth();
+    const isShopper = user?.role === "shopper" || user?.role === "registered_shopper";
+
+    return (
+      <>
+        {/* Welcome Message for Shoppers */}
+        {isAuthed && isShopper && (
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-8 mb-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                Welcome back, {user?.name || "Shopper"}! 👋
+              </h1>
+              <p className="text-blue-100 text-sm sm:text-base">
+                Discover amazing shops and items with CDC voucher acceptance. Happy shopping!
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Non-authenticated welcome */}
+        {!isAuthed && (
+          <div className="bg-gradient-to-r from-amber-400 to-amber-500 text-white px-6 py-8 mb-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                Welcome to OneCDC! 🛍️
+              </h1>
+              <p className="text-amber-50 text-sm sm:text-base">
+                Find shops that accept CDC vouchers near you. Login to unlock more features!
+              </p>
+            </div>
+          </div>
+        )}
+
+        <SearchBar />
+        <div className="flex flex-col gap-5 items-center m-5 align-center justify-center">
+          {shops.map((shop) => (
+            <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="w-full rounded-3xl bg-amber-400 shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto hover:bg-amber-500 transition-colors">
+              <h2 className="text-xl text-white font-semibold">{shop.name}</h2>
+              <p className="text-white">{shop.address}</p>
+            </Link>
+          ))}
+        </div>
+      </>
+    );
+  };
 
   return (
     <BrowserRouter>
@@ -123,6 +181,16 @@ export default function App() {
             <Route path="/EditReview" element={<EditReview />} />
             <Route path="/EditReport" element={<EditReport />} />
           </Route>
+
+          {/* Admin-only routes */}
+          <Route
+            path="/admin-dashboard"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
         </Routes>
         <Footer />
         </Layout>
