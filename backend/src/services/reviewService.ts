@@ -112,7 +112,10 @@ export const submitReview = async (
 /**
  * Get Reviews for Item
  */
-export const getItemReviews = async (catalogueId: string, itemId: string) => {
+export const getItemReviews = async (_catalogueId: string, itemId: string) => {
+  // Note: catalogueId kept for API compatibility but not used in validation
+  // after migration to separate collections
+
   // Check if item exists
   const item = await Item.findById(itemId);
   if (!item) {
