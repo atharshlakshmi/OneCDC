@@ -62,72 +62,72 @@ export default function App() {
     <BrowserRouter>
       <userContext.Provider value={{ username, setUsername }}>
         <Layout>
-        <NavBar />
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/ViewShop/:id" element={<ViewShop />} />
-          <Route path="/ViewItem/:id" element={<ViewItem />} />
-          <Route path="/storeSearch" element={<StoreSearch />} />
-          <Route path="/itemSearch" element={<ItemSearch />} />
-          <Route path="/ActionSuccess" element={<ActionSuccess />} />
+          <NavBar />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/ViewShop/:id" element={<ViewShop />} />
+            <Route path="/ViewItem/:id" element={<ViewItem />} />
+            <Route path="/storeSearch" element={<StoreSearch />} />
+            <Route path="/itemSearch" element={<ItemSearch />} />
+            <Route path="/ActionSuccess" element={<ActionSuccess />} />
 
-          {/* Auth routes (redirect authed users away) */}
-          <Route
-            path="/login"
-            element={
-              <RedirectIfAuthed>
-                <Login />
-              </RedirectIfAuthed>
-            }
-          />
-          <Route
-            path="/register/shopper"
-            element={
-              <RedirectIfAuthed>
-                <RegisterShopper />
-              </RedirectIfAuthed>
-            }
-          />
-          <Route
-            path="/register/owner"
-            element={
-              <RedirectIfAuthed>
-                <RegisterOwner />
-              </RedirectIfAuthed>
-            }
-          />
+            {/* Auth routes (redirect authed users away) */}
+            <Route
+              path="/login"
+              element={
+                <RedirectIfAuthed>
+                  <Login />
+                </RedirectIfAuthed>
+              }
+            />
+            <Route
+              path="/register/shopper"
+              element={
+                <RedirectIfAuthed>
+                  <RegisterShopper />
+                </RedirectIfAuthed>
+              }
+            />
+            <Route
+              path="/register/owner"
+              element={
+                <RedirectIfAuthed>
+                  <RegisterOwner />
+                </RedirectIfAuthed>
+              }
+            />
 
-          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<ProfileHome />} />
-            <Route path="/profile/details" element={<ProfileDetails />} />
-            <Route path="/profile/reviews" element={<ProfileReviews />} />
-            <Route path="/profile/reports" element={<ProfileReports />} />
-            <Route path="/profile/stores" element={<ProfileStores />} />
-            <Route path="/profile/flagged-stores" element={<ProfileFlaggedStores />} />
-            <Route path="/ViewCart" element={<ViewCart />} />
-            <Route path="/route" element={<ViewRoute />} />
-            <Route path="/SeeReviews" element={<SeeReviews />} />
-            <Route path="/SeeReports" element={<SeeReports />} />
-            <Route path="/SeeViolations" element={<SeeViolations />} />
-            <Route path="/AddReview" element={<AddReview />} />
-            <Route path="/ReportShop" element={<ReportShop />} />
-            <Route path="/ReportReview" element={<AddReport />} />
-            <Route path="/AddItem" element={<AddItem />} />
-            <Route path="/EditReview" element={<EditReview />} />
-            <Route path="/EditReport" element={<EditReport />} />
-            <Route path="/EditItem" element={<EditItem />} />
-            <Route path="/EditShop" element={<EditShop />} />
-            <Route path="/AddShop" element={<AddShop />} />
-          </Route>
-        </Routes>
-        <Footer />
+            <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<ProfileHome />} />
+              <Route path="/profile/details" element={<ProfileDetails />} />
+              <Route path="/profile/reviews" element={<ProfileReviews />} />
+              <Route path="/profile/reports" element={<ProfileReports />} />
+              <Route path="/profile/stores" element={<ProfileStores />} />
+              <Route path="/profile/flagged-stores" element={<ProfileFlaggedStores />} />
+              <Route path="/ViewCart" element={<ViewCart />} />
+              <Route path="/route" element={<ViewRoute />} />
+              <Route path="/SeeReviews" element={<SeeReviews />} />
+              <Route path="/SeeReports" element={<SeeReports />} />
+              <Route path="/SeeViolations" element={<SeeViolations />} />
+              <Route path="/AddReview" element={<AddReview />} />
+              <Route path="/ReportShop" element={<ReportShop />} />
+              <Route path="/ReportReview" element={<AddReport />} />
+              <Route path="/AddItem" element={<AddItem />} />
+              <Route path="/EditReview" element={<EditReview />} />
+              <Route path="/EditReport" element={<EditReport />} />
+              <Route path="/EditItem" element={<EditItem />} />
+              <Route path="/EditShop" element={<EditShop />} />
+              <Route path="/AddShop" element={<AddShop />} />
+            </Route>
+          </Routes>
+          <Footer />
         </Layout>
       </userContext.Provider>
     </BrowserRouter>

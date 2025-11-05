@@ -24,6 +24,27 @@ export default function ProfileStores() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const formatImageUrl = (url: string) => {
+    if (!url) return "";
+
+    // Case 1: Old relative uploads (e.g., /uploads/image-xxx.jpg)
+    if (url.startsWith("/")) {
+      return `${import.meta.env.VITE_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${url}`;
+    }
+
+    // Case 2: Google Places photo URL (add API key if missing)
+    if (url.startsWith("https://places.googleapis.com/v1/")) {
+      const hasKey = url.includes("key=");
+      if (!hasKey) {
+        const joiner = url.includes("?") ? "&" : "?";
+        return `${url}${joiner}key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+      }
+    }
+
+    // Case 3: Already a valid external URL
+    return url;
+  };
+
   // Defensive check: redirect if not authenticated
   useEffect(() => {
     if (checked && !isAuthed) {
@@ -36,10 +57,7 @@ export default function ProfileStores() {
     const fetchShops = async () => {
       try {
         setLoading(true);
-        const response = await apiFetch<{ success: boolean; data: Shop[] }>(
-          "/owner/shops",
-          { method: "GET" }
-        );
+        const response = await apiFetch<{ success: boolean; data: Shop[] }>("/owner/shops", { method: "GET" });
 
         if (response?.success && response?.data) {
           setShops(response.data);
@@ -61,19 +79,11 @@ export default function ProfileStores() {
 
   // Show loading while checking auth status
   if (!checked) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-gray-600">
-        Checking session…
-      </div>
-    );
+    return <div className="min-h-[60vh] flex items-center justify-center text-gray-600">Checking session…</div>;
   }
 
   if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-gray-600">
-        Loading your stores…
-      </div>
-    );
+    return <div className="min-h-[60vh] flex items-center justify-center text-gray-600">Loading your stores…</div>;
   }
 
   return (
@@ -92,11 +102,7 @@ export default function ProfileStores() {
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {error}
-        </div>
-      )}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
 
       {shops.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-200">
@@ -114,22 +120,11 @@ export default function ProfileStores() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {shops.map((shop) => (
-            <div
-              key={shop._id}
-              className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-200"
-            >
+            <div key={shop._id} className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-200">
               {/* Store Image */}
               <div className="h-48 bg-gradient-to-br from-purple-100 to-blue-100 relative">
                 {shop.images && shop.images.length > 0 ? (
-                  <img
-                    src={
-                      shop.images[0].startsWith('/')
-                        ? `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${shop.images[0]}`
-                        : shop.images[0]
-                    }
-                    alt={shop.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={formatImageUrl(shop.images[0])} alt={shop.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <Store size={64} className="text-purple-300" />
@@ -139,13 +134,9 @@ export default function ProfileStores() {
                 {/* Status Badge */}
                 <div className="absolute top-3 right-3">
                   {shop.isActive ? (
-                    <span className="bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      Active
-                    </span>
+                    <span className="bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Active</span>
                   ) : (
-                    <span className="bg-gray-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      Inactive
-                    </span>
+                    <span className="bg-gray-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Inactive</span>
                   )}
                 </div>
               </div>
@@ -153,19 +144,11 @@ export default function ProfileStores() {
               {/* Store Details */}
               <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-xl font-bold text-gray-800 line-clamp-1">
-                    {shop.name}
-                  </h3>
-                  {shop.verifiedByOwner && (
-                    <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded">
-                      Verified
-                    </span>
-                  )}
+                  <h3 className="text-xl font-bold text-gray-800 line-clamp-1">{shop.name}</h3>
+                  {shop.verifiedByOwner && <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded">Verified</span>}
                 </div>
 
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {shop.description}
-                </p>
+                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{shop.description}</p>
 
                 <div className="space-y-2 mb-4">
                   <div className="flex items-start gap-2 text-sm text-gray-600">

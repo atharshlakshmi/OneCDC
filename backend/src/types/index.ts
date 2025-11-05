@@ -191,15 +191,17 @@ export interface IItem {
   cdcVoucherAccepted: boolean;
   lastUpdatedDate: Date;
   lastUpdatedBy: Types.ObjectId;
-  reviews: IReview[];
+  reviews: Types.ObjectId[];
 }
 
 /**
  * Review Interface
  */
-export interface IReview {
+export interface IReview extends Document {
   _id: Types.ObjectId;
   shopper: Types.ObjectId;
+  catalogue: Types.ObjectId;
+  item: Types.ObjectId;
   rating: number; // 1-5
   comment: string;
   photos: string[];
@@ -207,6 +209,8 @@ export interface IReview {
   timestamp: Date;
   warnings: number;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
