@@ -261,16 +261,6 @@ const ItemSearch: React.FC = () => {
         {loading && <p className="text-center text-gray-500">Loading...</p>}
         {error && <p className="text-center text-red-500">{error}</p>}
         
-        {/* Debug Info - Remove this after testing */}
-        {!loading && (
-          <div className="w-full max-w-4xl p-4 bg-gray-100 rounded text-xs">
-            <p>Debug Info:</p>
-            <p>isFallbackMode: {isFallbackMode.toString()}</p>
-            <p>suggestedShops.length: {suggestedShops.length}</p>
-            <p>results.length: {results.length}</p>
-            <p>fallbackMessage: {fallbackMessage || '(empty)'}</p>
-          </div>
-        )}
         
         {/* Fallback Message */}
       {!loading && isFallbackMode && fallbackMessage && (
@@ -341,9 +331,7 @@ const ItemSearch: React.FC = () => {
             </div>
           </Link>
         ))}
-        {!loading && isFallbackMode && fallbackMessage && (
-          <div className="...">{fallbackMessage}</div>
-        )}
+
 
 
         {/* Suggested Shops */}
