@@ -186,9 +186,8 @@ export interface ICatalogue extends Document {
 /**
  * Item Interface
  */
-export interface IItem {
-  _id: Types.ObjectId;
-  shopId: Types.ObjectId;
+export interface IItem extends Document {
+  catalogue: Types.ObjectId;
   name: string;
   description: string;
   price?: number;
@@ -198,22 +197,26 @@ export interface IItem {
   cdcVoucherAccepted: boolean;
   lastUpdatedDate: Date;
   lastUpdatedBy: Types.ObjectId;
-  reviews: IReview[];
+  reviews: Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
- * Review Interface
+ * Review Interface - Shopper-submitted item reviews
  */
-export interface IReview {
-  _id: Types.ObjectId;
+export interface IReview extends Document {
   shopper: Types.ObjectId;
-  rating: number; // 1-5
-  comment: string;
-  photos: string[];
+  item: string;
+  catalogue: Types.ObjectId;
+  shop: Types.ObjectId;
+  description: string;
   availability: boolean;
-  timestamp: Date;
+  images: string[];
   warnings: number;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
