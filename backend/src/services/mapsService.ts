@@ -19,7 +19,7 @@ export const geocodeAddress = async (address: string): Promise<{ lat: number; ln
       params: {
         address: address,
         key: GOOGLE_MAPS_API_KEY,
-        region: 'sg', // Bias results to Singapore
+        region: "sg", // Bias results to Singapore
       },
     });
 
@@ -144,4 +144,3 @@ export const generateMostEfficientRoute = async (
     throw error;
   }
 };
-

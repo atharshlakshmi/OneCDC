@@ -1,3 +1,7 @@
+// backend/src/models/Shop.ts
+
+// define what a shop looks like
+
 import mongoose, { Schema, Model } from "mongoose";
 import { IShop, IOperatingHours, ShopCategory } from "../types";
 
@@ -76,6 +80,7 @@ const ShopSchema = new Schema<IShop>(
     },
     operatingHours: { type: [OperatingHoursSchema], default: [] },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    catalogue: { type: Schema.Types.ObjectId, ref: "Catalogue" },
     verifiedByOwner: { type: Boolean, default: false },
     reportCount: { type: Number, default: 0, min: 0 },
     warnings: { type: Number, default: 0, min: 0 },

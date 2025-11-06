@@ -148,6 +148,7 @@ export interface IShop extends Document {
   images: string[];
   operatingHours: IOperatingHours[];
   owner: Types.ObjectId;
+  catalogue?: Types.ObjectId;
   verifiedByOwner: boolean;
   reportCount: number;
   warnings: number;

@@ -12,7 +12,7 @@ const SHOP_CATEGORIES = [
   { value: "services", label: "Services" },
   { value: "electronics", label: "Electronics" },
   { value: "fashion", label: "Fashion" },
-  { value: "other", label: "Other" }
+  { value: "other", label: "Other" },
 ];
 
 const DAYS_OF_WEEK = [
@@ -22,7 +22,7 @@ const DAYS_OF_WEEK = [
   { value: 3, label: "Wednesday" },
   { value: 4, label: "Thursday" },
   { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" }
+  { value: 6, label: "Saturday" },
 ];
 
 interface OperatingHours {
@@ -63,15 +63,15 @@ export default function EditShop() {
     phone: "",
     email: "",
     category: "grocery",
-    images: [] as string[]
+    images: [] as string[],
   });
 
   const [operatingHours, setOperatingHours] = useState<OperatingHours[]>(
-    DAYS_OF_WEEK.map(day => ({
+    DAYS_OF_WEEK.map((day) => ({
       dayOfWeek: day.value,
       openTime: "09:00",
       closeTime: "18:00",
-      isClosed: false
+      isClosed: false,
     }))
   );
 
@@ -88,10 +88,7 @@ export default function EditShop() {
 
       try {
         setLoading(true);
-        const response = await apiFetch<{ success: boolean; data: Shop }>(
-          `/owner/shops/${shopId}`,
-          { method: "GET" }
-        );
+        const response = await apiFetch<{ success: boolean; data: Shop }>(`/owner/shops/${shopId}`, { method: "GET" });
 
         if (response?.success && response?.data) {
           const shopData = response.data;
@@ -105,23 +102,23 @@ export default function EditShop() {
             phone: shopData.phone,
             email: shopData.email || "",
             category: shopData.category,
-            images: shopData.images || []
+            images: shopData.images || [],
           });
 
           // Populate operating hours
           if (shopData.operatingHours && shopData.operatingHours.length > 0) {
-            const hoursMap = new Map(
-              shopData.operatingHours.map(oh => [oh.dayOfWeek, oh])
-            );
+            const hoursMap = new Map(shopData.operatingHours.map((oh) => [oh.dayOfWeek, oh]));
 
-            const allHours = DAYS_OF_WEEK.map(day => {
+            const allHours = DAYS_OF_WEEK.map((day) => {
               const existing = hoursMap.get(day.value);
-              return existing || {
-                dayOfWeek: day.value,
-                openTime: "09:00",
-                closeTime: "18:00",
-                isClosed: true
-              };
+              return (
+                existing || {
+                  dayOfWeek: day.value,
+                  openTime: "09:00",
+                  closeTime: "18:00",
+                  isClosed: true,
+                }
+              );
             });
 
             setOperatingHours(allHours);
@@ -140,11 +137,11 @@ export default function EditShop() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleOperatingHoursChange = (index: number, field: keyof OperatingHours, value: string | boolean) => {
-    setOperatingHours(prev => {
+    setOperatingHours((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
@@ -193,9 +190,9 @@ export default function EditShop() {
 
       const uploadedUrls = await Promise.all(uploadPromises);
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, ...uploadedUrls]
+        images: [...prev.images, ...uploadedUrls],
       }));
     } catch (err: any) {
       console.error("Error uploading images:", err);
@@ -207,9 +204,9 @@ export default function EditShop() {
   };
 
   const handleRemoveImage = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: prev.images.filter((_, i) => i !== index),
     }));
   };
 
@@ -257,18 +254,15 @@ export default function EditShop() {
         email: formData.email.trim() || undefined,
         category: formData.category,
         images: formData.images,
-        operatingHours: operatingHours.filter(oh => !oh.isClosed),
-        verifiedByOwner: true
+        operatingHours: operatingHours.filter((oh) => !oh.isClosed),
+        verifiedByOwner: true,
       };
 
-      const response = await apiFetch<{ success: boolean; data: any; message: string }>(
-        `/owner/shops/${shopId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(shopData)
-        }
-      );
+      const response = await apiFetch<{ success: boolean; data: any; message: string }>(`/owner/shops/${shopId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shopData),
+      });
 
       if (response?.success) {
         navigate("/profile/stores", { replace: true });
@@ -284,11 +278,7 @@ export default function EditShop() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-gray-600">
-        Loading shop details…
-      </div>
-    );
+    return <div className="min-h-[60vh] flex items-center justify-center text-gray-600">Loading shop details…</div>;
   }
 
   if (error && !shop) {
@@ -296,10 +286,7 @@ export default function EditShop() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center text-gray-600">
           <p className="text-lg font-medium text-red-600">{error}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="mt-3 text-blue-600 hover:underline"
-          >
+          <button onClick={() => navigate(-1)} className="mt-3 text-blue-600 hover:underline">
             Go Back
           </button>
         </div>
@@ -317,11 +304,7 @@ export default function EditShop() {
           <h2 className="text-2xl font-bold text-gray-800">Update Your Store</h2>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           {/* Basic Information */}
@@ -369,8 +352,10 @@ export default function EditShop() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none"
                 required
               >
-                {SHOP_CATEGORIES.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                {SHOP_CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -396,9 +381,7 @@ export default function EditShop() {
                 placeholder="Enter full address (e.g., 123 Main Street, Singapore 123456)"
                 required
               />
-              <p className="text-sm text-gray-500 mt-1">
-                We'll automatically update coordinates if you change the address
-              </p>
+              <p className="text-sm text-gray-500 mt-1">We'll automatically update coordinates if you change the address</p>
             </div>
           </div>
 
@@ -452,9 +435,7 @@ export default function EditShop() {
                 className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors duration-200"
               >
                 <ImageIcon size={20} className="text-gray-400" />
-                <span className="text-gray-600">
-                  {uploadingImage ? "Uploading..." : "Click to browse and upload images"}
-                </span>
+                <span className="text-gray-600">{uploadingImage ? "Uploading..." : "Click to browse and upload images"}</span>
               </label>
               <input
                 id="image-upload"
@@ -465,25 +446,17 @@ export default function EditShop() {
                 disabled={formData.images.length >= 10 || uploadingImage}
                 className="hidden"
               />
-              <p className="text-sm text-gray-500 mt-2">
-                Accepted formats: JPEG, JPG, PNG, GIF, WEBP (Max 5MB per image)
-              </p>
+              <p className="text-sm text-gray-500 mt-2">Accepted formats: JPEG, JPG, PNG, GIF, WEBP (Max 5MB per image)</p>
             </div>
 
             {formData.images.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {formData.images.map((img, index) => {
-                  const imageUrl = img.startsWith('/')
-                    ? `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000'}${img}`
-                    : img;
+                  const imageUrl = img.startsWith("/") ? `${import.meta.env.VITE_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${img}` : img;
 
                   return (
                     <div key={index} className="relative group">
-                      <img
-                        src={imageUrl}
-                        alt={`Shop ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border border-gray-300"
-                      />
+                      <img src={imageUrl} alt={`Shop ${index + 1}`} className="w-full h-32 object-cover rounded-lg border border-gray-300" />
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}

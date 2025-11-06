@@ -6,9 +6,13 @@ interface CardDisplayProps {
   title: string;
   subtitle?: string;
   rating?: number;
+<<<<<<< HEAD
   availability?: boolean;
   content?: string;
   photos?: string[];
+=======
+  content?: string;
+>>>>>>> origin/lakshmi
   details?: string;
   status?: string;
   date?: string;
@@ -22,9 +26,13 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
   title,
   subtitle,
   rating,
+<<<<<<< HEAD
   availability,
   content,
   photos,
+=======
+  content,
+>>>>>>> origin/lakshmi
   details,
   status,
   date,
@@ -34,6 +42,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
   disableActions,
 }) => {
   const resolved = status?.toLowerCase() === "resolved";
+<<<<<<< HEAD
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
   const BASE_URL = API_BASE.replace("/api", ""); // Get base URL without /api
 
@@ -86,6 +95,29 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
       {date && <p className="text-gray-400 text-sm">Date: {date}</p>}
 
       {status && <p className={`font-medium ${resolved ? "text-green-600" : "text-yellow-600"}`}>Status: {status}</p>}
+=======
+
+  return (
+    <div
+      className={`w-full sm:w-3/4 rounded-2xl shadow-lg p-4 sm:p-10 flex flex-col gap-3 items-center text-center transition-all duration-200 ${highlightColor}`}
+    >
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {subtitle && <p className="text-gray-500 text-sm">{subtitle}</p>}
+      {rating && <p className="text-yellow-500">⭐ {rating}/5</p>}
+      {content && <p className="text-gray-700">{content}</p>}
+      {details && <p className="text-gray-600 italic">{details}</p>}
+      {date && <p className="text-gray-400 text-sm">Date: {date}</p>}
+
+      {status && (
+        <p
+          className={`font-medium ${
+            resolved ? "text-green-600" : "text-yellow-600"
+          }`}
+        >
+          Status: {status}
+        </p>
+      )}
+>>>>>>> origin/lakshmi
 
       {!disableActions && !resolved && (onEdit || onDelete) && (
         <div className="flex gap-3 mt-2">

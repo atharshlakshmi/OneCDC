@@ -1,7 +1,7 @@
-import { Shop, Catalogue, Owner, ModerationLog } from '../models';
-import { AppError } from '../middleware';
-import logger from '../utils/logger';
-import * as mapsService from './mapsService';
+import { Shop, Catalogue, Owner, ModerationLog } from "../models";
+import { AppError } from "../middleware";
+import logger from "../utils/logger";
+import * as mapsService from "./mapsService";
 
 /**
  * Get Owner's Shops
@@ -21,7 +21,7 @@ export const getOwnerShop = async (shopId: string, ownerId: string) => {
   const shop = await Shop.findOne({ _id: shopId, owner: ownerId, isActive: true });
 
   if (!shop) {
-    throw new AppError('Shop not found or unauthorized', 404);
+    throw new AppError("Shop not found or unauthorized", 404);
   }
 
   return shop;
@@ -41,11 +41,11 @@ export const getFlaggedShops = async (ownerId: string) => {
   const shopsWithWarnings = await Promise.all(
     shops.map(async (shop) => {
       const moderationLogs = await ModerationLog.find({
-        targetType: 'shop',
+        targetType: "shop",
         targetId: shop._id,
-        action: 'warn_shop',
+        action: "warn_shop",
       })
-        .populate('admin', 'name email')
+        .populate("admin", "name email")
         .sort({ timestamp: -1 })
         .lean();
 
@@ -66,26 +66,23 @@ export const createShop = async (ownerId: string, shopData: any) => {
   // Verify owner
   const owner = await Owner.findById(ownerId);
   if (!owner) {
-    throw new AppError('Owner not found', 404);
+    throw new AppError("Owner not found", 404);
   }
 
   // If location coordinates are not provided, geocode the address
   if (!shopData.location || !shopData.location.coordinates) {
     if (!shopData.address) {
-      throw new AppError('Address is required when coordinates are not provided', 400);
+      throw new AppError("Address is required when coordinates are not provided", 400);
     }
 
     try {
       const coordinates = await mapsService.geocodeAddress(shopData.address);
       shopData.location = {
-        type: 'Point',
+        type: "Point",
         coordinates: [coordinates.lng, coordinates.lat], // MongoDB uses [lng, lat] order
       };
     } catch (error: any) {
-      throw new AppError(
-        error.message || 'Failed to geocode address. Please verify the address is correct.',
-        400
-      );
+      throw new AppError(error.message || "Failed to geocode address. Please verify the address is correct.", 400);
     }
   }
 
@@ -114,15 +111,11 @@ export const createShop = async (ownerId: string, shopData: any) => {
 /**
  * Update Shop Page (Use Case #3-1)
  */
-export const updateShop = async (
-  shopId: string,
-  ownerId: string,
-  updates: any
-) => {
+export const updateShop = async (shopId: string, ownerId: string, updates: any) => {
   const shop = await Shop.findOne({ _id: shopId, owner: ownerId, isActive: true });
 
   if (!shop) {
-    throw new AppError('Shop not found or unauthorized', 404);
+    throw new AppError("Shop not found or unauthorized", 404);
   }
 
   // If address is being updated without coordinates, geocode it
@@ -130,30 +123,16 @@ export const updateShop = async (
     try {
       const coordinates = await mapsService.geocodeAddress(updates.address);
       updates.location = {
-        type: 'Point',
+        type: "Point",
         coordinates: [coordinates.lng, coordinates.lat],
       };
     } catch (error: any) {
-      throw new AppError(
-        error.message || 'Failed to geocode address. Please verify the address is correct.',
-        400
-      );
+      throw new AppError(error.message || "Failed to geocode address. Please verify the address is correct.", 400);
     }
   }
 
   // Update allowed fields
-  const allowedUpdates = [
-    'name',
-    'description',
-    'address',
-    'location',
-    'phone',
-    'email',
-    'category',
-    'images',
-    'operatingHours',
-    'verifiedByOwner',
-  ];
+  const allowedUpdates = ["name", "description", "address", "location", "phone", "email", "category", "images", "operatingHours", "verifiedByOwner"];
 
   allowedUpdates.forEach((field) => {
     if (updates[field] !== undefined) {
@@ -176,7 +155,7 @@ export const deleteShop = async (shopId: string, ownerId: string) => {
   const shop = await Shop.findOne({ _id: shopId, owner: ownerId });
 
   if (!shop) {
-    throw new AppError('Shop not found or unauthorized', 404);
+    throw new AppError("Shop not found or unauthorized", 404);
   }
 
   shop.isActive = false;
@@ -184,7 +163,7 @@ export const deleteShop = async (shopId: string, ownerId: string) => {
 
   logger.info(`Shop deleted: ${shop.name} by owner ${ownerId}`);
 
-  return { success: true, message: 'Shop deleted successfully' };
+  return { success: true, message: "Shop deleted successfully" };
 };
 
 /**
@@ -193,17 +172,17 @@ export const deleteShop = async (shopId: string, ownerId: string) => {
 export const getShopCatalogue = async (shopId: string, ownerId?: string) => {
   const shop = await Shop.findById(shopId);
   if (!shop) {
-    throw new AppError('Shop not found', 404);
+    throw new AppError("Shop not found", 404);
   }
 
   // If owner is checking, verify ownership
   if (ownerId && shop.owner.toString() !== ownerId) {
-    throw new AppError('Unauthorized', 403);
+    throw new AppError("Unauthorized", 403);
   }
 
   const catalogue = await Catalogue.findOne({ shop: shopId });
   if (!catalogue) {
-    throw new AppError('Catalogue not found', 404);
+    throw new AppError("Catalogue not found", 404);
   }
 
   return catalogue;
@@ -212,20 +191,16 @@ export const getShopCatalogue = async (shopId: string, ownerId?: string) => {
 /**
  * Add Catalogue Item (Use Case #3-2)
  */
-export const addCatalogueItem = async (
-  shopId: string,
-  ownerId: string,
-  itemData: any
-) => {
+export const addCatalogueItem = async (shopId: string, ownerId: string, itemData: any) => {
   // Verify shop ownership
   const shop = await Shop.findOne({ _id: shopId, owner: ownerId, isActive: true });
   if (!shop) {
-    throw new AppError('Shop not found or unauthorized', 404);
+    throw new AppError("Shop not found or unauthorized", 404);
   }
 
   const catalogue = await Catalogue.findOne({ shop: shopId });
   if (!catalogue) {
-    throw new AppError('Catalogue not found', 404);
+    throw new AppError("Catalogue not found", 404);
   }
 
   const newItem = {
@@ -252,37 +227,24 @@ export const addCatalogueItem = async (
 /**
  * Update Catalogue Item (Use Case #3-3)
  */
-export const updateCatalogueItem = async (
-  shopId: string,
-  itemId: string,
-  ownerId: string,
-  updates: any
-) => {
+export const updateCatalogueItem = async (shopId: string, itemId: string, ownerId: string, updates: any) => {
   const shop = await Shop.findOne({ _id: shopId, owner: ownerId, isActive: true });
   if (!shop) {
-    throw new AppError('Shop not found or unauthorized', 404);
+    throw new AppError("Shop not found or unauthorized", 404);
   }
 
   const catalogue = await Catalogue.findOne({ shop: shopId });
   if (!catalogue) {
-    throw new AppError('Catalogue not found', 404);
+    throw new AppError("Catalogue not found", 404);
   }
 
   const item = catalogue.items.id(itemId);
   if (!item) {
-    throw new AppError('Item not found', 404);
+    throw new AppError("Item not found", 404);
   }
 
   // Update allowed fields
-  const allowedUpdates = [
-    'name',
-    'description',
-    'price',
-    'availability',
-    'images',
-    'category',
-    'cdcVoucherAccepted',
-  ];
+  const allowedUpdates = ["name", "description", "price", "availability", "images", "category", "cdcVoucherAccepted"];
 
   allowedUpdates.forEach((field) => {
     if (updates[field] !== undefined) {
@@ -303,24 +265,20 @@ export const updateCatalogueItem = async (
 /**
  * Delete Catalogue Item
  */
-export const deleteCatalogueItem = async (
-  shopId: string,
-  itemId: string,
-  ownerId: string
-) => {
+export const deleteCatalogueItem = async (shopId: string, itemId: string, ownerId: string) => {
   const shop = await Shop.findOne({ _id: shopId, owner: ownerId, isActive: true });
   if (!shop) {
-    throw new AppError('Shop not found or unauthorized', 404);
+    throw new AppError("Shop not found or unauthorized", 404);
   }
 
   const catalogue = await Catalogue.findOne({ shop: shopId });
   if (!catalogue) {
-    throw new AppError('Catalogue not found', 404);
+    throw new AppError("Catalogue not found", 404);
   }
 
   const item = catalogue.items.id(itemId);
   if (!item) {
-    throw new AppError('Item not found', 404);
+    throw new AppError("Item not found", 404);
   }
 
   // Remove item
@@ -329,5 +287,5 @@ export const deleteCatalogueItem = async (
 
   logger.info(`Item deleted: ${itemId} from shop ${shopId}`);
 
-  return { success: true, message: 'Item deleted successfully' };
+  return { success: true, message: "Item deleted successfully" };
 };

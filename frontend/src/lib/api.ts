@@ -16,18 +16,26 @@ export function authHeaders(): Record<string, string> {
 // Main API helper
 export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+<<<<<<< HEAD
 
   // Don't set Content-Type for FormData (browser will set it with boundary)
   const headers: Record<string, string> = {
+=======
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+>>>>>>> origin/lakshmi
     ...authHeaders(),
     ...(options.headers as Record<string, string>),
   };
 
+<<<<<<< HEAD
   // Only add Content-Type: application/json if body is not FormData
   if (!(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
+=======
+>>>>>>> origin/lakshmi
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,

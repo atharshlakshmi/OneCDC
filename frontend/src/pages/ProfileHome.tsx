@@ -30,7 +30,7 @@ export default function ProfileHome() {
       path: "/profile/details",
       color: "bg-blue-50 hover:bg-blue-100 border-blue-200",
       iconColor: "text-blue-600",
-      showFor: ["registered_shopper", "owner"] // Show for both roles
+      showFor: ["registered_shopper", "owner"], // Show for both roles
     },
     {
       title: "My Reviews",
@@ -39,7 +39,7 @@ export default function ProfileHome() {
       path: "/profile/reviews",
       color: "bg-green-50 hover:bg-green-100 border-green-200",
       iconColor: "text-green-600",
-      showFor: ["registered_shopper"] // Only shoppers can post reviews
+      showFor: ["registered_shopper"], // Only shoppers can post reviews
     },
     {
       title: "Flagged Reviews",
@@ -48,7 +48,7 @@ export default function ProfileHome() {
       path: "/profile/reports",
       color: "bg-red-50 hover:bg-red-100 border-red-200",
       iconColor: "text-red-600",
-      showFor: ["registered_shopper"] // Only shoppers have reviews to be flagged
+      showFor: ["registered_shopper"], // Only shoppers have reviews to be flagged
     },
     {
       title: "My Stores",
@@ -57,7 +57,7 @@ export default function ProfileHome() {
       path: "/profile/stores",
       color: "bg-purple-50 hover:bg-purple-100 border-purple-200",
       iconColor: "text-purple-600",
-      showFor: ["owner"] // Only owners have stores
+      showFor: ["owner"], // Only owners have stores
     },
     {
       title: "Flagged Stores",
@@ -66,9 +66,9 @@ export default function ProfileHome() {
       path: "/profile/flagged-stores",
       color: "bg-orange-50 hover:bg-orange-100 border-orange-200",
       iconColor: "text-orange-600",
-      showFor: ["owner"] // Only owners have stores to be flagged
-    }
-  ].filter(card => card.showFor.includes(user?.role || ""));
+      showFor: ["owner"], // Only owners have stores to be flagged
+    },
+  ].filter((card) => card.showFor.includes(user?.role || ""));
 
   return (
     <div className="max-w-6xl mx-auto p-6 mt-8">
