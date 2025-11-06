@@ -18,7 +18,15 @@ type User = {
 };
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api";
-const resolveUrl = (u?: string) => (u && /^https?:\/\//i.test(u) ? u : u ? `${API_BASE.replace(/\/api$/, "")}${u}` : "");
+const resolveUrl = (u?: string) => {
+  if (!u) return "";
+  // If it's a data URI (Base64), return as is
+  if (u.startsWith("data:")) return u;
+  // If it's an absolute URL, return as is
+  if (/^https?:\/\//i.test(u)) return u;
+  // Otherwise, prepend the API base
+  return `${API_BASE.replace(/\/api$/, "")}${u}`;
+};
 
 export default function ProfileDetails() {
   const { logout, user: ctxUser } = useAuth();

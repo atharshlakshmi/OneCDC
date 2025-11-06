@@ -169,19 +169,27 @@ export default function ProfileStores() {
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate(`/ViewShop/${shop._id}`)}
+                      className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => navigate("/EditShop", { state: { shopId: shop._id } })}
+                      className="flex-1 bg-amber-400 hover:bg-amber-500 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      <Edit size={16} />
+                      Edit
+                    </button>
+                  </div>
                   <button
-                    onClick={() => navigate(`/ViewShop/${shop._id}`)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium"
+                    onClick={() => navigate(`/ManageCatalogue/${shop._id}`)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium"
                   >
-                    View
-                  </button>
-                  <button
-                    onClick={() => navigate("/EditShop", { state: { shopId: shop._id } })}
-                    className="flex-1 bg-amber-400 hover:bg-amber-500 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    <Edit size={16} />
-                    Edit
+                    Manage Items
                   </button>
                 </div>
               </div>

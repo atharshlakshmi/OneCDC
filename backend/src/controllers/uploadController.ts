@@ -11,14 +11,15 @@ export const uploadImage = asyncHandler(async (req: AuthRequest, res: Response) 
     throw new AppError("No file uploaded", 400);
   }
 
-  // Get the file URL (relative path from public folder)
-  const fileUrl = `/uploads/${req.file.filename}`;
+  // Convert buffer to Base64 data URI
+  const base64Data = req.file.buffer.toString("base64");
+  const dataUri = `data:${req.file.mimetype};base64,${base64Data}`;
 
   res.status(200).json({
     success: true,
     data: {
-      url: fileUrl,
-      filename: req.file.filename,
+      url: dataUri, // Return Base64 data URI directly
+      filename: req.file.originalname,
       originalName: req.file.originalname,
       size: req.file.size,
     },
@@ -35,12 +36,18 @@ export const uploadImages = asyncHandler(async (req: AuthRequest, res: Response)
     throw new AppError("No files uploaded", 400);
   }
 
-  const uploadedFiles = req.files.map((file) => ({
-    url: `/uploads/${file.filename}`,
-    filename: file.filename,
-    originalName: file.originalname,
-    size: file.size,
-  }));
+  const uploadedFiles = req.files.map((file) => {
+    // Convert buffer to Base64 data URI
+    const base64Data = file.buffer.toString("base64");
+    const dataUri = `data:${file.mimetype};base64,${base64Data}`;
+
+    return {
+      url: dataUri, // Return Base64 data URI directly
+      filename: file.originalname,
+      originalName: file.originalname,
+      size: file.size,
+    };
+  });
 
   res.status(200).json({
     success: true,

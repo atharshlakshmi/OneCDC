@@ -27,6 +27,7 @@ import AddItem from "./pages/AddItem";
 import EditItem from "./pages/EditItem";
 import EditShop from "./pages/EditShop";
 import AddShop from "./pages/AddShop";
+import ManageCatalogue from "./pages/ManageCatalogue";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -122,10 +123,11 @@ export default function App() {
               <Route path="/AddReview" element={<AddReview />} />
               <Route path="/ReportShop" element={<ReportShop />} />
               <Route path="/ReportReview" element={<AddReport />} />
-              <Route path="/AddItem" element={<AddItem />} />
+              <Route path="/ManageCatalogue/:shopId" element={<ManageCatalogue />} />
+              <Route path="/AddItem/:shopId" element={<AddItem />} />
+              <Route path="/EditItem/:shopId/:itemId" element={<EditItem />} />
               <Route path="/EditReview" element={<EditReview />} />
               <Route path="/EditReport" element={<EditReport />} />
-              <Route path="/EditItem" element={<EditItem />} />
               <Route path="/EditShop" element={<EditShop />} />
               <Route path="/AddShop" element={<AddShop />} />
             </Route>

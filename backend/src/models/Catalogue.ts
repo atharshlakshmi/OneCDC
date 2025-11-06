@@ -12,10 +12,11 @@ const CatalogueSchema = new Schema<ICatalogue>(
       required: true,
       unique: true,
     },
-    items: { type: [Schema.Types.ObjectId], ref: "Item", required: true, unique: true, default: [] },
+    items: { type: [Schema.Types.ObjectId], ref: "Item", default: [] },
   },
   {
     timestamps: true,
+    versionKey: false, // Disable __v field to match MongoDB validation schema
   }
 );
 

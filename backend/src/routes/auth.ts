@@ -10,25 +10,26 @@ import { changePassword } from "../controllers/authController";
 // ...
 import multer from "multer";
 import path from "path";
-import fs from "fs";
 const router = express.Router();
 
 router.get("/_debug", (_req, res) => {
   res.json({ ok: true, where: "auth router" });
 });
-// ---- Multer setup for avatars (disk) ----
-const avatarsDir = path.join(process.cwd(), "uploads", "avatars");
-fs.mkdirSync(avatarsDir, { recursive: true });
+
+// ---- Multer setup for avatars (memory storage for Base64) ----
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, avatarsDir),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname) || ".jpg";
-      const name = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-      cb(null, name);
-    },
-  }),
+  storage: multer.memoryStorage(), // Store in memory for Base64 conversion
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    // Only allow image files
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Only image files are allowed!"));
+  },
 });
 
 //Google Login

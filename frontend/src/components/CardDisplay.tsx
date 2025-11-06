@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 interface CardDisplayProps {
   title: string;
   subtitle?: string;
-  rating?: number;
   availability?: boolean;
   content?: string;
   photos?: string[];
@@ -21,7 +20,6 @@ interface CardDisplayProps {
 const CardDisplay: React.FC<CardDisplayProps> = ({
   title,
   subtitle,
-  rating,
   availability,
   content,
   photos,
@@ -42,9 +40,8 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
       <h2 className="text-xl font-bold text-gray-800">{title}</h2>
       {subtitle && <p className="text-gray-600 text-base">{subtitle}</p>}
 
-      {/* Rating and Availability */}
+      {/* Availability */}
       <div className="flex items-center justify-center gap-4 flex-wrap">
-        {rating && <p className="text-yellow-500 text-lg font-medium">⭐ {rating}/5</p>}
         {availability !== undefined && (
           <span
             className={`px-4 py-1.5 rounded-full text-sm font-semibold ${

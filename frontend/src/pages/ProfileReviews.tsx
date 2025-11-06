@@ -6,7 +6,6 @@ import { apiFetch } from "../lib/api";
 
 type Review = {
   _id: string;
-  rating: number;
   comment: string;
   availability?: boolean;
   photos?: string[];
@@ -122,7 +121,6 @@ export default function ProfileReviews() {
                 key={review._id}
                 title={review.itemName || "Unknown Item"}
                 subtitle={review.shopName}
-                rating={review.rating}
                 availability={review.availability}
                 content={review.comment}
                 photos={review.photos}

@@ -21,6 +21,7 @@ type Shop = {
   address: string;
   contact_number: string;
   operating_hours: string;
+  ownerId?: string; // Add owner ID field
   ownerVerified?: boolean;
   items: Item[];
 };
@@ -37,6 +38,9 @@ const ViewShop: React.FC = () => {
 
   const userType = user?.role === "owner" ? "Owner" : "Shopper";
   const currentUser = { id: user?._id || "1", name: user?.name || "User" };
+
+  // Check if current user is the owner of this shop
+  const isShopOwner = user?.role === "owner" && shop?.ownerId === user?._id;
 
   // Fetch shop data from backend
   useEffect(() => {
@@ -165,7 +169,7 @@ const ViewShop: React.FC = () => {
                 <strong>Operating Hours:</strong> {shop.operating_hours}
               </p>
 
-              {/* Conditional buttons based on userType */}
+              {/* Conditional buttons based on userType and ownership */}
               <div className="flex gap-4 mt-4">
                 {userType === "Shopper" ? (
                   <>
@@ -191,11 +195,12 @@ const ViewShop: React.FC = () => {
                       Report Shop
                     </Button>
                   </>
-                ) : (
+                ) : isShopOwner ? (
+                  // Only show edit button if user is the actual owner of this shop
                   <Button onClick={() => navigate("/EditShop", { state: { shopId: shop.id } })} className="bg-blue-900 text-white hover:bg-blue-800" size="lg">
                     Edit Shop Details
                   </Button>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -217,11 +222,7 @@ const ViewShop: React.FC = () => {
                 >
                   <h2 className="text-xl font-semibold text-gray-800">{item.name}</h2>
                   <p className="text-amber-600 font-medium">{item.price}</p>
-                  {item.status && (
-                    <p className={item.status === "Not available" ? "text-red-700 font-medium" : "text-green-700 font-medium"}>
-                      {item.status}
-                    </p>
-                  )}
+                  {item.status && <p className={item.status === "Not available" ? "text-red-700 font-medium" : "text-green-700 font-medium"}>{item.status}</p>}
                 </Link>
               ))
             )}
@@ -233,17 +234,27 @@ const ViewShop: React.FC = () => {
                 Add it to the catalogue to let others know!
               </p>
             )}
-            <Button
-              onClick={() =>
-                navigate("/AddItem", {
-                  state: { userId: currentUser.id, shopID: shop.id },
-                })
-              }
-              variant="outline"
-              size="lg"
-            >
-              Add New Item
-            </Button>
+
+            {/* Only show Add Item button for shoppers or the shop owner */}
+            {(userType === "Shopper" || isShopOwner) && (
+              <Button
+                onClick={() => {
+                  if (isShopOwner) {
+                    // Owner should use the proper catalogue management
+                    navigate(`/ManageCatalogue/${shop.id}`);
+                  } else {
+                    // Shoppers use the old flow
+                    navigate("/AddItem", {
+                      state: { userId: currentUser.id, shopID: shop.id },
+                    });
+                  }
+                }}
+                variant="outline"
+                size="lg"
+              >
+                {isShopOwner ? "Manage Catalogue" : "Add New Item"}
+              </Button>
+            )}
           </div>
         </TabsContent>
       </Tabs>

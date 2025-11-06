@@ -7,7 +7,6 @@ import { useAuth } from "../context/AuthContext";
 
 interface Review {
   _id: string;
-  rating: number;
   comment: string;
   photos: string[];
   availability: boolean;
@@ -32,7 +31,6 @@ const EditReview: React.FC = () => {
   // Form state
   const [status, setStatus] = useState<string>("Available");
   const [description, setDescription] = useState<string>("");
-  const [rating, setRating] = useState<number>(5);
   const [photo, setPhoto] = useState<File | null>(null);
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
 
@@ -48,7 +46,6 @@ const EditReview: React.FC = () => {
           setReview(reviewData);
           setStatus(reviewData.availability ? "Available" : "Unavailable");
           setDescription(reviewData.comment);
-          setRating(reviewData.rating || 5);
           setCurrentPhotos(reviewData.photos || []);
         } else {
           setError("Review not found");
@@ -100,7 +97,6 @@ const EditReview: React.FC = () => {
       await apiFetch(`/reviews/${catalogueId}/${itemId}/${reviewId}`, {
         method: "PUT",
         body: JSON.stringify({
-          rating: rating,
           comment: description,
           availability: status === "Available",
           photos: photoUrls,
@@ -176,23 +172,6 @@ const EditReview: React.FC = () => {
               Unavailable
             </Button>
           </div>
-        </div>
-
-        {/* --- Rating --- */}
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">
-            Rating <span className="text-red-500">*</span>
-          </label>
-          <div className="flex gap-2 justify-center">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button key={star} type="button" onClick={() => setRating(star)} className="text-4xl transition-all hover:scale-110">
-                {star <= rating ? "⭐" : "☆"}
-              </button>
-            ))}
-          </div>
-          <p className="text-center text-sm text-gray-500 mt-2">
-            {rating} star{rating !== 1 ? "s" : ""} selected
-          </p>
         </div>
 
         {/* --- Photo Upload (Only when Available) --- */}

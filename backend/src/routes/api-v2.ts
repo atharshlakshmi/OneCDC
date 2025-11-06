@@ -63,7 +63,8 @@ router.get("/shops/:id", async (req, res) => {
       return;
     }
 
-    const catalogue = await Catalogue.findOne({ shop: shop._id }).lean();
+    // Populate the items in the catalogue
+    const catalogue = await Catalogue.findOne({ shop: shop._id }).populate("items").lean();
 
     const formattedShop = {
       id: (shop._id as any).toString(),
@@ -72,13 +73,17 @@ router.get("/shops/:id", async (req, res) => {
       address: shop.address,
       contact_number: shop.phone,
       operating_hours: "9 AM - 9 PM",
-      items: catalogue
-        ? (catalogue as any).items.map((item: any) => ({
-            id: item._id.toString(),
-            name: item.name,
-            price: `$${item.price || 0}`,
-          }))
-        : [],
+      ownerId: (shop.owner as any).toString(), // Add owner ID for authorization checks
+      ownerVerified: shop.verifiedByOwner,
+      items:
+        catalogue && (catalogue as any).items
+          ? (catalogue as any).items.map((item: any) => ({
+              id: item._id.toString(),
+              name: item.name,
+              price: `$${item.price !== undefined ? item.price.toFixed(2) : "0.00"}`,
+              status: item.availability ? "Available" : "Not available",
+            }))
+          : [],
     };
 
     res.status(200).json(formattedShop);

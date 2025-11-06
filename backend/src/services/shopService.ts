@@ -1,4 +1,4 @@
-import { Shop, Catalogue, Owner, ModerationLog } from "../models";
+import { Shop, Catalogue, Owner, ModerationLog, Item } from "../models";
 import { AppError } from "../middleware";
 import logger from "../utils/logger";
 import * as mapsService from "./mapsService";
@@ -69,6 +69,32 @@ export const createShop = async (ownerId: string, shopData: any) => {
     throw new AppError("Owner not found", 404);
   }
 
+  // Validate required fields
+  if (!shopData.name) {
+    throw new AppError("Shop name is required", 400);
+  }
+  if (!shopData.description) {
+    throw new AppError("Shop description is required", 400);
+  }
+  if (!shopData.phone) {
+    throw new AppError("Shop phone number is required", 400);
+  }
+  if (!shopData.category) {
+    throw new AppError("Shop category is required", 400);
+  }
+
+  // Validate phone format
+  const phoneRegex = /^[689]\d{7}$/;
+  if (!phoneRegex.test(shopData.phone)) {
+    throw new AppError("Phone number must be 8 digits starting with 6, 8, or 9", 400);
+  }
+
+  // Validate category
+  const validCategories = ["food_beverage", "grocery", "healthcare", "retail", "services", "electronics", "fashion", "other"];
+  if (!validCategories.includes(shopData.category)) {
+    throw new AppError(`Category must be one of: ${validCategories.join(", ")}`, 400);
+  }
+
   // If location coordinates are not provided, geocode the address
   if (!shopData.location || !shopData.location.coordinates) {
     if (!shopData.address) {
@@ -86,26 +112,73 @@ export const createShop = async (ownerId: string, shopData: any) => {
     }
   }
 
-  // Create shop
-  const shop = await Shop.create({
-    ...shopData,
-    owner: ownerId,
-    lastUpdatedBy: ownerId,
-  });
+  // Log the data being sent for debugging
+  logger.info(
+    `Creating shop with data: ${JSON.stringify({
+      name: shopData.name,
+      category: shopData.category,
+      phone: shopData.phone,
+      hasLocation: !!shopData.location,
+      hasCoordinates: !!shopData.location?.coordinates,
+    })}`
+  );
 
-  // Create empty catalogue
-  await Catalogue.create({
-    shop: shop._id,
-    items: [],
-  });
+  // Create shop WITHOUT catalogue first
+  try {
+    // Remove catalogue field if it exists in shopData
+    const { catalogue: _, ...shopDataWithoutCatalogue } = shopData as any;
 
-  // Add shop to owner's shops
-  owner.shops.push(shop._id as any);
-  await owner.save();
+    const shop = await Shop.create({
+      ...shopDataWithoutCatalogue,
+      owner: ownerId,
+      lastUpdatedBy: ownerId,
+      // Don't include catalogue yet - it doesn't exist
+    });
 
-  logger.info(`Shop created: ${shop.name} by owner ${ownerId}`);
+    logger.info(`Shop created (without catalogue): ${shop.name} by owner ${ownerId}`);
+    logger.info(`Shop ID: ${shop._id}`);
 
-  return shop;
+    // Now create the catalogue that references this shop
+    try {
+      const catalogue = await Catalogue.create({
+        shop: shop._id,
+        items: [],
+      });
+
+      logger.info(`Catalogue created for shop: ${shop.name}, catalogue ID: ${catalogue._id}`);
+      logger.info(`Shop ID: ${shop._id}, Catalogue ID: ${catalogue._id} - Should be DIFFERENT!`);
+
+      // Now link catalogue back to shop
+      shop.catalogue = catalogue._id as any;
+      await shop.save();
+
+      logger.info(`Catalogue linked to shop: ${shop.name}`);
+    } catch (catalogueError: any) {
+      // If catalogue creation fails, delete the shop to maintain consistency
+      logger.error(`Catalogue creation failed: ${catalogueError.message}`);
+      await Shop.findByIdAndDelete(shop._id);
+      throw new AppError(`Failed to create catalogue: ${catalogueError.message}`, 500);
+    }
+
+    // Add shop to owner's shops
+    owner.shops.push(shop._id as any);
+    await owner.save();
+
+    logger.info(`Shop ${shop.name} added to owner's shops list`);
+
+    // Return shop with populated catalogue for verification
+    const shopWithCatalogue = await Shop.findById(shop._id).populate("catalogue");
+    logger.info(`Final shop: ID=${shopWithCatalogue?._id}, Catalogue=${shopWithCatalogue?.catalogue}`);
+
+    return shopWithCatalogue || shop;
+  } catch (error: any) {
+    logger.error(`Shop creation failed: ${error.message}`);
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      throw new AppError(`Validation failed: ${errors.join(", ")}`, 400);
+    }
+    throw error;
+  }
 };
 
 /**
@@ -180,7 +253,7 @@ export const getShopCatalogue = async (shopId: string, ownerId?: string) => {
     throw new AppError("Unauthorized", 403);
   }
 
-  const catalogue = await Catalogue.findOne({ shop: shopId });
+  const catalogue = await Catalogue.findOne({ shop: shopId }).populate("items");
   if (!catalogue) {
     throw new AppError("Catalogue not found", 404);
   }
@@ -203,7 +276,9 @@ export const addCatalogueItem = async (shopId: string, ownerId: string, itemData
     throw new AppError("Catalogue not found", 404);
   }
 
-  const newItem = {
+  // Create a new Item document in the Item collection
+  const newItem = await Item.create({
+    catalogue: catalogue._id,
     name: itemData.name,
     description: itemData.description,
     price: itemData.price,
@@ -214,13 +289,16 @@ export const addCatalogueItem = async (shopId: string, ownerId: string, itemData
     lastUpdatedBy: ownerId,
     lastUpdatedDate: new Date(),
     reviews: [],
-  };
+  });
 
-  catalogue.items.push(newItem as any);
+  // Add the Item's ObjectId to the catalogue's items array
+  catalogue.items.push(newItem._id as any);
   await catalogue.save();
 
   logger.info(`Item added to catalogue: ${itemData.name} in shop ${shopId}`);
 
+  // Return catalogue with populated items
+  await catalogue.populate("items");
   return catalogue;
 };
 
@@ -238,7 +316,8 @@ export const updateCatalogueItem = async (shopId: string, itemId: string, ownerI
     throw new AppError("Catalogue not found", 404);
   }
 
-  const item = catalogue.items.id(itemId);
+  // Find the Item document by ID
+  const item = await Item.findOne({ _id: itemId, catalogue: catalogue._id });
   if (!item) {
     throw new AppError("Item not found", 404);
   }
@@ -255,10 +334,12 @@ export const updateCatalogueItem = async (shopId: string, itemId: string, ownerI
   item.lastUpdatedBy = ownerId as any;
   item.lastUpdatedDate = new Date();
 
-  await catalogue.save();
+  await item.save();
 
   logger.info(`Item updated: ${item.name} in shop ${shopId}`);
 
+  // Return catalogue with populated items
+  await catalogue.populate("items");
   return catalogue;
 };
 
@@ -276,14 +357,18 @@ export const deleteCatalogueItem = async (shopId: string, itemId: string, ownerI
     throw new AppError("Catalogue not found", 404);
   }
 
-  const item = catalogue.items.id(itemId);
+  // Find the Item document by ID
+  const item = await Item.findOne({ _id: itemId, catalogue: catalogue._id });
   if (!item) {
     throw new AppError("Item not found", 404);
   }
 
-  // Remove item
-  (catalogue.items as any).pull(itemId);
+  // Remove item ObjectId from catalogue's items array
+  catalogue.items = catalogue.items.filter((id) => id.toString() !== itemId.toString()) as any;
   await catalogue.save();
+
+  // Delete the Item document
+  await Item.findByIdAndDelete(itemId);
 
   logger.info(`Item deleted: ${itemId} from shop ${shopId}`);
 
