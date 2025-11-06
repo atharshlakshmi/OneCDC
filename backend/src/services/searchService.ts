@@ -259,12 +259,20 @@ export const searchItems = async (
 
     return catalogue.items
       .filter((item: any) => {
-        if (query) {
-          const q = query.toLowerCase();
-          if (!item.name.toLowerCase().includes(q) && !item.description?.toLowerCase().includes(q))
-            return false;
+        // Skip items without a name
+        if (!item.name) return false;
+
+        // If there's a query, check if item matches
+        if (query && query.trim()) {
+          const q = query.toLowerCase().trim();
+          const nameMatch = item.name.toLowerCase().includes(q);
+          const descMatch = item.description?.toLowerCase().includes(q);
+          if (!nameMatch && !descMatch) return false;
         }
+
+        // Check availability filter
         if (availability !== undefined && item.availability !== availability) return false;
+
         return true;
       })
       .map((item: any) => {
