@@ -1,6 +1,6 @@
 // backend/src/services/searchService.ts
 
-import { Shop, Catalogue } from "../models";
+import { Shop, Catalogue, Item } from "../models";
 import { SearchFilters, SortOption, PaginationOptions, ShopCategory } from "../types";
 import { calculateDistance, getDefaultLocation } from "../utils/distance";
 import { AppError } from "../middleware";
@@ -219,50 +219,23 @@ export const searchItems = async (filters: SearchFilters, sortBy: SortOption = S
 
   console.log("❗❗❗❗ Starting item search", { filters, sortBy, userLocation });
 
-  // --- 1. Build and run shop query ---
-  const shopQuery: any = { isActive: true };
-  if (category) shopQuery.category = Array.isArray(category) ? { $in: category } : category;
-  if (typeof ownerVerified === "boolean") shopQuery.verifiedByOwner = ownerVerified;
+  // --- 1. Build item query ---
+  const itemQuery: any = {};
 
-  const shops = await Shop.find(shopQuery).lean();
-  const catalogues = await Catalogue.find({ shop: { $in: shops.map((s) => s._id) } }).lean();
-  const catalogueMap = new Map(catalogues.map((c) => [c.shop.toString(), c]));
+  if (query && query.trim()) {
+    const q = query.toLowerCase().trim();
+    itemQuery.$or = [{ name: { $regex: q, $options: "i" } }, { description: { $regex: q, $options: "i" } }];
+  }
 
-  // --- 2. Build item results ---
-  let results = shops.flatMap((shop) => {
-    const catalogue = catalogueMap.get(shop._id.toString());
-    if (!catalogue?.items?.length) return [];
+  if (availability !== undefined) {
+    itemQuery.availability = availability;
+  }
 
-    return catalogue.items
-      .filter((item: any) => {
-        if (query) {
-          const q = query.toLowerCase();
-          if (!item.name.toLowerCase().includes(q) && !item.description?.toLowerCase().includes(q)) return false;
-        }
-        if (availability !== undefined && item.availability !== availability) return false;
-        return true;
-      })
-      .map((item: any) => {
-        const distance = calculateDistance(userLocation.lat, userLocation.lng, shop.location.coordinates[1], shop.location.coordinates[0]);
-        const cleanName = item.name.replace(new RegExp(`\\s*-\\s*${shop.name}\\s*$`, "i"), "").trim();
-        return {
-          shopId: shop._id,
-          shopName: shop.name,
-          shopCategory: shop.category,
-          shopAddress: shop.address,
-          shopLocation: shop.location,
-          verifiedByOwner: shop.verifiedByOwner,
-          operatingHours: shop.operatingHours,
-          distance,
-          item: { ...item, name: cleanName },
-        };
-      });
-  });
+  // --- 2. Find items from items collection ---
+  const items = await Item.find(itemQuery).lean();
+  console.log(`🧾 Found ${items.length} items from items collection`);
 
-  console.log(`🧾 Found ${results.length} items before filters`);
-
-  // --- 3. Fallback (LLM category suggestion) ---
-  if (!results.length && query?.trim()) {
+  if (!items.length && query?.trim()) {
     console.log("⚙️ No items found, using LLM category suggestion...");
     const suggestion = await categorizeAndSuggestShops(query, userLocation, pagination);
     console.log(`🧾 Return: Fallback found ${suggestion.suggestedShops.length} shops in category ${suggestion.suggestedCategory}`);
@@ -278,8 +251,59 @@ export const searchItems = async (filters: SearchFilters, sortBy: SortOption = S
     };
   }
 
-  // --- 4. Additional filters ---
-  if (maxDistance) results = results.filter((r) => r.distance <= maxDistance);
+  // --- 3. Get unique catalogue IDs from items ---
+  const catalogueIds = [...new Set(items.map((item) => item.catalogue.toString()))];
+
+  // --- 4. Find shops by catalogue IDs ---
+  const shopQuery: any = {
+    catalogue: { $in: catalogueIds },
+    isActive: true,
+  };
+
+  if (category) {
+    shopQuery.category = Array.isArray(category) ? { $in: category } : category;
+  }
+
+  if (typeof ownerVerified === "boolean") {
+    shopQuery.verifiedByOwner = ownerVerified;
+  }
+
+  const shops = await Shop.find(shopQuery).lean();
+  console.log(`🏪 Found ${shops.length} shops matching catalogue IDs`);
+
+  // --- 5. Create a map of catalogue ID -> shop ---
+  const catalogueToShopMap = new Map(shops.map((shop) => [shop.catalogue?.toString(), shop]));
+
+  // --- 6. Build results by joining items with shops ---
+  let results = items
+    .map((item) => {
+      const shop = catalogueToShopMap.get(item.catalogue.toString());
+      if (!shop) return null;
+
+      const distance = calculateDistance(userLocation.lat, userLocation.lng, shop.location.coordinates[1], shop.location.coordinates[0]);
+
+      const cleanName = item.name.replace(new RegExp(`\\s*-\\s*${shop.name}\\s*$`, "i"), "").trim();
+
+      return {
+        shopId: shop._id,
+        shopName: shop.name,
+        shopCategory: shop.category,
+        shopAddress: shop.address,
+        shopLocation: shop.location,
+        verifiedByOwner: shop.verifiedByOwner,
+        operatingHours: shop.operatingHours,
+        distance,
+        item: { ...item, name: cleanName },
+      };
+    })
+    .filter((result): result is NonNullable<typeof result> => result !== null);
+
+  console.log(`🧾 Built ${results.length} item-shop pairs`);
+
+  // --- 7. Additional filters ---
+  if (maxDistance) {
+    results = results.filter((r) => r.distance <= maxDistance);
+  }
 
   if (openNow) {
     const now = new Date();
@@ -296,18 +320,18 @@ export const searchItems = async (filters: SearchFilters, sortBy: SortOption = S
     });
   }
 
-  // --- 5. Sorting ---
+  // --- 8. Sorting ---
   const sorters: Record<SortOption, (a: any, b: any) => number> = {
     [SortOption.DISTANCE]: (a, b) => a.distance - b.distance,
     [SortOption.ALPHABETICAL_ASC]: (a, b) => a.item.name.localeCompare(b.item.name),
     [SortOption.ALPHABETICAL_DESC]: (a, b) => b.item.name.localeCompare(a.item.name),
     [SortOption.RELEVANCE]: () => 0,
-    [SortOption.RATING]: (a, b) => (b.shopRating || 0) - (a.shopRating || 0), // ✅ added
+    [SortOption.RATING]: (a, b) => (b.shopRating || 0) - (a.shopRating || 0),
   };
 
   results.sort(sorters[sortBy]);
 
-  // --- 6. Pagination ---
+  // --- 9. Pagination ---
   const total = results.length;
   const start = (pagination.page - 1) * pagination.limit;
   const paginatedResults = results.slice(start, start + pagination.limit).map((r) => ({

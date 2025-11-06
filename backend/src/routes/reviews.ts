@@ -23,42 +23,40 @@ router.post(
   reviewLimiter,
   validate([
     body("catalogueId").isMongoId().withMessage("Valid catalogue ID is required"),
-    body("itemId").isMongoId().withMessage("Valid item ID is required"),
-    body("rating").isInt({ min: 1, max: 5 }).withMessage("Rating must be between 1 and 5"),
-    body("comment").notEmpty().withMessage("Comment is required").isLength({ max: 1000 }).withMessage("Comment must not exceed 1000 characters"),
+    body("itemName").notEmpty().withMessage("Item name is required"),
+    body("description").notEmpty().withMessage("Description is required").isLength({ max: 1000 }).withMessage("Description must not exceed 1000 characters"),
     body("availability").isBoolean().withMessage("Availability must be a boolean"),
-    body("photos").optional().isArray({ max: 5 }).withMessage("Maximum 5 photos allowed"),
+    body("images").optional().isArray({ max: 10 }).withMessage("Maximum 10 images allowed"),
   ]),
   reviewController.submitReview
 );
 
 /**
- * GET /api/reviews/item/:catalogueId/:itemId
+ * GET /api/reviews/item/:catalogueId/:itemName
  * Get reviews for item
  */
-router.get("/item/:catalogueId/:itemId", reviewController.getItemReviews);
+router.get("/item/:catalogueId/:itemName", reviewController.getItemReviews);
 
 /**
- * PUT /api/reviews/:catalogueId/:itemId/:reviewId
+ * PUT /api/reviews/:catalogueId/:itemName/:reviewId
  * Update own review
  */
 router.put(
-  "/:catalogueId/:itemId/:reviewId",
+  "/:catalogueId/:itemName/:reviewId",
   authenticate,
   authorize(UserRole.REGISTERED_SHOPPER),
   validate([
-    body("rating").optional().isInt({ min: 1, max: 5 }).withMessage("Rating must be between 1 and 5"),
-    body("comment").optional().isLength({ max: 1000 }).withMessage("Comment must not exceed 1000 characters"),
+    body("description").optional().isLength({ max: 1000 }).withMessage("Description must not exceed 1000 characters"),
     body("availability").optional().isBoolean().withMessage("Availability must be a boolean"),
-    body("photos").optional().isArray({ max: 5 }).withMessage("Maximum 5 photos allowed"),
+    body("images").optional().isArray({ max: 10 }).withMessage("Maximum 10 images allowed"),
   ]),
   reviewController.updateReview
 );
 
 /**
- * DELETE /api/reviews/:catalogueId/:itemId/:reviewId
+ * DELETE /api/reviews/:catalogueId/:itemName/:reviewId
  * Delete own review
  */
-router.delete("/:catalogueId/:itemId/:reviewId", authenticate, authorize(UserRole.REGISTERED_SHOPPER), reviewController.deleteReview);
+router.delete("/:catalogueId/:itemName/:reviewId", authenticate, authorize(UserRole.REGISTERED_SHOPPER), reviewController.deleteReview);
 
 export default router;

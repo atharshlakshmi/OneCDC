@@ -12,15 +12,22 @@ const CatalogueSchema = new Schema<ICatalogue>(
       required: true,
       unique: true,
     },
-    items: [{ type: Schema.Types.ObjectId, ref: "Item" }],
+    items: { type: [Schema.Types.ObjectId], ref: "Item", required: true, unique: true, default: [] },
   },
   {
     timestamps: true,
   }
 );
 
-// Indexes
+/**
+ * Indexes
+ */
 CatalogueSchema.index({ shop: 1 });
+CatalogueSchema.index({ "items.name": "text", "items.description": "text" });
+CatalogueSchema.index({ "items.availability": 1 });
+CatalogueSchema.index({ "items.cdcVoucherAccepted": 1 });
 
-// Export model
+/**
+ * Catalogue Model
+ */
 export const Catalogue: Model<ICatalogue> = mongoose.model<ICatalogue>("Catalogue", CatalogueSchema);

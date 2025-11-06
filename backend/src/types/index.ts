@@ -1,3 +1,5 @@
+// backend/src/types/index.ts
+
 import { Request } from "express";
 import { Document, Types } from "mongoose";
 
@@ -134,6 +136,9 @@ export interface IWarning {
 /**
  * Shop Interface
  */
+/**
+ * Shop Interface
+ */
 export interface IShop extends Document {
   name: string;
   description: string;
@@ -181,8 +186,8 @@ export interface ICatalogue extends Document {
 /**
  * Item Interface
  */
-export interface IItem {
-  _id: Types.ObjectId;
+export interface IItem extends Document {
+  catalogue: Types.ObjectId;
   name: string;
   description: string;
   price?: number;
@@ -193,21 +198,21 @@ export interface IItem {
   lastUpdatedDate: Date;
   lastUpdatedBy: Types.ObjectId;
   reviews: Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
- * Review Interface
+ * Review Interface - Shopper-submitted item reviews
  */
 export interface IReview extends Document {
-  _id: Types.ObjectId;
   shopper: Types.ObjectId;
+  item: string;
   catalogue: Types.ObjectId;
-  item: Types.ObjectId;
-  rating: number; // 1-5
-  comment: string;
-  photos: string[];
+  shop: Types.ObjectId;
+  description: string;
   availability: boolean;
-  timestamp: Date;
+  images: string[];
   warnings: number;
   isActive: boolean;
   createdAt: Date;

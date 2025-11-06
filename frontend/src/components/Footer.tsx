@@ -6,7 +6,7 @@ type UserType = "Owner" | "Shopper"; // 👈 define roles
 
 const Footer: React.FC = () => {
   const location = useLocation();
-  const userType: UserType = "Shopper";
+  const userType: UserType = "Shopper"; // Can be changed dynamically based on auth context
 
   const isStoreSearch = location.pathname === "/shopSearch";
   const isItemSearch = location.pathname === "/itemSearch";

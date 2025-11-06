@@ -1,4 +1,4 @@
-import { Catalogue, Review, Item } from "../models";
+import { Catalogue, Review, Shop } from "../models";
 import { AppError } from "../middleware";
 import logger from "../utils/logger";
 import mongoose from "mongoose";
@@ -7,12 +7,12 @@ import mongoose from "mongoose";
  * Get User's Reviews
  */
 export const getMyReviews = async (shopperId: string) => {
-  // Query the Review collection directly and populate item and catalogue with shop
+  // Query the Review collection directly and populate shop and catalogue
   const reviews = await Review.find({
     shopper: new mongoose.Types.ObjectId(shopperId),
     isActive: true,
   })
-    .populate("item", "name")
+    .populate("shop", "name")
     .populate({
       path: "catalogue",
       select: "shop",
@@ -21,21 +21,19 @@ export const getMyReviews = async (shopperId: string) => {
         select: "name",
       },
     })
-    .sort({ timestamp: -1 })
+    .sort({ createdAt: -1 })
     .lean();
 
   // Transform the data to match the expected format
   const transformedReviews = reviews.map((review: any) => ({
     _id: review._id,
-    itemId: review.item?._id || review.item,
+    itemName: review.item || "Unknown Item",
     catalogueId: review.catalogue?._id || review.catalogue,
-    itemName: review.item?.name || "Unknown Item",
-    shopName: review.catalogue?.shop?.name || "Unknown Shop",
-    rating: review.rating,
-    comment: review.comment,
-    photos: review.photos || [],
+    shopName: review.shop?.name || review.catalogue?.shop?.name || "Unknown Shop",
+    description: review.description,
+    images: review.images || [],
     availability: review.availability,
-    createdAt: review.timestamp,
+    createdAt: review.createdAt,
   }));
 
   return { data: transformedReviews };
@@ -47,36 +45,30 @@ export const getMyReviews = async (shopperId: string) => {
 export const submitReview = async (
   shopperId: string,
   catalogueId: string,
-  itemId: string,
+  itemName: string,
   reviewData: {
-    rating: number;
-    comment: string;
-    photos?: string[];
+    description: string;
+    images?: string[];
     availability: boolean;
   }
 ) => {
   // Check if catalogue exists
-  const catalogue = await Catalogue.findById(catalogueId);
+  const catalogue = await Catalogue.findById(catalogueId).populate("shop");
   if (!catalogue) {
     throw new AppError("Catalogue not found", 404);
   }
 
-  // Check if item exists
-  const item = await Item.findById(itemId);
-  if (!item) {
-    throw new AppError("Item not found", 404);
+  // Get the shop from catalogue
+  const shop = await Shop.findById(catalogue.shop);
+  if (!shop) {
+    throw new AppError("Shop not found", 404);
   }
 
-  // Verify item belongs to catalogue
-  if (item.catalogue.toString() !== catalogueId) {
-    throw new AppError("Item does not belong to this catalogue", 400);
-  }
-
-  // Check if user already reviewed
+  // Check if user already reviewed this item at this shop
   const existingReview = await Review.findOne({
     shopper: new mongoose.Types.ObjectId(shopperId),
     catalogue: new mongoose.Types.ObjectId(catalogueId),
-    item: new mongoose.Types.ObjectId(itemId),
+    item: itemName,
     isActive: true,
   });
 
@@ -88,23 +80,18 @@ export const submitReview = async (
   const review = new Review({
     shopper: shopperId,
     catalogue: catalogueId,
-    item: itemId,
-    rating: reviewData.rating,
-    comment: reviewData.comment,
-    photos: reviewData.photos || [],
+    shop: shop._id,
+    item: itemName,
+    description: reviewData.description,
+    images: reviewData.images || [],
     availability: reviewData.availability,
-    timestamp: new Date(),
     warnings: 0,
     isActive: true,
   });
 
   await review.save();
 
-  // Add review reference to item
-  item.reviews.push(review._id as any);
-  await item.save();
-
-  logger.info(`Review submitted for item ${itemId} by shopper ${shopperId}`);
+  logger.info(`Review submitted for item ${itemName} at shop ${shop._id} by shopper ${shopperId}`);
 
   return { success: true, message: "Review submitted successfully", reviewId: review._id };
 };
@@ -112,37 +99,25 @@ export const submitReview = async (
 /**
  * Get Reviews for Item
  */
-export const getItemReviews = async (_catalogueId: string, itemId: string) => {
-  // Note: catalogueId kept for API compatibility but not used in validation
-  // after migration to separate collections
-
-  // Check if item exists
-  const item = await Item.findById(itemId);
-  if (!item) {
-    throw new AppError("Item not found", 404);
-  }
-
-  // Get all active reviews for this item
+export const getItemReviews = async (_catalogueId: string, itemName: string) => {
+  // Get all active reviews for this item name
   const reviews = await Review.find({
-    item: new mongoose.Types.ObjectId(itemId),
+    item: itemName,
     isActive: true,
   })
     .populate("shopper", "name")
-    .sort({ timestamp: -1 })
+    .populate("shop", "name")
+    .sort({ createdAt: -1 })
     .lean();
 
-  // Calculate average rating
-  const averageRating = await item.getAverageRating();
-  const totalReviews = await item.getReviewCount();
+  const totalReviews = reviews.length;
 
   return {
     item: {
-      id: item._id,
-      name: item.name,
+      name: itemName,
     },
     reviews: reviews,
     totalReviews: totalReviews,
-    averageRating: averageRating,
   };
 };
 
@@ -152,12 +127,11 @@ export const getItemReviews = async (_catalogueId: string, itemId: string) => {
 export const updateReview = async (
   shopperId: string,
   catalogueId: string,
-  itemId: string,
+  itemName: string,
   reviewId: string,
   updates: {
-    rating?: number;
-    comment?: string;
-    photos?: string[];
+    description?: string;
+    images?: string[];
     availability?: boolean;
   }
 ) => {
@@ -173,7 +147,7 @@ export const updateReview = async (
   }
 
   // Verify review belongs to the correct item and catalogue
-  if (review.item.toString() !== itemId || review.catalogue.toString() !== catalogueId) {
+  if (review.item !== itemName || review.catalogue.toString() !== catalogueId) {
     throw new AppError("Review does not belong to this item", 400);
   }
 
@@ -183,9 +157,8 @@ export const updateReview = async (
   }
 
   // Update fields
-  if (updates.rating !== undefined) review.rating = updates.rating;
-  if (updates.comment !== undefined) review.comment = updates.comment;
-  if (updates.photos !== undefined) review.photos = updates.photos;
+  if (updates.description !== undefined) review.description = updates.description;
+  if (updates.images !== undefined) review.images = updates.images;
   if (updates.availability !== undefined) review.availability = updates.availability;
 
   await review.save();
@@ -198,7 +171,7 @@ export const updateReview = async (
 /**
  * Delete Own Review
  */
-export const deleteReview = async (shopperId: string, catalogueId: string, itemId: string, reviewId: string) => {
+export const deleteReview = async (shopperId: string, catalogueId: string, itemName: string, reviewId: string) => {
   // Find the review
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -211,7 +184,7 @@ export const deleteReview = async (shopperId: string, catalogueId: string, itemI
   }
 
   // Verify review belongs to the correct item and catalogue
-  if (review.item.toString() !== itemId || review.catalogue.toString() !== catalogueId) {
+  if (review.item !== itemName || review.catalogue.toString() !== catalogueId) {
     throw new AppError("Review does not belong to this item", 400);
   }
 

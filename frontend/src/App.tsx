@@ -27,7 +27,7 @@ import AddItem from "./pages/AddItem";
 import EditItem from "./pages/EditItem";
 import EditShop from "./pages/EditShop";
 import AddShop from "./pages/AddShop";
-import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RegisterShopper from "./pages/RegisterShopper";
