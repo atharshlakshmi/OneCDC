@@ -273,12 +273,12 @@ const ItemSearch: React.FC = () => {
         )}
         
         {/* Fallback Message */}
-        {!loading && isFallbackMode && fallbackMessage && (
-          <div className="w-full max-w-4xl bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-            <Info className="text-blue-600 shrink-0 mt-0.5" size={20} />
-            <p className="text-blue-800 text-sm">{fallbackMessage}</p>
-          </div>
-        )}
+      {!loading && isFallbackMode && fallbackMessage && (
+        <div className="w-full max-w-4xl bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <Info className="text-blue-600 shrink-0 mt-0.5" size={20} />
+          <p className="text-blue-800 text-sm">{fallbackMessage}</p>
+        </div>
+      )}
 
         {/* Only show "No items found" when NOT in fallback mode AND no suggested shops */}
         {!loading && !error && !isFallbackMode && results.length === 0 && suggestedShops.length === 0 && (
@@ -346,47 +346,46 @@ const ItemSearch: React.FC = () => {
         )}
 
 
-        {/* Suggested Shops (Fallback Mode) */}
-        {!loading && isFallbackMode && suggestedShops.length > 0 && (
-        suggestedShops.map(shop => (
-          <Link
-            to={`/ViewShop/${shop._id}`}
-            key={shop._id}
-            className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-start text-left mx-auto hover:shadow-xl transition-shadow border-2 border-blue-100"
-          >
-            {/* Shop Header */}
-            <div className="w-full">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-amber-500">{shop.name}</h2>
-                  {shop.verifiedByOwner && (
-                    <BadgeCheck className="text-green-700" size={20} />
-                  )}
-                </div>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                  May have availability
-                </span>
-              </div>
-              
-              {shop.description && (
-                <p className="text-gray-600 mb-3">{shop.description}</p>
-              )}
-              
-              <p className="text-sm text-gray-600">{shop.address}</p>
-              
-              {shop.category && (
-                <span className="inline-block px-3 py-1 mt-3 bg-blue-100 text-blue-800 text-xs rounded-full">
-                  {shop.category.replace('_', ' ').charAt(0).toUpperCase() + shop.category.slice(1).replace('_', ' ')}
-                </span>
-              )}
-            </div>
+        {/* Suggested Shops */}
+{!loading && isFallbackMode && suggestedShops.length > 0 && (
+  suggestedShops.map(shop => (
+    <Link
+      to={`/ViewShop/${shop._id}`}
+      key={shop._id}
+      className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-start text-left mx-auto hover:shadow-xl transition-shadow border-2 border-blue-100"
+    >
+      {/* Shop Header */}
+      <div className="w-full">
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-amber-500">{shop.name}</h2>
+            {shop.verifiedByOwner && <BadgeCheck className="text-green-700" size={20} />}
+          </div>
+          <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+            May have availability
+          </span>
+        </div>
 
-            {/* Distance */}
-            <div className="w-full pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-500">{shop.distance} km away</p>
-            </div>
-          </Link>
-        )))}
+        {shop.description && <p className="text-gray-600 mb-3">{shop.description}</p>}
+
+        <p className="text-sm text-gray-600">{shop.address}</p>
+
+        {shop.category && (
+          <span className="inline-block px-3 py-1 mt-3 bg-blue-100 text-blue-800 text-xs rounded-full">
+            {shop.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+          </span>
+        )}
+      </div>
+
+      {/* Distance */}
+      {shop.distance !== undefined && (
+        <div className="w-full pt-4 border-t border-gray-200">
+          <p className="text-sm text-gray-500">{shop.distance} km away</p>
+        </div>
+      )}
+    </Link>
+  ))
+)}
 
         {/* Pagination Controls */}
         {!loading && (results.length > 0 || suggestedShops.length > 0) && pagination.pages > 1 && (
