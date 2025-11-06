@@ -58,6 +58,11 @@ export const searchItems = asyncHandler(
       success: true,
       data: result.results,
       pagination: result.pagination,
+      suggestedShops: result.suggestedShops,
+      isFallback: result.isFallback,
+      fallbackMessage: result.fallbackMessage,
+      categoryName: result.categoryName,
+      suggestedCategory: result.suggestedCategory,
     });
   }
 );
