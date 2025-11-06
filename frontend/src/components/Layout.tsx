@@ -19,11 +19,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, []);
 
   return (
-<<<<<<< HEAD
-    <div className="min-h-screen bg-gray-50" style={{ paddingBottom: footerHeight+15}}>
-=======
-    <div className="min-h-screen bg-gray-50" style={{ paddingBottom: footerHeight+100}}>
->>>>>>> origin/lakshmi
+    <div className="min-h-screen bg-gray-50" style={{ paddingBottom: footerHeight + 100 }}>
       {children}
 
       <div ref={footerRef}>

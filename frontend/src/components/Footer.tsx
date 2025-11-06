@@ -6,22 +6,13 @@ type UserType = "Owner" | "Shopper"; // 👈 define roles
 
 const Footer: React.FC = () => {
   const location = useLocation();
-   const userType: UserType = "Shopper";
+  const userType: UserType = "Shopper";
 
-
-<<<<<<< HEAD
-  const isStoreSearch = location.pathname === "/storeSearch";
-  const isItemSearch = location.pathname === "/itemSearch";
-
-  let searchLink = {
-    to: "/storeSearch",
-=======
   const isStoreSearch = location.pathname === "/shopSearch";
   const isItemSearch = location.pathname === "/itemSearch";
 
   let searchLink = {
     to: "/shopSearch",
->>>>>>> origin/lakshmi
     label: "Store Search",
     icon: <ShoppingBag size="1.5rem" />,
   };
@@ -34,32 +25,20 @@ const Footer: React.FC = () => {
     };
   } else if (isItemSearch) {
     searchLink = {
-<<<<<<< HEAD
-      to: "/storeSearch",
-=======
       to: "/shopSearch",
->>>>>>> origin/lakshmi
       label: "Store Search",
       icon: <ShoppingBag size="1.5rem" />,
     };
   }
 
   return (
-<<<<<<< HEAD
-=======
-    
->>>>>>> origin/lakshmi
     <footer className="fixed bottom-0 left-0 w-full bg-transparent z-50 flex justify-center">
       <div className="relative w-full bg-white rounded-t-3xl shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex justify-between items-center px-10 pt-4 pb-6">
         {/* Left side content (only for shoppers) */}
         {userType === "Shopper" && (
           <Link
             to={searchLink.to}
-            className={`flex flex-col items-center text-sm gap-1 transition-all ${
-              isStoreSearch || isItemSearch
-                ? "text-gray-800"
-                : "text-gray-400 hover:text-gray-800"
-            }`}
+            className={`flex flex-col items-center text-sm gap-1 transition-all ${isStoreSearch || isItemSearch ? "text-gray-800" : "text-gray-400 hover:text-gray-800"}`}
           >
             {searchLink.icon}
             <span>{searchLink.label}</span>
@@ -77,11 +56,7 @@ const Footer: React.FC = () => {
         {/* Profile Icon (always visible on right) */}
         <Link
           to="/profile"
-          className={`flex flex-col items-center text-sm gap-1 transition-all ml-auto ${
-            location.pathname === "/profile"
-              ? "text-gray-800"
-              : "text-gray-400 hover:text-gray-800"
-          }`}
+          className={`flex flex-col items-center text-sm gap-1 transition-all ml-auto ${location.pathname === "/profile" ? "text-gray-800" : "text-gray-400 hover:text-gray-800"}`}
         >
           <User size="1.5rem" />
           <span>Profile</span>
