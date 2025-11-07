@@ -6,19 +6,29 @@ import ViewItem from "./pages/ShopperUI/ViewItem";
 import ViewCart from "./pages/ShopperUI/ViewCart";
 import MER from "./pages/ShopperUI/MER";
 import Footer from "./components/Footer";
-import StoreSearch from "./pages/ShopperUI/StoreSearch";
-import ItemSearch from "./pages/ShopperUI/ItemSearch";
-import AddReview from "./pages/ShopperUI/AddReview";
-import EditReview from "./pages/ShopperUI/EditReview";
-import Profile from "./pages/AuthUI/Profile";
-import Login from "./pages/AuthUI/LogIn";
-import AddReport from "./pages/ShopperUI/ReportReview";
-import ReportShop from "./pages/ShopperUI/ReportShop";
-import EditReport from "./pages/ShopperUI/EditReport";
-import AddItem from "./pages/OwnerUI/AddItem";
-import EditItem from "./pages/OwnerUI/EditItem";
-import EditShop from "./pages/OwnerUI/EditShop";
-import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
+import ShopSearch from "./pages/shopSearch";
+import ItemSearch from "./pages/itemSearch";
+import AddReview from "./pages/AddReview";
+import EditReview from "./pages/EditReview";
+import ActionSuccess from "./pages/ActionSuccess";
+import ProfileHome from "./pages/ProfileHome";
+import ProfileDetails from "./pages/ProfileDetails";
+import ProfileReviews from "./pages/ProfileReviews";
+import ProfileReports from "./pages/ProfileReports";
+import ProfileStores from "./pages/ProfileStores";
+import ProfileFlaggedStores from "./pages/ProfileFlaggedStores";
+import ViewRoute from "./pages/ViewRoute";
+import Login from "./pages/LogIn";
+import AddReport from "./pages/ReportReview";
+import ReportShop from "./pages/ReportShop";
+import EditReport from "./pages/EditReport";
+import AddItem from "./pages/AddItem";
+import EditItem from "./pages/EditItem";
+import EditShop from "./pages/EditShop";
+import AddShop from "./pages/AddShop";
+import ManageCatalogue from "./pages/ManageCatalogue";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RegisterShopper from "./pages/AuthUI/RegisterShopper";
 import RegisterOwner from "./pages/AuthUI/RegisterOwner";
@@ -182,77 +192,78 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Layout>
-        <NavBar />
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/ViewShop/:id" element={<ViewShop />} />
-          <Route path="/ViewItem/:id" element={<ViewItem />} />
-          <Route path="/storeSearch" element={<StoreSearch />} />
-          <Route path="/itemSearch" element={<ItemSearch />} />
+      <userContext.Provider value={{ username, setUsername }}>
+        <Layout>
+          <NavBar />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/ViewShop/:id" element={<ViewShop />} />
+            <Route path="/ViewItem/:id" element={<ViewItem />} />
+            <Route path="/storeSearch" element={<ShopSearch />} />
+            <Route path="/shopSearch" element={<ShopSearch />} />
+            <Route path="/itemSearch" element={<ItemSearch />} />
+            <Route path="/ActionSuccess" element={<ActionSuccess />} />
 
-          {/* Auth routes (redirect authed users away) */}
-          <Route
-            path="/login"
-            element={
-              <RedirectIfAuthed>
-                <Login />
-              </RedirectIfAuthed>
-            }
-          />
-          <Route
-            path="/register/shopper"
-            element={
-              <RedirectIfAuthed>
-                <RegisterShopper />
-              </RedirectIfAuthed>
-            }
-          />
-          <Route
-            path="/register/owner"
-            element={
-              <RedirectIfAuthed>
-                <RegisterOwner />
-              </RedirectIfAuthed>
-            }
-          />
+            {/* Auth routes (redirect authed users away) */}
+            <Route
+              path="/login"
+              element={
+                <RedirectIfAuthed>
+                  <Login />
+                </RedirectIfAuthed>
+              }
+            />
+            <Route
+              path="/register/shopper"
+              element={
+                <RedirectIfAuthed>
+                  <RegisterShopper />
+                </RedirectIfAuthed>
+              }
+            />
+            <Route
+              path="/register/owner"
+              element={
+                <RedirectIfAuthed>
+                  <RegisterOwner />
+                </RedirectIfAuthed>
+              }
+            />
 
-          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/ViewCart" element={<ViewCart />} />
-            <Route path="/SeeReviews" element={<SeeReviews />} />
-            <Route path="/SeeReports" element={<SeeReports />} />
-            <Route path="/SeeViolations" element={<SeeViolations />} />
-            <Route path="/AddReview" element={<AddReview />} />
-            <Route path="/ReportShop" element={<ReportShop />} />
-            <Route path="/ReportReview" element={<AddReport />} />
-            <Route path="/AddItem" element={<AddItem />} />
-            <Route path="/EditReview" element={<EditReview />} />
-            <Route path="/EditReport" element={<EditReport />} />
-            <Route path="/EditItem" element={<EditItem />} />
-            <Route path="/EditShop" element={<EditShop />} />
-            <Route path="/MER" element={<MER />} />
-          </Route>
-
-          {/* Admin-only routes */}
-          <Route
-            path="/admin-dashboard"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
-        </Routes>
-        <Footer />
-      </Layout>
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<ProfileHome />} />
+              <Route path="/profile/details" element={<ProfileDetails />} />
+              <Route path="/profile/reviews" element={<ProfileReviews />} />
+              <Route path="/profile/reports" element={<ProfileReports />} />
+              <Route path="/profile/stores" element={<ProfileStores />} />
+              <Route path="/profile/flagged-stores" element={<ProfileFlaggedStores />} />
+              <Route path="/ViewCart" element={<ViewCart />} />
+              <Route path="/route" element={<ViewRoute />} />
+              <Route path="/SeeReviews" element={<SeeReviews />} />
+              <Route path="/SeeReports" element={<SeeReports />} />
+              <Route path="/SeeViolations" element={<SeeViolations />} />
+              <Route path="/AddReview" element={<AddReview />} />
+              <Route path="/ReportShop" element={<ReportShop />} />
+              <Route path="/ReportReview" element={<AddReport />} />
+              <Route path="/ManageCatalogue/:shopId" element={<ManageCatalogue />} />
+              <Route path="/AddItem/:shopId" element={<AddItem />} />
+              <Route path="/EditItem/:shopId/:itemId" element={<EditItem />} />
+              <Route path="/EditReview" element={<EditReview />} />
+              <Route path="/EditReport" element={<EditReport />} />
+              <Route path="/EditShop" element={<EditShop />} />
+              <Route path="/AddShop" element={<AddShop />} />
+            </Route>
+          </Routes>
+          <Footer />
+        </Layout>
+      </userContext.Provider>
     </BrowserRouter>
   );
 }
