@@ -22,11 +22,17 @@ export async function apiFetch<T = Record<string, unknown>>(
   options: RequestInit = {}
 ): Promise<T> {
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+  // Don't set Content-Type for FormData (browser will set it with boundary)
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...authHeaders(),
     ...(options.headers as Record<string, string>),
   };
+
+  // Only add Content-Type: application/json if body is not FormData
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,

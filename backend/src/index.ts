@@ -30,8 +30,13 @@ const corsOptions: CorsOptions = {
     const allowed = [FRONTEND_URL, LOCAL_DEV];
     if (allowed.includes(origin)) return callback(null, true);
 
+    // In development, allow any localhost origin
+    if (process.env.NODE_ENV === "development" && origin.startsWith("http://localhost:")) {
+      return callback(null, true);
+    }
+
     // You can log here to diagnose unexpected origins:
-    // logger.warn({ origin }, "Blocked CORS origin");
+    logger.warn({ origin }, "Blocked CORS origin");
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
@@ -44,9 +49,17 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 // upload of avatar files
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-// Body parsers
-app.use(express.json({ limit: "20mb" })); // increase if needed for large JSON
+// Body parsers - skip JSON parsing for upload routes (multer handles multipart/form-data)
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/upload")) {
+    return next();
+  }
+  express.json({ limit: "20mb" })(req, res, next);
+});
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
+
+// Mount all routes under /api
+app.use("/api", routes);
 
 // Global rate limiter
 app.use(generalLimiter);

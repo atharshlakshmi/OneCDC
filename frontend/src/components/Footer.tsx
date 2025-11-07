@@ -7,12 +7,11 @@ const Footer: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-
-  const isStoreSearch = location.pathname === "/storeSearch";
+  const isStoreSearch = location.pathname === "/shopSearch";
   const isItemSearch = location.pathname === "/itemSearch";
 
   let searchLink = {
-    to: "/storeSearch",
+    to: "/shopSearch",
     label: "Store Search",
     icon: <ShoppingBag size="1.5rem" />,
   };
@@ -25,7 +24,7 @@ const Footer: React.FC = () => {
     };
   } else if (isItemSearch) {
     searchLink = {
-      to: "/storeSearch",
+      to: "/shopSearch",
       label: "Store Search",
       icon: <ShoppingBag size="1.5rem" />,
     };
@@ -50,11 +49,7 @@ const Footer: React.FC = () => {
         ) : (user?.role === "registered_shopper" || user?.role === "guest" || !user) ? (
           <Link
             to={searchLink.to}
-            className={`flex flex-col items-center text-sm gap-1 transition-all ${
-              isStoreSearch || isItemSearch
-                ? "text-gray-800"
-                : "text-gray-400 hover:text-gray-800"
-            }`}
+            className={`flex flex-col items-center text-sm gap-1 transition-all ${isStoreSearch || isItemSearch ? "text-gray-800" : "text-gray-400 hover:text-gray-800"}`}
           >
             {searchLink.icon}
             <span>{searchLink.label}</span>
@@ -72,11 +67,7 @@ const Footer: React.FC = () => {
         {/* Profile Icon (always visible on right) */}
         <Link
           to="/profile"
-          className={`flex flex-col items-center text-sm gap-1 transition-all ml-auto ${
-            location.pathname === "/profile"
-              ? "text-gray-800"
-              : "text-gray-400 hover:text-gray-800"
-          }`}
+          className={`flex flex-col items-center text-sm gap-1 transition-all ml-auto ${location.pathname === "/profile" ? "text-gray-800" : "text-gray-400 hover:text-gray-800"}`}
         >
           <User size="1.5rem" />
           <span>Profile</span>

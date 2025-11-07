@@ -1,228 +1,371 @@
-import { Shop, Catalogue, Item } from '../models';
-import { SearchFilters, SortOption, PaginationOptions } from '../types';
-import { calculateDistance, getDefaultLocation } from '../utils/distance';
-import { AppError } from '../middleware';
+// backend/src/services/searchService.ts
+
+import { Shop, Catalogue, Item } from "../models";
+import { SearchFilters, SortOption, PaginationOptions, ShopCategory } from "../types";
+import { calculateDistance, getDefaultLocation } from "../utils/distance";
+import { AppError } from "../middleware";
+
+// In-memory cache for category classifications
+interface CacheEntry {
+  category: string;
+  timestamp: number;
+}
+
+const categoryCache = new Map<string, CacheEntry>();
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_CACHE_SIZE = 1000;
 
 /**
- * Helper function to append Google Maps API key to image URLs
+ * Clean expired cache entries
  */
-function appendApiKeyToImages(images: string[]): string[] {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey || !images) return images || [];
+const cleanCache = () => {
+  const now = Date.now();
+  const entriesToDelete: string[] = [];
 
-  return images.map(imageUrl => {
-    if (!imageUrl) return imageUrl;
-    // Check if the URL already has the key parameter
-    if (imageUrl.includes('key=')) return imageUrl;
-    // Append the API key
-    return `${imageUrl}&key=${apiKey}`;
+  categoryCache.forEach((entry, key) => {
+    if (now - entry.timestamp > CACHE_DURATION) {
+      entriesToDelete.push(key);
+    }
   });
-}
+
+  entriesToDelete.forEach((key) => categoryCache.delete(key));
+
+  if (categoryCache.size > MAX_CACHE_SIZE) {
+    const entries = Array.from(categoryCache.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+    const toRemove = entries.slice(0, categoryCache.size - MAX_CACHE_SIZE);
+    toRemove.forEach(([key]) => categoryCache.delete(key));
+  }
+};
 
 /**
- * Helper function to capitalize category
+ * Format category name for display
  */
-function capitalizeCategory(category: string | undefined): string | undefined {
-  if (!category) return category;
+const formatCategoryName = (category: string): string => {
+  const categoryMap: { [key: string]: string } = {
+    food_beverage: "Food & Beverage",
+    grocery: "Grocery",
+    healthcare: "Healthcare",
+    retail: "Retail",
+    services: "Services",
+    electronics: "Electronics",
+    fashion: "Fashion",
+    other: "General",
+  };
 
-  return category
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ')
-    .split('&')
-    .map(word => word.trim().charAt(0).toUpperCase() + word.trim().slice(1))
-    .join(' & ');
-}
+  return categoryMap[category] || "General";
+};
 
 /**
- * Search for Items (Use Case #1-1)
+ * Categorize item using Hugging Face model
  */
-export const searchItems = async (
-  filters: SearchFilters,
-  sortBy: SortOption = SortOption.RELEVANCE,
-  pagination: PaginationOptions = { page: 1, limit: 20 }
-) => {
-  const { query, category, availability, ownerVerified, location } = filters;
+const categorizeItemWithHF = async (itemQuery: string): Promise<ShopCategory> => {
+  try {
+    // Normalize query for cache lookup
+    const normalizedQuery = itemQuery.toLowerCase().trim();
+
+    // Check cache first
+    const cached = categoryCache.get(normalizedQuery);
+    if (cached) {
+      const age = Date.now() - cached.timestamp;
+      if (age < CACHE_DURATION) {
+        console.log(`✅ Cache hit for "${itemQuery}": ${cached.category} (age: ${Math.round(age / 1000)}s)`);
+        return cached.category as ShopCategory;
+      } else {
+        categoryCache.delete(normalizedQuery);
+      }
+    }
+
+    const HF_TOKEN = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
+    if (!HF_TOKEN) {
+      console.warn("No Hugging Face token found, defaulting to ShopCategory.OTHER");
+      return ShopCategory.OTHER;
+    }
+
+    // canonical categories (enum values)
+    const categories: ShopCategory[] = [
+      ShopCategory.FOOD_BEVERAGE,
+      ShopCategory.GROCERY,
+      ShopCategory.HEALTHCARE,
+      ShopCategory.RETAIL,
+      ShopCategory.SERVICES,
+      ShopCategory.ELECTRONICS,
+      ShopCategory.FASHION,
+      ShopCategory.OTHER,
+    ];
+
+    console.log(`🔍 Cache miss for "${itemQuery}", calling HF API...`);
+
+    const response = await fetch("https://router.huggingface.co/hf-inference/models/typeform/distilbert-base-uncased-mnli", {
+      headers: {
+        Authorization: `Bearer ${HF_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      body: JSON.stringify({
+        inputs: itemQuery,
+        parameters: {
+          candidate_labels: categories,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HF API error: ${response.status} - ${errorText}`);
+      return ShopCategory.OTHER;
+    }
+
+    const resultAny: any = await response.json();
+    console.log("HF API Response:", JSON.stringify(resultAny));
+
+    // Extract top label correctly
+    let rawLabel = "";
+    let topScore: number | null = null;
+    if (Array.isArray(resultAny) && resultAny.length > 0 && typeof resultAny[0].label === "string") {
+      rawLabel = resultAny[0].label;
+      topScore = resultAny[0].score;
+    }
+
+    const normalizedLabel = String(rawLabel || "")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^\w_]/g, "");
+
+    let topCategory: ShopCategory = categories.find((c) => c === (normalizedLabel as ShopCategory)) || ShopCategory.OTHER;
+
+    // cache the result (store enum string)
+    categoryCache.set(normalizedQuery, {
+      category: topCategory,
+      timestamp: Date.now(),
+    });
+
+    if (categoryCache.size > MAX_CACHE_SIZE * 0.9) cleanCache();
+
+    console.log(`🤖 HF categorized "${itemQuery}" as: ${topCategory} (raw: "${rawLabel}", score: ${topScore ?? "N/A"})`);
+    return topCategory;
+  } catch (error) {
+    console.error("Error calling Hugging Face API:", error);
+    return ShopCategory.OTHER;
+  }
+};
+
+/**
+ * Categorize and suggest shops
+ */
+const categorizeAndSuggestShops = async (itemQuery: string, userLocation: { lat: number; lng: number }, pagination: PaginationOptions = { page: 1, limit: 20 }) => {
+  try {
+    console.log(`🔎 Starting categorizeAndSuggestShops for "${itemQuery}"`);
+
+    // Get category from Hugging Face model (with cache)
+    const suggestedCategory: ShopCategory = await categorizeItemWithHF(itemQuery);
+    console.log(`📋 Got category: ${suggestedCategory}`);
+
+    // Build filters to search shops in the suggested category near the user
+    const categoryFilters: SearchFilters = {
+      query: undefined,
+      category: suggestedCategory,
+      ownerVerified: undefined,
+      openNow: undefined,
+      location: userLocation,
+      maxDistance: undefined,
+    };
+
+    // Search for shops in that category, sorted by distance
+    console.log(`🏪 Searching for shops in category: ${suggestedCategory}`);
+    const categoryShops = await searchShops(categoryFilters, SortOption.DISTANCE, pagination);
+
+    console.log(`✨ Found ${categoryShops.results.length} shops in ${suggestedCategory} category`);
+
+    return {
+      suggestedCategory,
+      categoryName: suggestedCategory,
+      suggestedShops: categoryShops.results,
+      pagination: categoryShops.pagination,
+      fallbackMessage: `We couldn't find "${itemQuery}" but found shops in the ${formatCategoryName(suggestedCategory)} category that might have what you're looking for.`,
+    };
+  } catch (error) {
+    console.error("Error in categorizeAndSuggestShops:", error);
+
+    const GeneralShopFilter: SearchFilters = {
+      query: undefined,
+      category: ShopCategory.OTHER,
+      ownerVerified: undefined,
+      openNow: undefined,
+      location: userLocation,
+      maxDistance: undefined,
+    };
+
+    const GeneralShops = await searchShops(GeneralShopFilter, SortOption.DISTANCE, pagination);
+
+    return {
+      categoryName: "General",
+      suggestedShops: GeneralShops.results,
+      pagination: GeneralShops.pagination,
+      fallbackMessage: `We couldn't find "${itemQuery}". Here are some shops that might be helpful.`,
+    };
+  }
+};
+
+/**
+ * Search for Items
+ */
+export const searchItems = async (filters: SearchFilters, sortBy: SortOption = SortOption.DISTANCE, pagination: PaginationOptions = { page: 1, limit: 20 }) => {
+  const { query, category, availability, ownerVerified, location, maxDistance, openNow } = filters;
   const userLocation = location || getDefaultLocation();
 
-  // Build aggregation pipeline
-  const pipeline: any[] = [];
+  console.log("❗❗❗❗ Starting item search", { filters, sortBy, userLocation });
 
-  // Match shops by filters - include shops without isActive field (for backward compatibility)
-  const shopMatch: any = {};
-  const activeConditions = [{ isActive: true }, { isActive: { $exists: false } }];
+  // Build item query
+  const itemQuery: any = {};
 
-  if (category || ownerVerified !== undefined) {
-    shopMatch.$and = [
-      { $or: activeConditions }
-    ];
-    if (category) shopMatch.$and.push({ category });
-    if (ownerVerified !== undefined) shopMatch.$and.push({ verifiedByOwner: ownerVerified });
-  } else {
-    shopMatch.$or = activeConditions;
+  if (query && query.trim()) {
+    const q = query.toLowerCase().trim();
+    itemQuery.$or = [{ name: { $regex: q, $options: "i" } }, { description: { $regex: q, $options: "i" } }];
   }
 
-  pipeline.push({ $match: shopMatch });
-
-  // Join with catalogues
-  pipeline.push({
-    $lookup: {
-      from: 'catalogues',
-      localField: '_id',
-      foreignField: 'shop',
-      as: 'catalogue',
-    },
-  });
-
-  pipeline.push({ $unwind: '$catalogue' });
-  pipeline.push({ $unwind: '$catalogue.items' });
-
-  // Lookup Item documents
-  pipeline.push({
-    $lookup: {
-      from: 'items',
-      localField: 'catalogue.items',
-      foreignField: '_id',
-      as: 'item',
-    },
-  });
-
-  pipeline.push({ $unwind: '$item' });
-
-  // Filter items
-  const itemMatch: any = {};
-  if (query) {
-    itemMatch.$or = [
-      { 'item.name': { $regex: query, $options: 'i' } },
-      { 'item.description': { $regex: query, $options: 'i' } },
-    ];
-  }
   if (availability !== undefined) {
-    itemMatch['item.availability'] = availability;
+    itemQuery.availability = availability;
   }
 
-  if (Object.keys(itemMatch).length > 0) {
-    pipeline.push({ $match: itemMatch });
+  // Find items from items collection
+  const items = await Item.find(itemQuery).lean();
+  console.log(`🧾 Found ${items.length} items from items collection`);
+
+  if (!items.length && query?.trim()) {
+    console.log("⚙️ No items found, using LLM category suggestion...");
+    const suggestion = await categorizeAndSuggestShops(query, userLocation, pagination);
+    console.log(`🧾 Return: Fallback found ${suggestion.suggestedShops.length} shops in category ${suggestion.suggestedCategory}`);
+
+    return {
+      results: [],
+      suggestedShops: suggestion.suggestedShops,
+      suggestedCategory: suggestion.suggestedCategory,
+      categoryName: suggestion.categoryName,
+      fallbackMessage: suggestion.fallbackMessage,
+      pagination: suggestion.pagination,
+      isFallback: true,
+    };
   }
 
-  // Calculate distance
-  pipeline.push({
-    $addFields: {
-      distance: {
-        $let: {
-          vars: {
-            lat: { $arrayElemAt: ['$location.coordinates', 1] },
-            lng: { $arrayElemAt: ['$location.coordinates', 0] },
-          },
-          in: {
-            $sqrt: {
-              $add: [
-                {
-                  $pow: [
-                    {
-                      $subtract: [
-                        '$$lat',
-                        userLocation.lat,
-                      ],
-                    },
-                    2,
-                  ],
-                },
-                {
-                  $pow: [
-                    {
-                      $subtract: [
-                        '$$lng',
-                        userLocation.lng,
-                      ],
-                    },
-                    2,
-                  ],
-                },
-              ],
-            },
-          },
-        },
-      },
-    },
-  });
+  // Get unique catalogue IDs from items
+  const catalogueIds = [...new Set(items.map((item) => item.catalogue.toString()))];
 
-  // Sort
-  let sortStage: any = {};
-  switch (sortBy) {
-    case SortOption.DISTANCE:
-      sortStage = { distance: 1 };
-      break;
-    case SortOption.ALPHABETICAL_ASC:
-      sortStage = { 'item.name': 1 };
-      break;
-    case SortOption.ALPHABETICAL_DESC:
-      sortStage = { 'item.name': -1 };
-      break;
-    default:
-      sortStage = { distance: 1 };
+  // Find catalogues to get shop IDs
+  const catalogues = await Catalogue.find({ _id: { $in: catalogueIds } }).lean();
+  const catalogueToShopMap = new Map(catalogues.map((cat) => [cat._id.toString(), cat.shop.toString()]));
+
+  // Get unique shop IDs
+  const shopIds = [...new Set(catalogues.map((cat) => cat.shop.toString()))];
+
+  // Find shops by IDs with filters
+  const shopQuery: any = {
+    _id: { $in: shopIds },
+    isActive: true,
+  };
+
+  if (category) {
+    shopQuery.category = Array.isArray(category) ? { $in: category } : category;
   }
-  pipeline.push({ $sort: sortStage });
+
+  if (typeof ownerVerified === "boolean") {
+    shopQuery.verifiedByOwner = ownerVerified;
+  }
+
+  const shops = await Shop.find(shopQuery).lean();
+  console.log(`🏪 Found ${shops.length} shops matching filters`);
+
+  // Create a map of shop ID -> shop
+  const shopMap = new Map(shops.map((shop) => [shop._id.toString(), shop]));
+
+  // Build results by joining items with catalogues and shops
+  let results = items
+    .map((item) => {
+      const shopId = catalogueToShopMap.get(item.catalogue.toString());
+      if (!shopId) return null;
+
+      const shop = shopMap.get(shopId);
+      if (!shop) return null;
+
+      const distance = calculateDistance(userLocation.lat, userLocation.lng, shop.location.coordinates[1], shop.location.coordinates[0]);
+
+      const cleanName = item.name.replace(new RegExp(`\\s*-\\s*${shop.name}\\s*$`, "i"), "").trim();
+
+      return {
+        shopId: shop._id,
+        shopName: shop.name,
+        shopCategory: shop.category,
+        shopAddress: shop.address,
+        shopLocation: shop.location,
+        verifiedByOwner: shop.verifiedByOwner,
+        operatingHours: shop.operatingHours,
+        distance,
+        item: { ...item, name: cleanName },
+        catalogueId: item.catalogue,
+      };
+    })
+    .filter((result): result is NonNullable<typeof result> => result !== null);
+
+  console.log(`🧾 Built ${results.length} item-shop pairs`);
+
+  // Additional filters
+  if (maxDistance) {
+    results = results.filter((r) => r.distance <= maxDistance);
+  }
+
+  if (openNow) {
+    const now = new Date();
+    const day = now.getDay();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    results = results.filter(({ operatingHours }) => {
+      const today = operatingHours?.find((h: any) => h.dayOfWeek === day);
+      if (!today || today.isClosed) return false;
+      const [oH, oM] = today.openTime.split(":").map(Number);
+      const [cH, cM] = today.closeTime.split(":").map(Number);
+      const openMins = oH * 60 + oM;
+      const closeMins = cH * 60 + cM;
+      return currentMins >= openMins && currentMins <= closeMins;
+    });
+  }
+
+  // Sorting
+  const sorters: Record<SortOption, (a: any, b: any) => number> = {
+    [SortOption.DISTANCE]: (a, b) => a.distance - b.distance,
+    [SortOption.ALPHABETICAL_ASC]: (a, b) => a.item.name.localeCompare(b.item.name),
+    [SortOption.ALPHABETICAL_DESC]: (a, b) => b.item.name.localeCompare(a.item.name),
+    [SortOption.RELEVANCE]: () => 0,
+    [SortOption.RATING]: (a, b) => (b.shopRating || 0) - (a.shopRating || 0),
+  };
+
+  results.sort(sorters[sortBy]);
 
   // Pagination
-  const skip = (pagination.page - 1) * pagination.limit;
-  pipeline.push({ $skip: skip });
-  pipeline.push({ $limit: pagination.limit });
-
-  // Project final shape
-  pipeline.push({
-    $project: {
-      shopId: '$_id',
-      shopName: '$name',
-      shopAddress: '$address',
-      shopCategory: '$category',
-      distance: 1,
-      item: '$item',
-      catalogueId: '$catalogue._id',
-    },
-  });
-
-  const results = await Shop.aggregate(pipeline);
-
-  // Append API key to item images and ensure each item has necessary fields
-  const resultsWithApiKeys = results.map(result => ({
-    ...result,
-    item: {
-      ...result.item,
-      itemId: result.item?.name || '', // Use name as identifier
-      catalogueId: result.catalogueId,
-      category: capitalizeCategory(result.item?.category),
-      images: appendApiKeyToImages(result.item?.images || [])
-    }
+  const total = results.length;
+  const start = (pagination.page - 1) * pagination.limit;
+  const paginatedResults = results.slice(start, start + pagination.limit).map((r) => ({
+    ...r,
+    distance: Math.round(r.distance * 100) / 100,
   }));
 
-  // Get total count
-  const countPipeline = pipeline.slice(0, -3); // Remove skip, limit, project
-  countPipeline.push({ $count: 'total' });
-  const countResult = await Shop.aggregate(countPipeline);
-  const total = countResult.length > 0 ? countResult[0].total : 0;
+  console.log(`✅ Returning ${paginatedResults.length}/${total} items`);
 
   return {
-    results: resultsWithApiKeys,
+    results: paginatedResults,
     pagination: {
-      page: pagination.page,
-      limit: pagination.limit,
+      ...pagination,
       total,
       pages: Math.ceil(total / pagination.limit),
     },
+    isFallback: false,
   };
 };
 
 /**
- * Search for Shops (Use Case #1-2)
+ * Search for Shops
  */
-export const searchShops = async (
-  filters: SearchFilters,
-  sortBy: SortOption = SortOption.DISTANCE,
-  pagination: PaginationOptions = { page: 1, limit: 20 }
-) => {
-  const { query, category, ownerVerified, openNow, location, maxDistance } =
-    filters;
+export const searchShops = async (filters: SearchFilters, sortBy: SortOption = SortOption.DISTANCE, pagination: PaginationOptions = { page: 1, limit: 20 }) => {
+  const { query, category, ownerVerified, openNow, location, maxDistance } = filters;
   const userLocation = location || getDefaultLocation();
 
   // Build query - include shops without isActive field (for backward compatibility)
@@ -231,14 +374,24 @@ export const searchShops = async (
   };
 
   if (query) {
-    queryObj.$text = { $search: query };
+    // Match if any word starts with the query (case-insensitive)
+    queryObj.name = {
+      $regex: new RegExp(`\\b${query}`, "i"),
+    };
   }
   if (category) {
-    queryObj.category = category;
+    if (Array.isArray(category)) {
+      queryObj.category = { $in: category };
+    } else {
+      queryObj.category = category;
+    }
   }
-  if (ownerVerified !== undefined) {
+
+  if (typeof ownerVerified === "boolean") {
     queryObj.verifiedByOwner = ownerVerified;
   }
+
+  console.log("🔎 Searching shops with query:", queryObj);
 
   // Find shops
   let shopsQuery = Shop.find(queryObj);
@@ -251,16 +404,11 @@ export const searchShops = async (
     .map((shop) => {
       // Handle shops without location data
       if (!shop.location || !shop.location.coordinates || shop.location.coordinates.length < 2) {
-        return { ...shop, distance: 999999, images: appendApiKeyToImages(shop.images || []) }; // Place shops without location at the end
+        return { ...shop, distance: 999999 }; // Place shops without location at the end
       }
 
-      const distance = calculateDistance(
-        userLocation.lat,
-        userLocation.lng,
-        shop.location.coordinates[1],
-        shop.location.coordinates[0]
-      );
-      return { ...shop, distance, images: appendApiKeyToImages(shop.images || []) };
+      const distance = calculateDistance(userLocation.lat, userLocation.lng, shop.location.coordinates[1], shop.location.coordinates[0]);
+      return { ...shop, distance };
     })
     .filter((shop) => !maxDistance || shop.distance <= maxDistance);
 
@@ -269,19 +417,18 @@ export const searchShops = async (
   if (openNow) {
     const now = new Date();
     const dayOfWeek = now.getDay();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, '0')}`;
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     filteredShops = shopsWithDistance.filter((shop) => {
-      const todayHours = shop.operatingHours?.find(
-        (hours: any) => hours.dayOfWeek === dayOfWeek
-      );
+      const todayHours = shop.operatingHours?.find((hours: any) => hours.dayOfWeek === dayOfWeek);
       if (!todayHours || todayHours.isClosed) return false;
-      return (
-        currentTime >= todayHours.openTime && currentTime <= todayHours.closeTime
-      );
+
+      const [openH, openM] = todayHours.openTime.split(":").map(Number);
+      const [closeH, closeM] = todayHours.closeTime.split(":").map(Number);
+      const openTotal = openH * 60 + openM;
+      const closeTotal = closeH * 60 + closeM;
+
+      return currentMinutes >= openTotal && currentMinutes <= closeTotal;
     });
   }
 
@@ -306,6 +453,8 @@ export const searchShops = async (
   const skip = (pagination.page - 1) * pagination.limit;
   const paginatedShops = filteredShops.slice(skip, skip + pagination.limit);
 
+  console.log(`📋 Found ${paginatedShops.length} shops`);
+
   return {
     results: paginatedShops,
     pagination: {
@@ -326,36 +475,19 @@ export const getShopById = async (shopId: string) => {
     $or: [{ isActive: true }, { isActive: { $exists: false } }],
   }).lean();
   if (!shop) {
-    throw new AppError('Shop not found', 404);
+    throw new AppError("Shop not found", 404);
   }
-  // Append API key to images
-  return {
-    ...shop,
-    images: appendApiKeyToImages(shop.images || [])
-  };
+  return shop;
 };
 
 /**
  * Get Shop Catalogue
  */
 export const getShopCatalogue = async (shopId: string) => {
-  const catalogue = await Catalogue.findOne({ shop: shopId })
-    .populate('shop')
-    .populate('items')
-    .lean();
+  const catalogue = await Catalogue.findOne({ shop: shopId }).populate("shop").populate("items");
   if (!catalogue) {
-    throw new AppError('Catalogue not found', 404);
+    throw new AppError("Catalogue not found", 404);
   }
 
-  // Append API key to item images and capitalize category
-  const itemsWithApiKeys = (catalogue.items as any[]).map((item: any) => ({
-    ...item,
-    category: capitalizeCategory(item.category),
-    images: appendApiKeyToImages(item.images || [])
-  }));
-
-  return {
-    ...catalogue,
-    items: itemsWithApiKeys
-  };
+  return catalogue;
 };

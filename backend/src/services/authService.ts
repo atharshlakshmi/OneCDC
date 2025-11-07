@@ -40,7 +40,9 @@ interface AuthResponse {
 /**
  * Mock Singpass Verification
  * In production, this would call the actual Singpass API
+ * @deprecated This is a mock implementation. Will be replaced with actual Singpass integration.
  */
+// @ts-ignore - Mock implementation for future use
 const verifySingpass = async (nric: string): Promise<boolean> => {
   logger.info(`Mock Singpass verification for NRIC: ${nric}`);
   // In production: call actual Singpass API

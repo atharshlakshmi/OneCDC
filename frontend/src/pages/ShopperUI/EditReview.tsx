@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { items, reviews } from "../../data/mockData";
-import { toast } from "sonner";
 
 const EditReview: React.FC = () => {
   const navigate = useNavigate();
@@ -28,18 +27,7 @@ const EditReview: React.FC = () => {
   // --- Handlers ---
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
-      const file = e.target.files[0];
-
-      // Validate file type (only jpg, jpeg, png)
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-
-      if (!allowedTypes.includes(file.type)) {
-        toast.error("Only JPG, JPEG, and PNG images are allowed");
-        e.target.value = ''; // Clear the input
-        return;
-      }
-
-      setPhoto(file);
+      setPhoto(e.target.files[0]);
     }
   };
 
@@ -55,11 +43,12 @@ const EditReview: React.FC = () => {
       newPhoto: photo,
     });
 
-    // Show success toast and navigate back
-    toast.success("Your review has been successfully updated!");
-    setTimeout(() => {
-      navigate("/SeeReviews");
-    }, 500);
+    navigate("/ActionSuccess", {
+      state: {
+        message: "Your review has been successfully updated.",
+        backPath: `/SeeReviews`,
+      },
+    });
   };
 
   if (!existingReview || !item) {
@@ -127,10 +116,7 @@ const EditReview: React.FC = () => {
         {status === "Available" && (
           <div>
             <label className="block text-gray-700 font-medium mb-2">
-              Upload Photo
-              <span className="text-sm text-gray-500 ml-2">
-                (JPG/JPEG/PNG only)
-              </span>
+              Upload Photo/Video
             </label>
 
             <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-4 bg-gray-50 hover:bg-gray-100 transition">
@@ -144,11 +130,11 @@ const EditReview: React.FC = () => {
                 <label className="flex flex-col items-center cursor-pointer">
                   <div className="text-3xl text-gray-400">⬆</div>
                   <p className="text-sm text-gray-500 mt-1">
-                    Click to upload a photo
+                    Click to upload a photo or video
                   </p>
                   <input
                     type="file"
-                    accept="image/jpeg,image/jpg,image/png"
+                    accept="image/*,video/*"
                     onChange={handlePhotoChange}
                     hidden
                   />

@@ -155,15 +155,18 @@ export const uploadAvatar = asyncHandler(async (req: AuthRequest, res: Response)
   }
 
   const userId = req.user!.id;
-  const publicBase = (process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 5000}`).replace(/\/+$/, "");
-  const url = `${publicBase}/uploads/avatars/${req.file.filename}`;
 
-  const user = await authService.updateUserProfile(userId, { avatarUrl: url });
+  // Convert buffer to Base64 data URI
+  const base64Data = req.file.buffer.toString("base64");
+  const dataUri = `data:${req.file.mimetype};base64,${base64Data}`;
+
+  // Save Base64 string as avatarUrl
+  const user = await authService.updateUserProfile(userId, { avatarUrl: dataUri });
 
   res.status(200).json({
     success: true,
     message: "Avatar updated successfully",
-    data: { url, user },
+    data: { url: dataUri, user },
   });
 });
 

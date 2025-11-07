@@ -1,44 +1,27 @@
-import multer from 'multer';
-import path from 'path';
-import { Request } from 'express';
+import multer from "multer";
+import path from "path";
+import { Request } from "express";
 
-const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '5242880'); // 5MB
-const MAX_FILES = parseInt(process.env.MAX_FILES || '5');
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || "5242880"); // 5MB
+const MAX_FILES = parseInt(process.env.MAX_FILES || "5");
 
 /**
- * Storage configuration
+ * Storage configuration - Using memory storage for Base64 conversion
  */
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)
-    );
-  },
-});
+const storage = multer.memoryStorage(); // Changed from diskStorage to memoryStorage
 
 /**
  * File filter
  */
-const fileFilter = (
-  _req: Request,
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase()
-  );
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
 
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'));
+    cb(new Error("Only image files are allowed!"));
   }
 };
 
@@ -57,9 +40,9 @@ export const upload = multer({
 /**
  * Single image upload
  */
-export const uploadSingle = upload.single('image');
+export const uploadSingle = upload.single("image");
 
 /**
  * Multiple images upload
  */
-export const uploadMultiple = upload.array('images', MAX_FILES);
+export const uploadMultiple = upload.array("images", MAX_FILES);

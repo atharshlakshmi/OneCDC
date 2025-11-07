@@ -18,7 +18,7 @@ export const submitReview = async (
   // Verify catalogue exists
   const catalogue = await Catalogue.findById(catalogueId).populate('items');
   if (!catalogue) {
-    throw new AppError('Catalogue not found', 404);
+    throw new AppError("Catalogue not found", 404);
   }
 
   // Find item by name in Item collection
@@ -104,12 +104,11 @@ export const getItemReviews = async (catalogueId: string, itemId: string) => {
 export const updateReview = async (
   shopperId: string,
   catalogueId: string,
-  itemId: string,
+  itemName: string,
   reviewId: string,
   updates: {
-    rating?: number;
-    comment?: string;
-    photos?: string[];
+    description?: string;
+    images?: string[];
     availability?: boolean;
   }
 ) => {
@@ -130,26 +129,34 @@ export const updateReview = async (
 
   const review = (item.reviews as any).id(reviewId);
   if (!review) {
-    throw new AppError('Review not found', 404);
+    throw new AppError("Review not found", 404);
   }
 
   // Verify ownership
   if (review.shopper.toString() !== shopperId) {
-    throw new AppError('Unauthorized to update this review', 403);
+    throw new AppError("Unauthorized to update this review", 403);
+  }
+
+  // Verify review belongs to the correct item and catalogue
+  if (review.item !== itemName || review.catalogue.toString() !== catalogueId) {
+    throw new AppError("Review does not belong to this item", 400);
+  }
+
+  // Verify review is active
+  if (!review.isActive) {
+    throw new AppError("Cannot update inactive review", 400);
   }
 
   // Update fields
-  if (updates.rating !== undefined) review.rating = updates.rating;
-  if (updates.comment !== undefined) review.comment = updates.comment;
-  if (updates.photos !== undefined) review.photos = updates.photos;
-  if (updates.availability !== undefined)
-    review.availability = updates.availability;
+  if (updates.description !== undefined) review.description = updates.description;
+  if (updates.images !== undefined) review.images = updates.images;
+  if (updates.availability !== undefined) review.availability = updates.availability;
 
   await item.save();
 
   logger.info(`Review ${reviewId} updated by shopper ${shopperId}`);
 
-  return { success: true, message: 'Review updated successfully' };
+  return { success: true, message: "Review updated successfully" };
 };
 
 /**
@@ -178,12 +185,17 @@ export const deleteReview = async (
 
   const review = (item.reviews as any).id(reviewId);
   if (!review) {
-    throw new AppError('Review not found', 404);
+    throw new AppError("Review not found", 404);
   }
 
   // Verify ownership
   if (review.shopper.toString() !== shopperId) {
-    throw new AppError('Unauthorized to delete this review', 403);
+    throw new AppError("Unauthorized to delete this review", 403);
+  }
+
+  // Verify review belongs to the correct item and catalogue
+  if (review.item !== itemName || review.catalogue.toString() !== catalogueId) {
+    throw new AppError("Review does not belong to this item", 400);
   }
 
   // Soft delete
@@ -193,5 +205,5 @@ export const deleteReview = async (
 
   logger.info(`Review ${reviewId} deleted by shopper ${shopperId}`);
 
-  return { success: true, message: 'Review deleted successfully' };
+  return { success: true, message: "Review deleted successfully" };
 };

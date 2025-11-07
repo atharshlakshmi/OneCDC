@@ -35,7 +35,6 @@ import Layout from "./components/Layout";
 import { useState, useEffect } from "react";
 import { apiGet } from "./lib/api";
 import { toast } from "sonner";
-import { useImageBlobUrls, getImageDisplayUrl } from "./utils/imageUtils";
 
 // Guard: redirects authenticated users away from /login and /register
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
@@ -92,10 +91,6 @@ export default function App() {
     const [shops, setShops] = useState<Shop[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Convert all shop images to blob URLs for better performance
-    const allShopImages = shops.flatMap(shop => shop.images || []);
-    const imageBlobUrls = useImageBlobUrls(allShopImages);
-
     useEffect(() => {
       const fetchShops = async () => {
         setLoading(true);
@@ -148,7 +143,7 @@ export default function App() {
               <div className="w-1/2 h-48 sm:h-56 bg-amber-300 flex items-center justify-center">
                 {shop.images && shop.images.length > 0 ? (
                   <img
-                    src={getImageDisplayUrl(shop.images[0], imageBlobUrls)}
+                    src={shop.images[0]}
                     alt={shop.name}
                     className="w-full h-full object-cover"
                   />
@@ -227,7 +222,7 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          
+
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<Profile />} />

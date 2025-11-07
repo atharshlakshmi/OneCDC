@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { apiFetch, authHeaders, API_BASE } from "../../lib/api";
+import { apiFetch, authHeaders } from "../../lib/api";
 import { useNavigate } from "react-router-dom";
 import PasswordField from "../../components/PasswordField";
 import { PASSWORD_MIN_LENGTH } from "../../lib/constants";
@@ -16,9 +16,18 @@ type User = UserType & {
   businessRegistrationNumber?: string; // owner-only
 };
 
-const resolveUrl = (u?: string) => (u && /^https?:\/\//i.test(u) ? u : u ? `${API_BASE.replace(/\/api$/, "")}${u}` : "");
+const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api";
+const resolveUrl = (u?: string) => {
+  if (!u) return "";
+  // If it's a data URI (Base64), return as is
+  if (u.startsWith("data:")) return u;
+  // If it's an absolute URL, return as is
+  if (/^https?:\/\//i.test(u)) return u;
+  // Otherwise, prepend the API base
+  return `${API_BASE.replace(/\/api$/, "")}${u}`;
+};
 
-export default function Profile() {
+export default function ProfileDetails() {
   const { logout, user: ctxUser } = useAuth();
   const navigate = useNavigate();
 
@@ -177,7 +186,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow mt-8">
-      <h1 className="text-2xl font-semibold mb-6">Profile</h1>
+      <h1 className="text-2xl font-semibold mb-6">User Details</h1>
 
       {apiError && <div className="mb-4 border border-red-200 bg-red-50 text-red-700 rounded-lg px-4 py-3 text-sm">{apiError}</div>}
       {apiSuccess && <div className="mb-4 border border-green-200 bg-green-50 text-green-700 rounded-lg px-4 py-3 text-sm">{apiSuccess}</div>}

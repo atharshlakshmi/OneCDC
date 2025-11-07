@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 interface CardDisplayProps {
   title: string;
   subtitle?: string;
-  rating?: number;
+  availability?: boolean;
   content?: string;
+  photos?: string[];
   details?: string;
   status?: string;
   date?: string;
@@ -20,8 +21,9 @@ interface CardDisplayProps {
 const CardDisplay: React.FC<CardDisplayProps> = ({
   title,
   subtitle,
-  rating,
+  availability,
   content,
+  photos,
   details,
   status,
   date,
@@ -32,6 +34,8 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
   disableActions,
 }) => {
   const resolved = status?.toLowerCase() === "resolved";
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+  const BASE_URL = API_BASE.replace("/api", ""); // Get base URL without /api
 
   const hasImages = images && images.length > 0;
 
@@ -44,7 +48,6 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
         <div className={`flex flex-col gap-3 ${hasImages ? 'flex-1' : 'w-full items-center text-center'}`}>
           <h2 className="text-lg font-semibold">{title}</h2>
           {subtitle && <p className="text-gray-500 text-sm">{subtitle}</p>}
-          {rating && <p className="text-yellow-500">⭐ {rating}/5</p>}
           {content && <p className="text-gray-700">{content}</p>}
           {details && <p className="text-gray-600 italic">{details}</p>}
           {date && <p className="text-gray-400 text-sm">Date: {date}</p>}
