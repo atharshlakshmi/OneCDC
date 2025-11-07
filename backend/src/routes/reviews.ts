@@ -23,7 +23,7 @@ router.post(
   reviewLimiter,
   validate([
     body("catalogueId").isMongoId().withMessage("Valid catalogue ID is required"),
-    body("itemName").notEmpty().withMessage("Item name is required"),
+    body("itemId").isMongoId().withMessage("Valid item ID is required"),
     body("description").notEmpty().withMessage("Description is required").isLength({ max: 1000 }).withMessage("Description must not exceed 1000 characters"),
     body("availability").isBoolean().withMessage("Availability must be a boolean"),
     body("images").optional().isArray({ max: 10 }).withMessage("Maximum 10 images allowed"),
@@ -32,17 +32,17 @@ router.post(
 );
 
 /**
- * GET /api/reviews/item/:catalogueId/:itemName
+ * GET /api/reviews/item/:catalogueId/:itemId
  * Get reviews for item
  */
-router.get("/item/:catalogueId/:itemName", reviewController.getItemReviews);
+router.get("/item/:catalogueId/:itemId", reviewController.getItemReviews);
 
 /**
- * PUT /api/reviews/:catalogueId/:itemName/:reviewId
+ * PUT /api/reviews/:catalogueId/:itemId/:reviewId
  * Update own review
  */
 router.put(
-  "/:catalogueId/:itemName/:reviewId",
+  "/:catalogueId/:itemId/:reviewId",
   authenticate,
   authorize(UserRole.REGISTERED_SHOPPER),
   validate([
@@ -54,9 +54,9 @@ router.put(
 );
 
 /**
- * DELETE /api/reviews/:catalogueId/:itemName/:reviewId
+ * DELETE /api/reviews/:catalogueId/:itemId/:reviewId
  * Delete own review
  */
-router.delete("/:catalogueId/:itemName/:reviewId", authenticate, authorize(UserRole.REGISTERED_SHOPPER), reviewController.deleteReview);
+router.delete("/:catalogueId/:itemId/:reviewId", authenticate, authorize(UserRole.REGISTERED_SHOPPER), reviewController.deleteReview);
 
 export default router;

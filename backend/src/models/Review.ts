@@ -4,7 +4,7 @@ import { IReview } from "../types";
 /**
  * Review Schema - Shopper-submitted item reviews
  */
-const ReviewSchema = new Schema<IReview>(
+const ReviewSchema = new Schema(
   {
     shopper: {
       type: Schema.Types.ObjectId,
@@ -13,9 +13,10 @@ const ReviewSchema = new Schema<IReview>(
       index: true,
     },
     item: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Item",
       required: true,
-      trim: true,
+      index: true,
     },
     catalogue: {
       type: Schema.Types.ObjectId,

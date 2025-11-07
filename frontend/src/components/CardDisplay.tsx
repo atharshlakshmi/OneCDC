@@ -59,8 +59,8 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
       {photos && photos.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {photos.map((photo, index) => {
-            // Prepend base URL if photo is a relative path
-            const photoUrl = photo.startsWith("http") ? photo : `${BASE_URL}${photo}`;
+            // Handle Base64, full URLs, or relative paths
+            const photoUrl = photo.startsWith("data:") || photo.startsWith("http") ? photo : `${BASE_URL}${photo}`;
             console.log("Photo URL:", photoUrl); // Debug
             return (
               <img

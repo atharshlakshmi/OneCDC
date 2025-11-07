@@ -7,12 +7,13 @@ import mongoose from "mongoose";
  * Get User's Reviews
  */
 export const getMyReviews = async (shopperId: string) => {
-  // Query the Review collection directly and populate shop and catalogue
+  // Query the Review collection directly and populate shop, catalogue, and item
   const reviews = await Review.find({
     shopper: new mongoose.Types.ObjectId(shopperId),
     isActive: true,
   })
     .populate("shop", "name")
+    .populate("item", "name")
     .populate({
       path: "catalogue",
       select: "shop",
@@ -27,7 +28,8 @@ export const getMyReviews = async (shopperId: string) => {
   // Transform the data to match the expected format
   const transformedReviews = reviews.map((review: any) => ({
     _id: review._id,
-    itemName: review.item || "Unknown Item",
+    itemId: review.item?._id,
+    itemName: review.item?.name || "Unknown Item",
     catalogueId: review.catalogue?._id || review.catalogue,
     shopName: review.shop?.name || review.catalogue?.shop?.name || "Unknown Shop",
     description: review.description,
@@ -45,7 +47,7 @@ export const getMyReviews = async (shopperId: string) => {
 export const submitReview = async (
   shopperId: string,
   catalogueId: string,
-  itemName: string,
+  itemId: string,
   reviewData: {
     description: string;
     images?: string[];
@@ -68,7 +70,7 @@ export const submitReview = async (
   const existingReview = await Review.findOne({
     shopper: new mongoose.Types.ObjectId(shopperId),
     catalogue: new mongoose.Types.ObjectId(catalogueId),
-    item: itemName,
+    item: new mongoose.Types.ObjectId(itemId),
     isActive: true,
   });
 
@@ -81,7 +83,7 @@ export const submitReview = async (
     shopper: shopperId,
     catalogue: catalogueId,
     shop: shop._id,
-    item: itemName,
+    item: itemId,
     description: reviewData.description,
     images: reviewData.images || [],
     availability: reviewData.availability,
@@ -91,7 +93,7 @@ export const submitReview = async (
 
   await review.save();
 
-  logger.info(`Review submitted for item ${itemName} at shop ${shop._id} by shopper ${shopperId}`);
+  logger.info(`Review submitted for item ${itemId} at shop ${shop._id} by shopper ${shopperId}`);
 
   return { success: true, message: "Review submitted successfully", reviewId: review._id };
 };
@@ -99,14 +101,15 @@ export const submitReview = async (
 /**
  * Get Reviews for Item
  */
-export const getItemReviews = async (_catalogueId: string, itemName: string) => {
-  // Get all active reviews for this item name
+export const getItemReviews = async (_catalogueId: string, itemId: string) => {
+  // Get all active reviews for this item ID
   const reviews = await Review.find({
-    item: itemName,
+    item: new mongoose.Types.ObjectId(itemId),
     isActive: true,
   })
     .populate("shopper", "name")
     .populate("shop", "name")
+    .populate("item", "name")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -114,7 +117,8 @@ export const getItemReviews = async (_catalogueId: string, itemName: string) => 
 
   return {
     item: {
-      name: itemName,
+      id: itemId,
+      name: (reviews[0] as any)?.item?.name || "Unknown Item",
     },
     reviews: reviews,
     totalReviews: totalReviews,
@@ -127,7 +131,7 @@ export const getItemReviews = async (_catalogueId: string, itemName: string) => 
 export const updateReview = async (
   shopperId: string,
   catalogueId: string,
-  itemName: string,
+  itemId: string,
   reviewId: string,
   updates: {
     description?: string;
@@ -147,7 +151,7 @@ export const updateReview = async (
   }
 
   // Verify review belongs to the correct item and catalogue
-  if (review.item !== itemName || review.catalogue.toString() !== catalogueId) {
+  if (review.item.toString() !== itemId || review.catalogue.toString() !== catalogueId) {
     throw new AppError("Review does not belong to this item", 400);
   }
 
@@ -171,7 +175,7 @@ export const updateReview = async (
 /**
  * Delete Own Review
  */
-export const deleteReview = async (shopperId: string, catalogueId: string, itemName: string, reviewId: string) => {
+export const deleteReview = async (shopperId: string, catalogueId: string, itemId: string, reviewId: string) => {
   // Find the review
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -184,7 +188,7 @@ export const deleteReview = async (shopperId: string, catalogueId: string, itemN
   }
 
   // Verify review belongs to the correct item and catalogue
-  if (review.item !== itemName || review.catalogue.toString() !== catalogueId) {
+  if (review.item.toString() !== itemId || review.catalogue.toString() !== catalogueId) {
     throw new AppError("Review does not belong to this item", 400);
   }
 

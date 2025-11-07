@@ -6,12 +6,12 @@ import { apiFetch } from "../lib/api";
 
 type Review = {
   _id: string;
-  comment: string;
+  description: string;
   availability?: boolean;
-  photos?: string[];
+  images?: string[];
+  itemId?: string;
   itemName?: string;
   shopName?: string;
-  itemId?: string;
   shopId?: string;
   catalogueId?: string;
   createdAt?: string;
@@ -122,8 +122,8 @@ export default function ProfileReviews() {
                 title={review.itemName || "Unknown Item"}
                 subtitle={review.shopName}
                 availability={review.availability}
-                content={review.comment}
-                photos={review.photos}
+                content={review.description}
+                photos={review.images}
                 onEdit={() => handleEdit(review._id, review.itemId, review.catalogueId)}
                 onDelete={() => handleDelete(review._id, review.catalogueId, review.itemId)}
               />

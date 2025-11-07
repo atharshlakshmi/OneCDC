@@ -7,8 +7,8 @@ import { useAuth } from "../context/AuthContext";
 
 interface Review {
   _id: string;
-  comment: string;
-  photos: string[];
+  description: string;
+  images: string[];
   availability: boolean;
   itemName: string;
   shopName: string;
@@ -45,8 +45,8 @@ const EditReview: React.FC = () => {
         if (reviewData) {
           setReview(reviewData);
           setStatus(reviewData.availability ? "Available" : "Unavailable");
-          setDescription(reviewData.comment);
-          setCurrentPhotos(reviewData.photos || []);
+          setDescription(reviewData.description || "");
+          setCurrentPhotos(reviewData.images || []);
         } else {
           setError("Review not found");
         }
@@ -93,13 +93,13 @@ const EditReview: React.FC = () => {
         photoUrls = [...currentPhotos, uploadResp.data.url];
       }
 
-      // Update review
+      // Update review - use correct field names that backend expects
       await apiFetch(`/reviews/${catalogueId}/${itemId}/${reviewId}`, {
         method: "PUT",
         body: JSON.stringify({
-          comment: description,
+          description: description,
           availability: status === "Available",
-          photos: photoUrls,
+          images: photoUrls,
         }),
       });
 
@@ -131,7 +131,12 @@ const EditReview: React.FC = () => {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
   const BASE_URL = API_BASE.replace("/api", ""); // Get base URL without /api
   const getPhotoUrl = (url: string) => {
-    return url.startsWith("http") ? url : `${BASE_URL}${url}`;
+    // If it's a Base64 data URI or full URL, return as is
+    if (url.startsWith("data:") || url.startsWith("http")) {
+      return url;
+    }
+    // Otherwise, prepend the base URL
+    return `${BASE_URL}${url}`;
   };
 
   // --- Render ---
