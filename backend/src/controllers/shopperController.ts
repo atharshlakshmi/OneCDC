@@ -191,10 +191,10 @@ export const updateReview = asyncHandler(
     const updates = req.body;
 
     const result = await reviewService.updateReview(
+      shopperId,
       catalogueId,
       itemId,
       reviewId,
-      shopperId,
       updates
     );
 
@@ -212,10 +212,10 @@ export const deleteReview = asyncHandler(
     const { catalogueId, itemId, reviewId } = req.params;
 
     const result = await reviewService.deleteReview(
+      shopperId,
       catalogueId,
       itemId,
-      reviewId,
-      shopperId
+      reviewId
     );
 
     res.status(200).json(result);

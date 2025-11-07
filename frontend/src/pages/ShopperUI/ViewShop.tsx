@@ -4,9 +4,8 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "../../context/AuthContext";
-import { cartStorage } from "../../lib/storage";
 import { toast } from "sonner";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { Loader2, MapPin, Phone, Clock } from "lucide-react";
 
 
@@ -113,15 +112,35 @@ const ViewShop: React.FC = () => {
   }
 
   // Function to add shop to cart
-  const addShopToCart = () => {
-    const cart = cartStorage.getCart<Array<{ id: string; name: string }>>() || [];
+  const addShopToCart = async () => {
+    // Prompt user for what items they want to buy from this shop
+    const itemTag = prompt(
+      "What items do you want to buy from this shop?\n(Enter item names, e.g., 'eggs, milk, bread')"
+    );
 
-    if (!cart.find((s) => s.id === shop.id)) {
-      cart.push({ id: shop.id, name: shop.name });
-      cartStorage.setCart(cart);
+    // If user cancels or doesn't enter anything, don't add to cart
+    if (!itemTag || itemTag.trim() === "") {
+      toast.info("Please enter the items you want to buy.");
+      return;
+    }
+
+    try {
+      await apiPost<{ success: boolean; message: string }>("/cart/add", {
+        shopId: shop.id,
+        itemTag: itemTag.trim(),
+      });
+
       toast.success(`${shop.name} added to cart!`);
-    } else {
-      toast.info(`${shop.name} is already in your cart.`);
+    } catch (error: any) {
+      console.error("Failed to add shop to cart:", error);
+
+      // Check if shop is already in cart
+      if (error?.payload?.message?.includes("already in cart") ||
+          error?.message?.includes("already in cart")) {
+        toast.info(`${shop.name} is already in your cart.`);
+      } else {
+        toast.error(error?.message || "Failed to add shop to cart");
+      }
     }
   };
 

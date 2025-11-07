@@ -322,6 +322,65 @@ export const addCatalogueItem = async (shopId: string, ownerId: string, itemData
 };
 
 /**
+ * Add Catalogue Item (by Shopper)
+ */
+export const addCatalogueItemByShopper = async (shopId: string, shopperId: string, itemData: any) => {
+  // Verify shop exists and is active
+  const shop = await Shop.findOne({ _id: shopId, isActive: true });
+  if (!shop) {
+    throw new AppError("Shop not found", 404);
+  }
+
+  const catalogue = await Catalogue.findOne({ shop: shopId }).populate('items');
+  if (!catalogue) {
+    throw new AppError("Catalogue not found", 404);
+  }
+
+  // Check for duplicate item name in the catalogue
+  const existingItem = await Item.findOne({
+    _id: { $in: catalogue.items },
+    name: { $regex: new RegExp(`^${itemData.name}$`, 'i') }, // Case-insensitive exact match
+  });
+
+  if (existingItem) {
+    throw new AppError('An item with this name already exists in the catalogue', 400);
+  }
+
+  // Validate price
+  const priceValue = typeof itemData.price === 'number' ? itemData.price : parseFloat(itemData.price);
+  if (isNaN(priceValue) || priceValue < 0) {
+    throw new AppError('Valid price is required (must be a number >= 0)', 400);
+  }
+
+  // Create standalone Item document
+  const newItem = await Item.create({
+    catalogue: catalogue._id,
+    name: itemData.name,
+    description: itemData.description,
+    price: priceValue,
+    availability: itemData.availability !== undefined ? itemData.availability : true,
+    images: itemData.images || [],
+    category: itemData.category,
+    cdcVoucherAccepted: itemData.cdcVoucherAccepted !== undefined ? itemData.cdcVoucherAccepted : true,
+    lastUpdatedBy: mongoose.Types.ObjectId.isValid(shopperId)
+      ? new mongoose.Types.ObjectId(shopperId)
+      : shopperId,
+    lastUpdatedDate: new Date(),
+    reviews: [],
+  });
+
+  // Add item ID to catalogue
+  catalogue.items.push(newItem._id as any);
+  await catalogue.save();
+
+  logger.info(`Item added to catalogue by shopper: ${itemData.name} in shop ${shopId}`);
+
+  // Return catalogue with populated items
+  await catalogue.populate("items");
+  return catalogue;
+};
+
+/**
  * Update Catalogue Item (Use Case #3-3)
  */
 export const updateCatalogueItem = async (shopId: string, itemId: string, ownerId: string, updates: any) => {

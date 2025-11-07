@@ -253,7 +253,7 @@ router.get('/items/:id', async (req, res) => {
 router.get('/items/:id/reviews', async (req, res) => {
   logger.info(`[API-V2] Item reviews endpoint hit: ${req.params.id}`);
   try {
-    const { Review, Item, User } = await import('../models');
+    const { Review } = await import('../models');
     const { id } = req.params;
 
     const allReviews: any[] = [];
@@ -272,32 +272,10 @@ router.get('/items/:id/reviews', async (req, res) => {
         shopperId: review.shopper?._id?.toString(),
         description: review.description,
         availability: review.availability,
-        images: appendApiKeyToImages(review.images || []),
+        images: review.images || [],
         createdAt: review.createdAt,
       }))
     );
-
-    // Also check for nested reviews in Item document
-    const item = await Item.findOne({ name: id }).lean();
-    if (item && item.reviews && item.reviews.length > 0) {
-      const activeNestedReviews = item.reviews.filter((r: any) => r.isActive);
-
-      for (const review of activeNestedReviews) {
-        // Get shopper details
-        const shopper = await User.findById(review.shopper).select('name').lean();
-
-        allReviews.push({
-          id: review._id.toString(),
-          itemId: id,
-          shopperName: shopper?.name || 'Anonymous',
-          shopperId: review.shopper.toString(),
-          description: review.comment, // Note: nested reviews use 'comment' field
-          availability: review.availability,
-          images: appendApiKeyToImages(review.photos || []), // Note: nested reviews use 'photos' field
-          createdAt: review.timestamp,
-        });
-      }
-    }
 
     // Sort all reviews by date (most recent first)
     allReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

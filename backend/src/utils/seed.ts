@@ -8,6 +8,8 @@ import {
   Admin,
   Shop,
   Catalogue,
+  Item,
+  Review,
   ShoppingCart,
   Report,
   ModerationLog,
@@ -142,26 +144,33 @@ const seed = async () => {
     // Create sample reviews for first shop
     const firstShop = await Shop.findOne({});
     if (firstShop) {
-      const catalogue = await Catalogue.findOne({ shop: firstShop._id });
+      const catalogue = await Catalogue.findOne({ shop: firstShop._id }).populate('items');
       if (catalogue && catalogue.items.length > 0) {
-        const firstItem = catalogue.items[0];
+        const firstItem = await Item.findById(catalogue.items[0]);
 
-        // Add reviews from shoppers
-        for (let i = 0; i < 3; i++) {
-          (firstItem.reviews as any).push({
-            shopper: shoppers[i]._id as any,
-            rating: 4 + Math.floor(Math.random() * 2), // 4 or 5
-            comment: `Great product! Highly recommend. Bought this using CDC vouchers.`,
-            photos: [],
-            availability: true,
-            timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-            warnings: 0,
-            isActive: true,
-          } as any);
+        if (firstItem) {
+          // Create reviews from shoppers using standalone Review model
+          for (let i = 0; i < 3; i++) {
+            const review = await Review.create({
+              shopper: shoppers[i]._id,
+              item: firstItem.name,
+              catalogue: catalogue._id,
+              shop: firstShop._id,
+              description: `Great product! Highly recommend. Bought this using CDC vouchers.`,
+              images: [],
+              availability: true,
+              createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+              warnings: 0,
+              isActive: true,
+            });
+
+            // Add review ID to item's reviews array
+            firstItem.reviews.push(review._id as any);
+          }
+
+          await firstItem.save();
+          logger.info('✓ Sample reviews added');
         }
-
-        await catalogue.save();
-        logger.info('✓ Sample reviews added');
       }
     }
 

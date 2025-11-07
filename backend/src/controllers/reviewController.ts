@@ -19,9 +19,9 @@ export const getMyReviews = asyncHandler(async (req: AuthRequest, res: Response)
  */
 export const submitReview = asyncHandler(async (req: AuthRequest, res: Response) => {
   const shopperId = req.user!.id;
-  const { catalogueId, itemName, description, images, availability } = req.body;
+  const { catalogueId, itemId, description, images, availability } = req.body;
 
-  const result = await reviewService.submitReview(shopperId, catalogueId, itemName, {
+  const result = await reviewService.submitReview(shopperId, catalogueId, itemId, {
     description,
     images,
     availability,
@@ -32,12 +32,12 @@ export const submitReview = asyncHandler(async (req: AuthRequest, res: Response)
 
 /**
  * Get Item Reviews
- * GET /api/reviews/item/:catalogueId/:itemName
+ * GET /api/reviews/item/:catalogueId/:itemId
  */
 export const getItemReviews = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { catalogueId, itemName } = req.params;
+  const { catalogueId, itemId } = req.params;
 
-  const result = await reviewService.getItemReviews(catalogueId, itemName);
+  const result = await reviewService.getItemReviews(catalogueId, itemId);
 
   res.status(200).json({
     success: true,
@@ -47,27 +47,27 @@ export const getItemReviews = asyncHandler(async (req: AuthRequest, res: Respons
 
 /**
  * Update Own Review
- * PUT /api/reviews/:catalogueId/:itemName/:reviewId
+ * PUT /api/reviews/:catalogueId/:itemId/:reviewId
  */
 export const updateReview = asyncHandler(async (req: AuthRequest, res: Response) => {
   const shopperId = req.user!.id;
-  const { catalogueId, itemName, reviewId } = req.params;
+  const { catalogueId, itemId, reviewId } = req.params;
   const updates = req.body;
 
-  const result = await reviewService.updateReview(shopperId, catalogueId, itemName, reviewId, updates);
+  const result = await reviewService.updateReview(shopperId, catalogueId, itemId, reviewId, updates);
 
   res.status(200).json(result);
 });
 
 /**
  * Delete Own Review
- * DELETE /api/reviews/:catalogueId/:itemName/:reviewId
+ * DELETE /api/reviews/:catalogueId/:itemId/:reviewId
  */
 export const deleteReview = asyncHandler(async (req: AuthRequest, res: Response) => {
   const shopperId = req.user!.id;
-  const { catalogueId, itemName, reviewId } = req.params;
+  const { catalogueId, itemId, reviewId } = req.params;
 
-  const result = await reviewService.deleteReview(shopperId, catalogueId, itemName, reviewId);
+  const result = await reviewService.deleteReview(shopperId, catalogueId, itemId, reviewId);
 
   res.status(200).json(result);
 });

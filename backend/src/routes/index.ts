@@ -6,6 +6,7 @@ import ownerRouter from "./owner";
 import uploadRouter from "./upload";
 import reviewsRouter from "./reviews";
 import searchRouter from "./search";
+import shopperRouter from "./shopper";
 
 console.log("[ROUTES INDEX] loaded");
 const router = express.Router();
@@ -19,6 +20,7 @@ router.use("/cart", cartRouter); // exposes /api/cart/*
 router.use("/owner", ownerRouter); // exposes /api/owner/*
 router.use("/upload", uploadRouter); // exposes /api/upload/*
 router.use("/reviews", reviewsRouter); // exposes /api/reviews/*
-router.use("/search", searchRouter);
+router.use("/search", searchRouter); // exposes /api/search/*
+router.use("/shopper", shopperRouter); // exposes /api/shopper/*
 
 export default router;

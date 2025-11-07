@@ -1,11 +1,10 @@
 import { User, RegisteredShopper, Owner } from '../models';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateToken } from '../utils/jwt';
-import { UserRole, IUser, IRegisteredShopper, IOwner, UserAuthProvider } from '../types';
+import { IUser, UserAuthProvider } from '../types';
 import { AppError } from '../middleware';
 import logger from '../utils/logger';
 import { validateBusinessRegistration } from '../utils/validators';
-import config from '../config';
 
 /**
  * Register Shopper Data Interface
@@ -92,7 +91,7 @@ export const registerShopper = async (
 
   // Generate token
   const token = generateToken({
-    id: shopper._id.toString(),
+    id: (shopper._id as any).toString(),
     email: shopper.email,
     role: shopper.role,
   });
@@ -161,7 +160,7 @@ export const registerOwner = async (
 
   // Generate token
   const token = generateToken({
-    id: owner._id.toString(),
+    id: (owner._id as any).toString(),
     email: owner.email,
     role: owner.role,
   });
@@ -203,7 +202,7 @@ export const login = async (
 
   // Generate token
   const token = generateToken({
-    id: user._id.toString(),
+    id: (user._id as any).toString(),
     email: user.email,
     role: user.role,
   });

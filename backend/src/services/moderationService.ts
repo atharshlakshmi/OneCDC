@@ -1,4 +1,4 @@
-import { Report, ModerationLog, User, Shop, Catalogue, Item, Review } from '../models';
+import { Report, ModerationLog, User, Shop, Item, Review } from '../models';
 import { ModerationAction, ReportStatus, UserRole, IModerationLog, IUser } from '../types';
 import { AppError } from '../middleware';
 import logger from '../utils/logger';
@@ -377,46 +377,7 @@ export const getPendingReports = async (
             };
           }
         } catch (error) {
-          logger.debug(`Review ${report.targetId} not found in standalone collection, checking nested structure`);
-        }
-
-        // Fallback: If not found in standalone collection, check nested reviews in Item documents
-        if (!reviewDetails) {
-          // Query all items that have reviews with matching ID
-          const items = await Item.find({
-            'reviews._id': report.targetId
-          });
-
-          for (const item of items) {
-            const review = item.reviews.find(
-              (r: any) => r._id.toString() === report.targetId.toString()
-            );
-            if (review) {
-              // Get shopper details
-              const shopper = await User.findById(review.shopper).select('name email');
-
-              // Find the catalogue and shop for this item
-              const catalogue = await Catalogue.findOne({
-                items: item._id
-              }).populate('shop', 'name');
-
-              reviewDetails = {
-                _id: review._id,
-                rating: review.rating,
-                comment: review.comment,
-                availability: review.availability,
-                reviewer: {
-                  name: shopper?.name || 'Unknown User',
-                  email: shopper?.email || 'unknown@email.com',
-                },
-                itemName: item.name,
-                shopName: (catalogue?.shop as any)?.name || 'Unknown Shop',
-                images: review.photos || [],
-                photos: review.photos || [],
-              };
-              break;
-            }
-          }
+          logger.debug(`Review ${report.targetId} not found in standalone collection`);
         }
 
         return {

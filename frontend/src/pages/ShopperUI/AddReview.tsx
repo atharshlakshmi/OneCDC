@@ -8,7 +8,7 @@ import { apiPost } from "@/lib/api";
 const AddReview: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { itemId, userId, catalogueId } = location.state || {};
+  const { itemId, itemName, userId, catalogueId } = location.state || {};
 
   const [availability, setAvailability] = useState<boolean | null>(null);
   const [description, setDescription] = useState("");
@@ -130,7 +130,7 @@ const AddReview: React.FC = () => {
           <label className="block text-gray-700 font-medium mb-1">
             Item Name
           </label>
-          <p className="text-gray-900 font-semibold">{itemId}</p>
+          <p className="text-gray-900 font-semibold">{itemName || itemId}</p>
         </div>
 
         {/* Availability Status */}

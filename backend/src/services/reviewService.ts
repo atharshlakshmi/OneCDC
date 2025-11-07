@@ -8,7 +8,7 @@ import logger from '../utils/logger';
 export const submitReview = async (
   shopperId: string,
   catalogueId: string,
-  itemName: string,
+  itemId: string,
   reviewData: {
     description: string;
     images?: string[];
@@ -21,20 +21,20 @@ export const submitReview = async (
     throw new AppError("Catalogue not found", 404);
   }
 
-  // Find item by name in Item collection
+  // Find item by ID in Item collection
   const item = await Item.findOne({
-    _id: { $in: catalogue.items },
-    name: itemName
+    _id: itemId,
+    catalogue: catalogueId
   });
   if (!item) {
-    throw new AppError('Item not found', 404);
+    throw new AppError('Item not found in catalogue', 404);
   }
 
   // Create review using standalone Review model
   try {
     const reviewDoc = {
       shopper: shopperId,
-      item: itemName, // Using item name as identifier
+      item: itemId, // Using item ID as identifier
       catalogue: catalogueId,
       shop: catalogue.shop,
       description: reviewData.description,
@@ -46,7 +46,11 @@ export const submitReview = async (
 
     const review = await Review.create(reviewDoc);
 
-    logger.info(`Review submitted for item ${itemName} by shopper ${shopperId}`);
+    // Add review ID to item's reviews array
+    item.reviews.push(review._id as any);
+    await item.save();
+
+    logger.info(`Review submitted for item ${itemId} by shopper ${shopperId}`);
 
     return {
       success: true,
@@ -66,6 +70,26 @@ export const submitReview = async (
 };
 
 /**
+ * Get User's Reviews
+ */
+export const getMyReviews = async (shopperId: string) => {
+  const reviews = await Review.find({
+    shopper: shopperId,
+    isActive: true
+  })
+  .populate('catalogue', 'name')
+  .populate('shop', 'name')
+  .sort({ createdAt: -1 })
+  .lean();
+
+  return {
+    success: true,
+    data: reviews,
+    total: reviews.length
+  };
+};
+
+/**
  * Get Reviews for Item
  */
 export const getItemReviews = async (catalogueId: string, itemId: string) => {
@@ -75,26 +99,30 @@ export const getItemReviews = async (catalogueId: string, itemId: string) => {
     throw new AppError('Catalogue not found', 404);
   }
 
-  // Find item directly from Item collection
+  // Find item by ID in the catalogue
   const item = await Item.findOne({
     _id: itemId,
-    _id: { $in: catalogue.items }
-  }).populate('reviews.shopper', 'name');
+    catalogue: catalogueId
+  });
 
   if (!item) {
-    throw new AppError('Item not found', 404);
+    throw new AppError('Item not found in catalogue', 404);
   }
 
-  const activeReviews = item.reviews.filter((review: any) => review.isActive);
+  // Find all reviews for this item from Review collection
+  const reviews = await Review.find({
+    item: itemId,
+    catalogue: catalogueId,
+    isActive: true
+  }).populate('shopper', 'name').lean();
 
   return {
     item: {
       id: item._id,
       name: item.name,
     },
-    reviews: activeReviews,
-    totalReviews: activeReviews.length,
-    averageRating: (item as any).averageRating || 0,
+    reviews: reviews,
+    totalReviews: reviews.length,
   };
 };
 
@@ -104,7 +132,7 @@ export const getItemReviews = async (catalogueId: string, itemId: string) => {
 export const updateReview = async (
   shopperId: string,
   catalogueId: string,
-  itemName: string,
+  itemId: string,
   reviewId: string,
   updates: {
     description?: string;
@@ -118,16 +146,8 @@ export const updateReview = async (
     throw new AppError('Catalogue not found', 404);
   }
 
-  // Find item directly from Item collection
-  const item = await Item.findOne({
-    _id: itemId,
-    _id: { $in: catalogue.items }
-  });
-  if (!item) {
-    throw new AppError('Item not found', 404);
-  }
-
-  const review = (item.reviews as any).id(reviewId);
+  // Find review from Review collection
+  const review = await Review.findById(reviewId);
   if (!review) {
     throw new AppError("Review not found", 404);
   }
@@ -138,7 +158,7 @@ export const updateReview = async (
   }
 
   // Verify review belongs to the correct item and catalogue
-  if (review.item !== itemName || review.catalogue.toString() !== catalogueId) {
+  if (review.item.toString() !== itemId || review.catalogue.toString() !== catalogueId) {
     throw new AppError("Review does not belong to this item", 400);
   }
 
@@ -152,7 +172,7 @@ export const updateReview = async (
   if (updates.images !== undefined) review.images = updates.images;
   if (updates.availability !== undefined) review.availability = updates.availability;
 
-  await item.save();
+  await review.save();
 
   logger.info(`Review ${reviewId} updated by shopper ${shopperId}`);
 
@@ -174,16 +194,8 @@ export const deleteReview = async (
     throw new AppError('Catalogue not found', 404);
   }
 
-  // Find item directly from Item collection
-  const item = await Item.findOne({
-    _id: itemId,
-    _id: { $in: catalogue.items }
-  });
-  if (!item) {
-    throw new AppError('Item not found', 404);
-  }
-
-  const review = (item.reviews as any).id(reviewId);
+  // Find review from Review collection
+  const review = await Review.findById(reviewId);
   if (!review) {
     throw new AppError("Review not found", 404);
   }
@@ -194,14 +206,13 @@ export const deleteReview = async (
   }
 
   // Verify review belongs to the correct item and catalogue
-  if (review.item !== itemName || review.catalogue.toString() !== catalogueId) {
+  if (review.item.toString() !== itemId || review.catalogue.toString() !== catalogueId) {
     throw new AppError("Review does not belong to this item", 400);
   }
 
   // Soft delete
   review.isActive = false;
-
-  await item.save();
+  await review.save();
 
   logger.info(`Review ${reviewId} deleted by shopper ${shopperId}`);
 

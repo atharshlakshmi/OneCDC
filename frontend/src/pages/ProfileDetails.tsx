@@ -16,8 +16,6 @@ type User = UserType & {
   businessRegistrationNumber?: string; // owner-only
 };
 
-
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api";
 const resolveUrl = (u?: string) => {
   if (!u) return "";
   // If it's a data URI (Base64), return as is

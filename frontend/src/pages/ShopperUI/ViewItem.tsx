@@ -320,6 +320,7 @@ const ViewItem: React.FC = () => {
                     navigate("/AddReview", {
                       state: {
                         itemId: item.id,
+                        itemName: item.name,
                         catalogueId: item.catalogueId,
                         userId: user._id,
                       },
