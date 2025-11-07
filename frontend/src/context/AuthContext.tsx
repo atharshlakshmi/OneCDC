@@ -1,15 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
-
-type User = {
-  _id: string;
-  email: string;
-  role: string;
-  name: string;
-  isActive?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-};
+import { authStorage } from "../lib/storage";
+import { logError } from "../lib/errorHandler";
+import type { User } from "../lib/types";
 
 type AuthContextValue = {
   user: User | null;
@@ -30,13 +23,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Load cached auth on first mount, then verify with server
   useEffect(() => {
-    const t = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
-    const u = localStorage.getItem("auth_user") || sessionStorage.getItem("auth_user");
+    const t = authStorage.getToken();
+    const u = authStorage.getUserData<User>();
     if (t) setToken(t);
     if (u) {
       try {
-        setUser(JSON.parse(u));
-      } catch {
+        setUser(u);
+      } catch (error) {
+        logError(error, "AuthContext - loading user data");
         setUser(null);
       }
     }
@@ -45,14 +39,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist to chosen storage and clear the other to avoid duplicates
+  // Persist to storage
   const persist = (u: User, t: string, remember: boolean) => {
-    const store = remember ? localStorage : sessionStorage;
-    const other = remember ? sessionStorage : localStorage;
-    store.setItem("auth_token", t);
-    store.setItem("auth_user", JSON.stringify(u));
-    other.removeItem("auth_token");
-    other.removeItem("auth_user");
+    // Note: Currently authStorage uses localStorage only
+    // If you need sessionStorage for "remember me" functionality,
+    // you can extend the storage utility to support both
+    authStorage.setToken(t);
+    authStorage.setUserData(u);
   };
 
   const login = (u: User, t: string, remember: boolean) => {
@@ -63,10 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearLocalAuth = () => {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_user");
-    sessionStorage.removeItem("auth_token");
-    sessionStorage.removeItem("auth_user");
+    authStorage.clearAll();
     setUser(null);
     setToken(null);
   };
@@ -85,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const verify = async () => {
-    const t = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
+    const t = authStorage.getToken();
     // If no token, consider unauthenticated (works for purely cookie backends too,
     // because /auth/verify below will just 401 and we clear user).
     try {
@@ -93,16 +83,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Accept either {success:true,data:{user}} or looser shapes if your API differs:
       const freshUser = resp?.data?.user as User;
       if (freshUser) {
-        const store = localStorage.getItem("auth_token") ? localStorage : sessionStorage;
-        store.setItem("auth_user", JSON.stringify(freshUser));
+        authStorage.setUserData(freshUser);
         setUser(freshUser);
         if (t) setToken(t);
         return;
       }
       // If shape unexpected, treat as unauth
       clearLocalAuth();
-    } catch {
-      // 401/expired/etc → clear locally (don’t call logout() to avoid extra redirects)
+    } catch (error) {
+      // 401/expired/etc → clear locally (don't call logout() to avoid extra redirects)
+      logError(error, "AuthContext - verify");
       clearLocalAuth();
     }
   };

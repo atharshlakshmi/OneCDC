@@ -1,10 +1,41 @@
-import { User, RegisteredShopper, Owner } from "../models";
-import { hashPassword, comparePassword } from "../utils/password";
-import { generateToken } from "../utils/jwt";
-import { UserRole } from "../types";
-import { AppError } from "../middleware";
-import logger from "../utils/logger";
-import { validateBusinessRegistration } from "../utils/validators";
+import { User, RegisteredShopper, Owner } from '../models';
+import { hashPassword, comparePassword } from '../utils/password';
+import { generateToken } from '../utils/jwt';
+import { UserRole, IUser, IRegisteredShopper, IOwner, UserAuthProvider } from '../types';
+import { AppError } from '../middleware';
+import logger from '../utils/logger';
+import { validateBusinessRegistration } from '../utils/validators';
+import config from '../config';
+
+/**
+ * Register Shopper Data Interface
+ */
+interface RegisterShopperData {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+  address?: string;
+}
+
+/**
+ * Register Owner Data Interface
+ */
+interface RegisterOwnerData {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+  businessRegistrationNumber: string;
+}
+
+/**
+ * Auth Response Interface
+ */
+interface AuthResponse {
+  user: IUser;
+  token: string;
+}
 
 /**
  * Mock Singpass Verification
@@ -13,7 +44,6 @@ import { validateBusinessRegistration } from "../utils/validators";
  */
 // @ts-ignore - Mock implementation for future use
 const verifySingpass = async (nric: string): Promise<boolean> => {
-  // Mock implementation
   logger.info(`Mock Singpass verification for NRIC: ${nric}`);
   // In production: call actual Singpass API
   return true;
@@ -24,7 +54,6 @@ const verifySingpass = async (nric: string): Promise<boolean> => {
  * In production, this would call the actual Corppass API
  */
 const verifyCorppass = async (uen: string): Promise<boolean> => {
-  // Mock implementation
   logger.info(`Mock Corppass verification for UEN: ${uen}`);
   // In production: call actual Corppass API
   return true;
@@ -33,11 +62,16 @@ const verifyCorppass = async (uen: string): Promise<boolean> => {
 /**
  * Register Shopper (Use Case #6-1)
  */
-export const registerShopper = async (data: { email: string; password: string; name: string; phone?: string; address?: string }) => {
+export const registerShopper = async (
+  data: RegisterShopperData
+): Promise<AuthResponse> => {
+  // Normalize email to lowercase
+  const normalizedEmail = data.email.toLowerCase();
+
   // Check if user already exists
-  const existingUser = await User.findOne({ email: data.email });
+  const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
-    throw new AppError("User with this email already exists", 409);
+    throw new AppError('User with this email already exists', 409);
   }
 
   // Hash password
@@ -45,21 +79,20 @@ export const registerShopper = async (data: { email: string; password: string; n
 
   // Create shopper
   const shopper = await RegisteredShopper.create({
-    email: data.email,
+    email: normalizedEmail,
     passwordHash,
     name: data.name,
     phone: data.phone,
-    role: UserRole.REGISTERED_SHOPPER,
     address: data.address,
     singpassVerified: true,
-    authProvider: "local",
+    authProvider: 'local' as UserAuthProvider,
     emailVerified: false,
     emailVerifiedAt: null,
   });
 
   // Generate token
   const token = generateToken({
-    id: (shopper._id as any).toString(),
+    id: shopper._id.toString(),
     email: shopper.email,
     role: shopper.role,
   });
@@ -75,14 +108,23 @@ export const registerShopper = async (data: { email: string; password: string; n
 /**
  * Register Owner (Use Case #6-2)
  */
-export const registerOwner = async (data: { email: string; password: string; name: string; phone?: string; businessRegistrationNumber: string }) => {
+export const registerOwner = async (
+  data: RegisterOwnerData
+): Promise<AuthResponse> => {
+  // Normalize email to lowercase
+  const normalizedEmail = data.email.toLowerCase();
+
   // Check if user already exists
-  const existingUser = await User.findOne({ email: data.email });
+  const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
-    throw new AppError("User with this email already exists", 409);
+    throw new AppError('User with this email already exists', 409);
   }
+
   if (!validateBusinessRegistration(data.businessRegistrationNumber)) {
-    throw new AppError("Invalid UEN format. Please use a valid Singapore UEN (e.g. 201912345K or T12LP3456A).", 400);
+    throw new AppError(
+      'Invalid UEN format. Please use a valid Singapore UEN (e.g. 201912345K or T12LP3456A).',
+      400
+    );
   }
 
   // Check if UEN already registered
@@ -90,13 +132,15 @@ export const registerOwner = async (data: { email: string; password: string; nam
     businessRegistrationNumber: data.businessRegistrationNumber,
   });
   if (existingOwner) {
-    throw new AppError("Business registration number already registered", 409);
+    throw new AppError('Business registration number already registered', 409);
   }
 
   // Verify with Corppass (mock)
-  const corppassVerified = await verifyCorppass(data.businessRegistrationNumber);
+  const corppassVerified = await verifyCorppass(
+    data.businessRegistrationNumber
+  );
   if (!corppassVerified) {
-    throw new AppError("Corppass verification failed", 400);
+    throw new AppError('Corppass verification failed', 400);
   }
 
   // Hash password
@@ -104,21 +148,20 @@ export const registerOwner = async (data: { email: string; password: string; nam
 
   // Create owner
   const owner = await Owner.create({
-    email: data.email,
+    email: normalizedEmail,
     passwordHash,
     name: data.name,
     phone: data.phone,
-    role: UserRole.OWNER,
     businessRegistrationNumber: data.businessRegistrationNumber,
     corppassVerified: true,
-    authProvider: "local",
+    authProvider: 'local' as UserAuthProvider,
     emailVerified: false,
     emailVerifiedAt: null,
   });
 
   // Generate token
   const token = generateToken({
-    id: (owner._id as any).toString(),
+    id: owner._id.toString(),
     email: owner.email,
     role: owner.role,
   });
@@ -134,28 +177,33 @@ export const registerOwner = async (data: { email: string; password: string; nam
 /**
  * Login (Use Case #6-3)
  */
-export const login = async (email: string, password: string) => {
+export const login = async (
+  email: string,
+  password: string
+): Promise<AuthResponse> => {
+  // Normalize email to lowercase
+  const normalizedEmail = email.toLowerCase();
+
   // Find user
-  const user = await User.findOne({ email, isActive: true });
+  const user = await User.findOne({ email: normalizedEmail, isActive: true });
   if (!user) {
-    throw new AppError("Invalid email or password", 401);
+    throw new AppError('Invalid email or password', 401);
   }
 
   // Compare password
   const isPasswordValid = await comparePassword(password, user.passwordHash);
   if (!isPasswordValid) {
-    throw new AppError("Invalid email or password", 401);
+    throw new AppError('Invalid email or password', 401);
   }
 
-  // 3) Block unverified LOCAL accounts; allow Google users to pass
-  // (If you didn't add authProvider, just check !user.emailVerified)
-  if ((user as any).authProvider === "local" && !user.emailVerified) {
-    throw new AppError("Please verify your email before logging in.", 403);
+  // Block unverified LOCAL accounts; allow Google users to pass
+  if (user.authProvider === 'local' && !user.emailVerified) {
+    throw new AppError('Please verify your email before logging in.', 403);
   }
 
   // Generate token
   const token = generateToken({
-    id: (user._id as any).toString(),
+    id: user._id.toString(),
     email: user.email,
     role: user.role,
   });
@@ -171,10 +219,10 @@ export const login = async (email: string, password: string) => {
 /**
  * Get User Profile
  */
-export const getUserProfile = async (userId: string) => {
-  const user = await User.findById(userId).select("-passwordHash");
+export const getUserProfile = async (userId: string): Promise<IUser> => {
+  const user = await User.findById(userId).select('-passwordHash');
   if (!user) {
-    throw new AppError("User not found", 404);
+    throw new AppError('User not found', 404);
   }
   return user;
 };
@@ -183,7 +231,14 @@ export const getUserProfile = async (userId: string) => {
  * Update User Profile
  */
 export async function updateUserProfile(userId: string, patch: Partial<{ name: string; gender: string; phone: string; address: string; avatarUrl: string }>) {
-  const updated = await User.findByIdAndUpdate(userId, { $set: patch }, { new: true, runValidators: true }).select("-password").lean();
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  Object.assign(user, patch);
+
+  const updated = await user.save();
 
   return updated;
 }

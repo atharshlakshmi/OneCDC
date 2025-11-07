@@ -1,55 +1,83 @@
-import mongoose, { Schema, Model } from "mongoose";
-import { IReview } from "../types";
+import mongoose, { Schema, Model, Types } from "mongoose";
 
 /**
- * Review Schema - Shopper-submitted item reviews
+ * Review Interface for standalone model
  */
-const ReviewSchema = new Schema(
+export interface IReviewDocument extends mongoose.Document {
+  shopper: Types.ObjectId;
+  item: Types.ObjectId; // Using item name as identifier
+  catalogue: Types.ObjectId;
+  shop: Types.ObjectId;
+  description: string;
+  availability: boolean;
+  images: string[];
+  warnings: number;
+  reportCount: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  // Instance methods
+  addWarning(): Promise<this>;
+  deactivate(): Promise<this>;
+  activate(): Promise<this>;
+}
+
+/**
+ * Review Model Interface with Static Methods
+ */
+interface IReviewModel extends Model<IReviewDocument> {
+  getShopperReviews(shopperId: Types.ObjectId): Promise<IReviewDocument[]>;
+  getShopReviews(shopId: Types.ObjectId): Promise<IReviewDocument[]>;
+  getItemReviews(itemName: string): Promise<IReviewDocument[]>;
+}
+
+/**
+ * Review Schema
+ * Represents user reviews for catalogue items as a standalone collection
+ */
+const ReviewSchema = new Schema<IReviewDocument>(
   {
     shopper: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     item: {
       type: Schema.Types.ObjectId,
       ref: "Item",
       required: true,
-      index: true,
     },
     catalogue: {
       type: Schema.Types.ObjectId,
       ref: "Catalogue",
       required: true,
-      index: true,
     },
     shop: {
       type: Schema.Types.ObjectId,
       ref: "Shop",
       required: true,
-      index: true,
     },
     description: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 1000,
     },
     availability: {
       type: Boolean,
       required: true,
     },
-    images: {
-      type: [String],
-      default: [],
-      validate: {
-        validator: function (images: string[]) {
-          return images.length <= 10;
-        },
-        message: "Maximum 10 images allowed per review",
+    images: [
+      {
+        type: String,
       },
-    },
+    ],
     warnings: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    reportCount: {
       type: Number,
       default: 0,
       min: 0,
@@ -60,21 +88,91 @@ const ReviewSchema = new Schema(
     },
   },
   {
-    timestamps: true,
+    timestamps: true, // Adds createdAt and updatedAt
   }
 );
 
 /**
  * Indexes
  */
-ReviewSchema.index({ shopper: 1 });
-ReviewSchema.index({ catalogue: 1 });
-ReviewSchema.index({ shop: 1 });
-ReviewSchema.index({ item: "text", description: "text" });
-ReviewSchema.index({ availability: 1 });
-ReviewSchema.index({ isActive: 1 });
+ReviewSchema.index({ item: 1, isActive: 1 }); // Get reviews for an item
+ReviewSchema.index({ shopper: 1, isActive: 1 }); // Get reviews by a shopper
+ReviewSchema.index({ catalogue: 1, isActive: 1 }); // Get reviews for a catalogue
+ReviewSchema.index({ shop: 1, isActive: 1 }); // Get reviews for a shop
+ReviewSchema.index({ availability: 1 }); // Filter by availability
+ReviewSchema.index({ createdAt: -1 }); // Sort by date (newest first)
+
+// Compound index for uniqueness
+ReviewSchema.index({ item: 1, shopper: 1 }, { unique: true }); // One review per item per shopper
+
+/**
+ * Instance Methods
+ */
+
+/**
+ * Add warning to review
+ */
+ReviewSchema.methods.addWarning = function () {
+  this.warnings += 1;
+  return this.save();
+};
+
+/**
+ * Deactivate review (soft delete)
+ */
+ReviewSchema.methods.deactivate = function () {
+  this.isActive = false;
+  return this.save();
+};
+
+/**
+ * Activate review
+ */
+ReviewSchema.methods.activate = function () {
+  this.isActive = true;
+  return this.save();
+};
+
+/**
+ * Static Methods
+ */
+
+/**
+ * Get reviews for a shopper
+ */
+ReviewSchema.statics.getShopperReviews = async function (shopperId: Types.ObjectId) {
+  return this.find({ shopper: shopperId, isActive: true }).populate("shop", "name").sort({ createdAt: -1 });
+};
+
+/**
+ * Get reviews for a shop
+ */
+ReviewSchema.statics.getShopReviews = async function (shopId: Types.ObjectId) {
+  return this.find({ shop: shopId, isActive: true }).populate("shopper", "name").sort({ createdAt: -1 });
+};
+
+/**
+ * Get reviews for an item
+ */
+ReviewSchema.statics.getItemReviews = async function (itemName: string) {
+  return this.find({ item: itemName, isActive: true }).populate("shopper", "name email").sort({ createdAt: -1 });
+};
+
+/**
+ * Pre-save validation
+ */
+ReviewSchema.pre("save", function (next) {
+  // Validate images array length - maximum 5 images allowed
+  if (this.images && this.images.length > 5) {
+    throw new Error("Maximum 5 images allowed per review");
+  }
+
+  // Unique index on { item, shopper } will handle duplicate prevention automatically
+
+  next();
+});
 
 /**
  * Review Model
  */
-export const Review: Model<IReview> = mongoose.model<IReview>("Review", ReviewSchema);
+export const Review = mongoose.model<IReviewDocument, IReviewModel>("Review", ReviewSchema);

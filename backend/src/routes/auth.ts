@@ -110,11 +110,7 @@ router.put(
   authController.updateProfile
 );
 
-/**
- * POST /api/auth/profile/avatar
- * multipart form-data field: "avatar"
- */
-router.post("/profile/avatar", authenticate, upload.single("avatar"), authController.uploadAvatar);
+
 
 /**
  * GET /api/auth/verify

@@ -2,19 +2,14 @@ import mongoose, { Schema, Model } from "mongoose";
 import { IItem } from "../types";
 
 /**
- * Item Schema (standalone collection)
+ * Item Schema
  */
 const ItemSchema = new Schema<IItem>(
   {
-    catalogue: {
-      type: Schema.Types.ObjectId,
-      ref: "Catalogue",
-      required: true,
-      index: true,
-    },
+    catalogue: { type: Schema.Types.ObjectId, ref: "Catalogue", required: true },
     name: { type: String, required: true, trim: true, index: "text" },
     description: { type: String, required: true, trim: true, maxlength: 500 },
-    price: { type: Number, min: 0 },
+    price: { type: Number, required: true, min: 0 },
     availability: { type: Boolean, default: true },
     images: {
       type: [String],
@@ -30,10 +25,7 @@ const ItemSchema = new Schema<IItem>(
     cdcVoucherAccepted: { type: Boolean, default: true },
     lastUpdatedDate: { type: Date, default: Date.now },
     lastUpdatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    reviews: {
-      type: [{ type: Schema.Types.ObjectId, ref: "Review" }],
-      default: [],
-    },
+    reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
   },
   {
     timestamps: true,

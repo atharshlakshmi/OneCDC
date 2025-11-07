@@ -104,20 +104,7 @@ export default function ProfileDetails() {
     else setAvatarPreview(resolveUrl(avatarUrl) || "");
   }
 
-  async function uploadAvatarIfNeeded(): Promise<string | undefined> {
-    if (!avatarFile) return;
-    const fd = new FormData();
-    fd.append("avatar", avatarFile);
-    const res = await fetch(`${API_BASE}/auth/profile/avatar`, {
-      method: "POST",
-      credentials: "include",
-      headers: { ...authHeaders() }, // do NOT set Content-Type manually
-      body: fd,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.message || "Avatar upload failed");
-    return data?.data?.url || data?.data?.avatarUrl || data?.url;
-  }
+
 
   async function save() {
     setSaving(true);
@@ -137,23 +124,21 @@ export default function ProfileDetails() {
         setNewPassword("");
       }
 
-      // 2) Upload avatar if needed
-      const uploadedUrl = await uploadAvatarIfNeeded();
+    const fd = new FormData();
+    fd.append("name", name.trim());
+    fd.append("gender", gender);
+    if (phone.trim()) {
+      fd.append("phone", phone.trim());
+    }
+    fd.append("address", address.trim());
+    if (avatarFile) {
+      fd.append("avatar", avatarFile);
+    }
 
-      // 3) Save profile
-      const body = {
-        name: name.trim(),
-        gender,
-        phone: phone.trim(),
-        address: address.trim(),
-        avatarUrl: uploadedUrl ?? avatarUrl,
-      };
-
-      const resp = await apiFetch("/auth/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+    const resp = await apiFetch("/auth/profile", {
+      method: "PUT",
+      body: fd, // use FormData
+    });
 
       const data: any = resp?.data?.user ?? resp?.data ?? resp;
       setUser(data);

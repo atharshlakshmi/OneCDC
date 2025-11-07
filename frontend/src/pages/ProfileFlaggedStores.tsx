@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "../lib/api";
-import { Store, MapPin, Phone, Mail, AlertTriangle, Calendar, User, Edit, Eye } from "lucide-react";
+import { Store, MapPin, Phone, Mail, AlertTriangle, Calendar, User, Edit } from "lucide-react";
 
 interface ModerationLog {
   _id: string;
@@ -51,10 +51,7 @@ export default function ProfileFlaggedStores() {
     const fetchFlaggedShops = async () => {
       try {
         setLoading(true);
-        const response = await apiFetch<{ success: boolean; data: FlaggedShop[] }>(
-          "/owner/flagged-shops",
-          { method: "GET" }
-        );
+        const response = await apiFetch<{ success: boolean; data: FlaggedShop[] }>("/owner/flagged-shops", { method: "GET" });
 
         if (response?.success && response?.data) {
           setShops(response.data);
@@ -76,19 +73,11 @@ export default function ProfileFlaggedStores() {
 
   // Show loading while checking auth status
   if (!checked) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-gray-600">
-        Checking session…
-      </div>
-    );
+    return <div className="min-h-[60vh] flex items-center justify-center text-gray-600">Checking session…</div>;
   }
 
   if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-gray-600">
-        Loading flagged stores…
-      </div>
-    );
+    return <div className="min-h-[60vh] flex items-center justify-center text-gray-600">Loading flagged stores…</div>;
   }
 
   // Format date helper
@@ -110,26 +99,16 @@ export default function ProfileFlaggedStores() {
           <AlertTriangle size={32} className="text-orange-600" />
           Flagged Stores
         </h1>
-        <p className="text-gray-600">
-          Stores that have been flagged by admin due to reports
-        </p>
+        <p className="text-gray-600">Stores that have been flagged by admin due to reports</p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {error}
-        </div>
-      )}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
 
       {shops.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-200">
           <AlertTriangle size={64} className="mx-auto text-gray-300 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">
-            No flagged stores
-          </h2>
-          <p className="text-gray-500 mb-6">
-            Great! None of your stores have been flagged by admin.
-          </p>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">No flagged stores</h2>
+          <p className="text-gray-500 mb-6">Great! None of your stores have been flagged by admin.</p>
           <button
             onClick={() => navigate("/profile/stores")}
             className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors duration-200"
@@ -149,10 +128,7 @@ export default function ProfileFlaggedStores() {
                 : null;
 
             return (
-              <div
-                key={shop._id}
-                className="bg-white border-2 border-orange-200 rounded-2xl overflow-hidden shadow-md"
-              >
+              <div key={shop._id} className="bg-white border-2 border-orange-200 rounded-2xl overflow-hidden shadow-md">
                 {/* Warning Header */}
                 <div className="bg-orange-50 border-b-2 border-orange-200 px-6 py-4">
                   <div className="flex items-center justify-between">
@@ -167,11 +143,7 @@ export default function ProfileFlaggedStores() {
                         </p>
                       </div>
                     </div>
-                    {!shop.isActive && (
-                      <span className="bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                        Deactivated
-                      </span>
-                    )}
+                    {!shop.isActive && <span className="bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-full">Deactivated</span>}
                   </div>
                 </div>
 
@@ -181,11 +153,7 @@ export default function ProfileFlaggedStores() {
                     <div className="flex-shrink-0">
                       <div className="w-48 h-48 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl overflow-hidden">
                         {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={shop.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={imageUrl} alt={shop.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="flex items-center justify-center h-full">
                             <Store size={48} className="text-purple-300" />
@@ -196,12 +164,8 @@ export default function ProfileFlaggedStores() {
 
                     {/* Store Details */}
                     <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                        {shop.name}
-                      </h2>
-                      <p className="text-gray-600 mb-4 line-clamp-2">
-                        {shop.description}
-                      </p>
+                      <h2 className="text-2xl font-bold text-gray-800 mb-2">{shop.name}</h2>
+                      <p className="text-gray-600 mb-4 line-clamp-2">{shop.description}</p>
 
                       <div className="space-y-2 mb-4">
                         <div className="flex items-start gap-2 text-sm text-gray-600">
@@ -225,16 +189,7 @@ export default function ProfileFlaggedStores() {
                       {/* Action Buttons */}
                       <div className="flex gap-3">
                         <button
-                          onClick={() => navigate(`/ViewShop/${shop._id}`)}
-                          className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium"
-                        >
-                          <Eye size={16} />
-                          View Store
-                        </button>
-                        <button
-                          onClick={() =>
-                            navigate("/EditShop", { state: { shopId: shop._id } })
-                          }
+                          onClick={() => navigate("/EditShop", { state: { shopId: shop._id } })}
                           className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium"
                         >
                           <Edit size={16} />
@@ -253,14 +208,9 @@ export default function ProfileFlaggedStores() {
                       </h3>
                       <div className="space-y-3">
                         {shop.moderationLogs.map((log, index) => (
-                          <div
-                            key={log._id}
-                            className="bg-orange-50 border border-orange-200 rounded-lg p-4"
-                          >
+                          <div key={log._id} className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                             <div className="flex items-start justify-between mb-2">
-                              <span className="text-sm font-semibold text-orange-900">
-                                Warning #{shop.moderationLogs.length - index}
-                              </span>
+                              <span className="text-sm font-semibold text-orange-900">Warning #{shop.moderationLogs.length - index}</span>
                               <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <Calendar size={14} />
                                 <span>{formatDate(log.timestamp || log.createdAt)}</span>
@@ -277,8 +227,7 @@ export default function ProfileFlaggedStores() {
                             <div className="flex items-center gap-2 text-xs text-gray-500">
                               <User size={14} />
                               <span>
-                                Issued by: {log.admin?.name || "Admin"} (
-                                {log.admin?.email || "N/A"})
+                                Issued by: {log.admin?.name || "Admin"} ({log.admin?.email || "N/A"})
                               </span>
                             </div>
                           </div>

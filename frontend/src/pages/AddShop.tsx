@@ -5,13 +5,14 @@ import { Store, MapPin, Phone, Mail, Clock, Image as ImageIcon, X } from "lucide
 import PageHeader from "@/components/PageHeader";
 
 const SHOP_CATEGORIES = [
-  { value: "food_beverage", label: "Food & Beverage" },
+  { value: "fashion & apparel", label: "Fashion & Apparel" },
+  { value: "home products", label: "Home Products" },
+  { value: "health & beauty", label: "Health & Beauty" },
+  { value: "toys & hobbies", label: "Toys & Hobbies" },
   { value: "grocery", label: "Grocery" },
-  { value: "healthcare", label: "Healthcare" },
-  { value: "retail", label: "Retail" },
-  { value: "services", label: "Services" },
+  { value: "food & beverage", label: "Food & Beverage" },
   { value: "electronics", label: "Electronics" },
-  { value: "fashion", label: "Fashion" },
+  { value: "services", label: "Services" },
   { value: "other", label: "Other" },
 ];
 
@@ -73,12 +74,27 @@ export default function AddShop() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      console.log("No files selected");
+      return;
+    }
+
+    console.log("Files selected:", files.length);
 
     // Check if adding these files would exceed the limit
     if (formData.images.length + files.length > 10) {
       setError("Maximum 10 images allowed");
       return;
+    }
+
+    // Validate file sizes (5MB each)
+    const maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
+    for (const file of Array.from(files)) {
+      console.log(`File: ${file.name}, Size: ${file.size} bytes, Type: ${file.type}`);
+      if (file.size > maxFileSize) {
+        setError(`File "${file.name}" is too large. Maximum size is 5MB.`);
+        return;
+      }
     }
 
     setUploadingImage(true);
@@ -93,6 +109,8 @@ export default function AddShop() {
         const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
         const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
+        console.log(`Uploading ${file.name} to ${apiBase}/upload/image`);
+
         const response = await fetch(`${apiBase}/upload/image`, {
           method: "POST",
           headers: {
@@ -102,23 +120,33 @@ export default function AddShop() {
           body: uploadFormData,
         });
 
+        console.log(`Upload response status: ${response.status}`);
+
         if (!response.ok) {
-          throw new Error("Upload failed");
+          const errorText = await response.text();
+          console.error("Upload error response:", errorText);
+          throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
+        console.log("Upload response data:", data);
+
         if (data?.success && data?.data?.url) {
+          console.log("Image URL received:", data.data.url.substring(0, 50) + "...");
           return data.data.url;
         }
-        throw new Error("Upload failed");
+        throw new Error("Upload response missing URL");
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
+      console.log("All uploads completed. Total URLs:", uploadedUrls.length);
 
       setFormData((prev) => ({
         ...prev,
         images: [...prev.images, ...uploadedUrls],
       }));
+
+      console.log("Images added to form data");
     } catch (err: any) {
       console.error("Error uploading images:", err);
       setError(err?.message || "Failed to upload images. Please try again.");
@@ -364,23 +392,27 @@ export default function AddShop() {
 
             {formData.images.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {formData.images.map((img, index) => {
-                  // Convert relative URL to absolute URL
-                  const imageUrl = img.startsWith("/") ? `${import.meta.env.VITE_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${img}` : img;
-
-                  return (
-                    <div key={index} className="relative group">
-                      <img src={imageUrl} alt={`Shop ${index + 1}`} className="w-full h-32 object-cover rounded-lg border border-gray-300" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  );
-                })}
+                {formData.images.map((img, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={img}
+                      alt={`Shop ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                      onError={(e) => {
+                        console.error("Image failed to load:", img.substring(0, 50) + "...");
+                        e.currentTarget.src =
+                          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EError%3C/text%3E%3C/svg%3E";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

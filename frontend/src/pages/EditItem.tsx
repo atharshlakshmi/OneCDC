@@ -23,10 +23,11 @@ interface Item {
 const EditItem: React.FC = () => {
   const navigate = useNavigate();
   const { shopId, itemId } = useParams<{ shopId: string; itemId: string }>();
-  const { isAuthed, checked } = useAuth();
+  const { isAuthed, checked, user } = useAuth();
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   // Form state
   const [itemName, setItemName] = useState("");
@@ -46,9 +47,53 @@ const EditItem: React.FC = () => {
     }
   }, [checked, isAuthed, navigate]);
 
+  // Verify shop ownership
+  useEffect(() => {
+    const verifyOwnership = async () => {
+      if (!shopId || !user || !isAuthed) {
+        setIsAuthorized(false);
+        return;
+      }
+
+      try {
+        // Fetch owner's shops to verify ownership
+        const response = await apiFetch<{ success: boolean; data: any[] }>("/owner/shops", { method: "GET" });
+
+        if (response?.success && response?.data) {
+          const ownsShop = response.data.some((s: any) => s._id === shopId);
+          setIsAuthorized(ownsShop);
+
+          if (!ownsShop) {
+            alert("You are not authorized to edit items from this shop");
+          }
+        } else {
+          setIsAuthorized(false);
+        }
+      } catch (error: any) {
+        console.error("Failed to verify shop ownership:", error);
+        setIsAuthorized(false);
+      }
+    };
+
+    if (checked && isAuthed) {
+      verifyOwnership();
+    }
+  }, [shopId, user, isAuthed, checked]);
+
   // Fetch shop and item details
   useEffect(() => {
     const fetchData = async () => {
+      // Don't fetch if not authorized
+      if (isAuthorized === false) {
+        setLoading(false);
+        return;
+      }
+
+      // Wait for authorization check
+      if (isAuthorized === null) {
+        return;
+      }
+
       if (!shopId || !itemId) {
         setLoading(false);
         return;
@@ -90,7 +135,7 @@ const EditItem: React.FC = () => {
     if (checked && isAuthed && shopId && itemId) {
       fetchData();
     }
-  }, [checked, isAuthed, shopId, itemId]);
+  }, [checked, isAuthed, shopId, itemId, isAuthorized]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {

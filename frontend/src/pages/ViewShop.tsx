@@ -243,10 +243,8 @@ const ViewShop: React.FC = () => {
                     // Owner should use the proper catalogue management
                     navigate(`/ManageCatalogue/${shop.id}`);
                   } else {
-                    // Shoppers use the old flow
-                    navigate("/AddItem", {
-                      state: { userId: currentUser.id, shopID: shop.id },
-                    });
+                    // Shoppers use the AddItem page
+                    navigate(`/AddItem/${shop.id}`);
                   }
                 }}
                 variant="outline"

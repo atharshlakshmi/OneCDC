@@ -1,4 +1,4 @@
-import { Catalogue, Review, Shop } from "../models";
+import { Catalogue, Review, Shop, Item } from "../models";
 import { AppError } from "../middleware";
 import logger from "../utils/logger";
 import mongoose from "mongoose";
@@ -66,11 +66,26 @@ export const submitReview = async (
     throw new AppError("Shop not found", 404);
   }
 
+  // Find the item by ID (could be ObjectId or name)
+  let itemObjectId: mongoose.Types.ObjectId;
+
+  // Check if itemId is a valid ObjectId
+  if (mongoose.Types.ObjectId.isValid(itemId) && itemId.length === 24) {
+    itemObjectId = new mongoose.Types.ObjectId(itemId);
+  } else {
+    // If not an ObjectId, try to find by name
+    const item = await Item.findOne({ name: itemId });
+    if (!item) {
+      throw new AppError("Item not found", 404);
+    }
+    itemObjectId = item._id;
+  }
+
   // Check if user already reviewed this item at this shop
   const existingReview = await Review.findOne({
     shopper: new mongoose.Types.ObjectId(shopperId),
     catalogue: new mongoose.Types.ObjectId(catalogueId),
-    item: new mongoose.Types.ObjectId(itemId),
+    item: itemObjectId,
     isActive: true,
   });
 
@@ -83,17 +98,18 @@ export const submitReview = async (
     shopper: shopperId,
     catalogue: catalogueId,
     shop: shop._id,
-    item: itemId,
+    item: itemObjectId,
     description: reviewData.description,
     images: reviewData.images || [],
     availability: reviewData.availability,
     warnings: 0,
+    reportCount: 0,
     isActive: true,
   });
 
   await review.save();
 
-  logger.info(`Review submitted for item ${itemId} at shop ${shop._id} by shopper ${shopperId}`);
+  logger.info(`Review submitted for item ${itemObjectId} at shop ${shop._id} by shopper ${shopperId}`);
 
   return { success: true, message: "Review submitted successfully", reviewId: review._id };
 };
@@ -199,4 +215,63 @@ export const deleteReview = async (shopperId: string, catalogueId: string, itemI
   logger.info(`Review ${reviewId} deleted by shopper ${shopperId}`);
 
   return { success: true, message: "Review deleted successfully" };
+};
+
+/**
+ * Get User's Flagged Reviews
+ * Returns reviews with warnings > 0 AND isActive: false
+ */
+export const getFlaggedReviews = async (shopperId: string) => {
+  const flaggedReviews = await Review.find({
+    shopper: new mongoose.Types.ObjectId(shopperId),
+    warnings: { $gt: 0 },
+    isActive: false,
+  })
+    .populate("shop", "name")
+    .populate("item", "name")
+    .populate({
+      path: "catalogue",
+      select: "shop",
+      populate: {
+        path: "shop",
+        select: "name",
+      },
+    })
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  // Transform the data to match expected format
+  const transformedReviews = flaggedReviews.map((review: any) => ({
+    _id: review._id,
+    itemId: review.item?._id,
+    itemName: review.item?.name || "Unknown Item",
+    catalogueId: review.catalogue?._id || review.catalogue,
+    shopName: review.shop?.name || review.catalogue?.shop?.name || "Unknown Shop",
+    description: review.description,
+    images: review.images || [],
+    availability: review.availability,
+    warnings: review.warnings,
+    reportCount: review.reportCount || 0,
+    createdAt: review.createdAt,
+    updatedAt: review.updatedAt,
+  }));
+
+  return transformedReviews;
+};
+
+/**
+ * Get a single review by ID
+ */
+export const getReviewById = async (reviewId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+    throw new AppError("Invalid review ID", 400);
+  }
+
+  const review = await Review.findById(reviewId).lean();
+
+  if (!review) {
+    throw new AppError("Review not found", 404);
+  }
+
+  return review;
 };

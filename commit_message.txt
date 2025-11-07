@@ -1,0 +1,1 @@
+feat: redirect owner to stores page and remove button

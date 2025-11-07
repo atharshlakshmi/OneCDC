@@ -81,22 +81,22 @@ const categorizeItemWithHF = async (itemQuery: string): Promise<ShopCategory> =>
       console.warn("No Hugging Face token found, defaulting to ShopCategory.OTHER");
       return ShopCategory.OTHER;
     }
-
     // canonical categories (enum values)
     const categories: ShopCategory[] = [
       ShopCategory.FOOD_BEVERAGE,
       ShopCategory.GROCERY,
-      ShopCategory.HEALTHCARE,
+      ShopCategory.HEALTHANDBEAUTY,
       ShopCategory.RETAIL,
-      ShopCategory.SERVICES,
       ShopCategory.ELECTRONICS,
+      ShopCategory.SERVICES,
+      ShopCategory.HOMEPRODUCTS,
       ShopCategory.FASHION,
       ShopCategory.OTHER,
     ];
 
     console.log(`🔍 Cache miss for "${itemQuery}", calling HF API...`);
 
-    const response = await fetch("https://router.huggingface.co/hf-inference/models/typeform/distilbert-base-uncased-mnli", {
+    const response = await fetch("https://router.huggingface.co/hf-inference/models/facebook/bart-large-mnli", {
       headers: {
         Authorization: `Bearer ${HF_TOKEN}`,
         "Content-Type": "application/json",
@@ -213,19 +213,25 @@ const categorizeAndSuggestShops = async (itemQuery: string, userLocation: { lat:
 /**
  * Search for Items
  */
-export const searchItems = async (filters: SearchFilters, sortBy: SortOption = SortOption.DISTANCE, pagination: PaginationOptions = { page: 1, limit: 20 }) => {
+export const searchItems = async (
+  filters: SearchFilters,
+
+  sortBy: SortOption = SortOption.DISTANCE,
+  pagination: PaginationOptions = { page: 1, limit: 20 },
+  options: { allowFallback?: boolean } = { allowFallback: true }
+) => {
   const { query, category, availability, ownerVerified, location, maxDistance, openNow } = filters;
   const userLocation = location || getDefaultLocation();
-
-  console.log("❗❗❗❗ Starting item search", { filters, sortBy, userLocation });
 
   // --- 1. Build item query ---
   const itemQuery: any = {};
 
+  // If query provided, search by name or description
   if (query && query.trim()) {
     const q = query.toLowerCase().trim();
     itemQuery.$or = [{ name: { $regex: q, $options: "i" } }, { description: { $regex: q, $options: "i" } }];
   }
+  // If no query, we'll fetch all items (no filter on name/description)
 
   if (availability !== undefined) {
     itemQuery.availability = availability;
@@ -233,9 +239,28 @@ export const searchItems = async (filters: SearchFilters, sortBy: SortOption = S
 
   // --- 2. Find items from items collection ---
   const items = await Item.find(itemQuery).lean();
+  console.log("herehrherhe", items);
   console.log(`🧾 Found ${items.length} items from items collection`);
 
+  // If no items found and there WAS a query, try fallback
   if (!items.length && query?.trim()) {
+    console.log("⚙️ No items found for query; checking fallback settings...");
+
+    // If caller opts out of fallback (eg. suggestion dropdown), return empty
+    // results without invoking the LLM/shop-suggestion flow.
+    if (options.allowFallback === false) {
+      console.log("↩️ Fallback disabled by caller. Returning empty results.");
+      return {
+        results: [],
+        pagination: {
+          ...pagination,
+          total: 0,
+          pages: 0,
+        },
+        isFallback: false,
+      };
+    }
+
     console.log("⚙️ No items found, using LLM category suggestion...");
     const suggestion = await categorizeAndSuggestShops(query, userLocation, pagination);
     console.log(`🧾 Return: Fallback found ${suggestion.suggestedShops.length} shops in category ${suggestion.suggestedCategory}`);
@@ -270,6 +295,12 @@ export const searchItems = async (filters: SearchFilters, sortBy: SortOption = S
 
   const shops = await Shop.find(shopQuery).lean();
   console.log(`🏪 Found ${shops.length} shops matching catalogue IDs`);
+
+  // If we have items but no matching shops, this is a data integrity issue
+  if (items.length > 0 && shops.length === 0) {
+    console.warn(`⚠️ Data integrity issue: Found ${items.length} items but no matching shops!`);
+    console.warn(`⚠️ Catalogue IDs from items:`, catalogueIds);
+  }
 
   // --- 5. Create a map of catalogue ID -> shop ---
   const catalogueToShopMap = new Map(shops.map((shop) => [shop.catalogue?.toString(), shop]));
@@ -465,9 +496,14 @@ export const getShopById = async (shopId: string) => {
  * Get Shop Catalogue
  */
 export const getShopCatalogue = async (shopId: string) => {
-  const catalogue = await Catalogue.findOne({ shop: shopId }).populate("shop");
-  if (!catalogue) {
-    throw new AppError("Catalogue not found", 404);
-  }
+  const catalogue = await Catalogue.findOne({ shop: shopId }).populate(["shop", "items"]);
   return catalogue;
+};
+
+export const getShopDetails = async (shopId: string) => {
+  const shop = await Shop.findOne({ _id: shopId, isActive: true });
+  if (!shop) {
+    throw new AppError("Shop not found", 404);
+  }
+  return shop;
 };

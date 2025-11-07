@@ -50,15 +50,7 @@ export default function ProfileHome() {
       iconColor: "text-red-600",
       showFor: ["registered_shopper"], // Only shoppers have reviews to be flagged
     },
-    {
-      title: "My Stores",
-      description: "View and manage your store pages",
-      icon: Store,
-      path: "/profile/stores",
-      color: "bg-purple-50 hover:bg-purple-100 border-purple-200",
-      iconColor: "text-purple-600",
-      showFor: ["owner"], // Only owners have stores
-    },
+
     {
       title: "Flagged Stores",
       description: "Your stores that have been flagged by admin",

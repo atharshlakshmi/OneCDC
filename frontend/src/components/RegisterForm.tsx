@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiFetch } from "../lib/api";
-import type { Proportions } from "lucide-react";
+import { EMAIL_REGEX, PASSWORD_MIN_LENGTH, PASSWORD_RULES } from "../lib/constants";
+import type { NavigationState, RegisterFormData } from "../lib/types";
 
 type Props = {
   title: string; // "Create Owner Account" / "Create Shopper Account"
@@ -11,23 +12,13 @@ type Props = {
   padClass?: string; // 👈 NEW (optional)
 };
 
-type RegisterBody = {
-  name: string;
-  email: string;
-  password: string;
-  uen?: string; // owners only
-};
-
-const EMAIL_RE = /^(?:[a-zA-Z0-9_'^&+%`{}~|-]+(?:\.[a-zA-Z0-9_'^&+%`{}~|-]+)*)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-const PW_MIN = 8;
-const PW_RULES = { upper: /[A-Z]/, lower: /[a-z]/, digit: /\d/ };
-
 export default function RegisterForm({ title, endpoint, includeUEN = false, redirectTo = "/login", padClass = "pt-24 sm:pt-18" }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from || redirectTo;
+  const navState = location.state as NavigationState | null;
+  const from = navState?.from || redirectTo;
 
-  const [values, setValues] = useState<RegisterBody>({
+  const [values, setValues] = useState<RegisterFormData>({
     name: "",
     email: "",
     password: "",
@@ -46,16 +37,16 @@ export default function RegisterForm({ title, endpoint, includeUEN = false, redi
     const errs: Record<string, string> = {};
     if (!values.name.trim()) errs.name = "Name is required";
     if (!values.email) errs.email = "Email is required";
-    else if (!EMAIL_RE.test(values.email)) errs.email = "Enter a valid email";
+    else if (!EMAIL_REGEX.test(values.email)) errs.email = "Enter a valid email";
     if (includeUEN) {
       if (!values.uen?.trim()) errs.uen = "UEN is required";
     }
     if (!values.password) errs.password = "Password is required";
     else {
-      if (values.password.length < PW_MIN) errs.password = `At least ${PW_MIN} characters`;
-      else if (!PW_RULES.upper.test(values.password)) errs.password = "Need at least one uppercase letter";
-      else if (!PW_RULES.lower.test(values.password)) errs.password = "Need at least one lowercase letter";
-      else if (!PW_RULES.digit.test(values.password)) errs.password = "Need at least one number";
+      if (values.password.length < PASSWORD_MIN_LENGTH) errs.password = `At least ${PASSWORD_MIN_LENGTH} characters`;
+      else if (!PASSWORD_RULES.upper.test(values.password)) errs.password = "Need at least one uppercase letter";
+      else if (!PASSWORD_RULES.lower.test(values.password)) errs.password = "Need at least one lowercase letter";
+      else if (!PASSWORD_RULES.digit.test(values.password)) errs.password = "Need at least one number";
     }
     if (!confirm) errs.confirm = "Confirm your password";
     else if (confirm !== values.password) errs.confirm = "Passwords do not match";
@@ -260,7 +251,7 @@ export default function RegisterForm({ title, endpoint, includeUEN = false, redi
                 {fieldErrors.password}
               </p>
             ) : (
-              <p className="text-xs text-gray-500">At least {PW_MIN} chars, include uppercase, lowercase, and a number.</p>
+              <p className="text-xs text-gray-500">At least {PASSWORD_MIN_LENGTH} chars, include uppercase, lowercase, and a number.</p>
             )}
           </div>
 

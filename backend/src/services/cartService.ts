@@ -1,14 +1,12 @@
-import { ShoppingCart } from '../models';
-import { AppError } from '../middleware';
-import logger from '../utils/logger';
+import { ShoppingCart } from "../models";
+import { AppError } from "../middleware";
+import logger from "../utils/logger";
 
 /**
  * Get User's Cart
  */
 export const getCart = async (shopperId: string) => {
-  let cart = await ShoppingCart.findOne({ shopper: shopperId }).populate(
-    'items.shop'
-  );
+  let cart = await ShoppingCart.findOne({ shopper: shopperId }).populate("items.shop");
 
   if (!cart) {
     cart = await ShoppingCart.create({ shopper: shopperId, items: [] });
@@ -20,42 +18,41 @@ export const getCart = async (shopperId: string) => {
 /**
  * Add Shop to Cart (Use Case #2-1)
  */
-export const addShopToCart = async (
-  shopperId: string,
-  shopId: string,
-  itemTag: string
-) => {
+export const addShopToCart = async (shopperId: string, shopId: string, itemTag: string) => {
   let cart = await ShoppingCart.findOne({ shopper: shopperId });
 
   if (!cart) {
     cart = await ShoppingCart.create({ shopper: shopperId, items: [] });
   }
 
-  await cart.addShopWithTag(shopId, itemTag);
+  const result: any = await cart.addShopWithTag(shopId, itemTag);
 
-  logger.info(`Shop ${shopId} added to cart for shopper ${shopperId}`);
+  logger.info(`Shop ${shopId} ${result.alreadyInCart ? "updated in" : "added to"} cart for shopper ${shopperId}`);
 
-  return cart.populate('items.shop');
+  const populatedCart = await result.cart.populate("items.shop");
+
+  return {
+    cart: populatedCart,
+    alreadyInCart: result.alreadyInCart,
+    wasUpdated: result.wasUpdated,
+  };
 };
 
 /**
  * Remove Shop from Cart
  */
-export const removeShopFromCart = async (
-  shopperId: string,
-  shopId: string
-) => {
+export const removeShopFromCart = async (shopperId: string, shopId: string) => {
   const cart = await ShoppingCart.findOne({ shopper: shopperId });
 
   if (!cart) {
-    throw new AppError('Cart not found', 404);
+    throw new AppError("Cart not found", 404);
   }
 
   await cart.removeShop(shopId);
 
   logger.info(`Shop ${shopId} removed from cart for shopper ${shopperId}`);
 
-  return cart.populate('items.shop');
+  return cart.populate("items.shop");
 };
 
 /**
@@ -65,7 +62,7 @@ export const clearCart = async (shopperId: string) => {
   const cart = await ShoppingCart.findOne({ shopper: shopperId });
 
   if (!cart) {
-    throw new AppError('Cart not found', 404);
+    throw new AppError("Cart not found", 404);
   }
 
   cart.items = [];

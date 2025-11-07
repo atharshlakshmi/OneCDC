@@ -17,13 +17,14 @@ export enum UserRole {
  * Shop Category Types
  */
 export enum ShopCategory {
-  FOOD_BEVERAGE = "food_beverage",
+  FASHION_APPAREL = "fashion & apparel",
+  HOME_PRODUCTS = "home products",
+  HEALTH_BEAUTY = "health & beauty",
+  TOYS_HOBBIES = "toys & hobbies",
   GROCERY = "grocery",
-  HEALTHCARE = "healthcare",
-  RETAIL = "retail",
-  SERVICES = "services",
+  FOOD_BEVERAGE = "food & beverage",
   ELECTRONICS = "electronics",
-  FASHION = "fashion",
+  SERVICES = "services",
   OTHER = "other",
 }
 
@@ -54,6 +55,7 @@ export enum ReportStatus {
   REVIEWED = "reviewed",
   RESOLVED = "resolved",
   DISMISSED = "dismissed",
+  REVIEW_REMOVED = "review_removed",
 }
 
 /**
@@ -174,19 +176,20 @@ export interface IOperatingHours {
 }
 
 /**
- * Catalogue Interface
+ * Catalogue Interface - Now stores Item ID references
  */
 export interface ICatalogue extends Document {
   shop: Types.ObjectId;
-  items: Types.DocumentArray<IItem>;
+  items: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
- * Item Interface
+ * Item Interface - Now a standalone document
  */
 export interface IItem extends Document {
+  _id: Types.ObjectId;
   catalogue: Types.ObjectId;
   name: string;
   description: string;
@@ -214,6 +217,7 @@ export interface IReview extends Document {
   availability: boolean;
   images: string[];
   warnings: number;
+  reportCount: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

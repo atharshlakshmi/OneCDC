@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import { OAuth2Client } from "google-auth-library";
-import { User } from "../models/User";
+import { User, RegisteredShopper } from "../models/User";
 import { generateToken } from "../utils/jwt";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -32,23 +32,18 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response): Pro
     }
 
     // Check or create user
-    // Check or create user
     let user = await User.findOne({ email: payload.email });
     if (!user) {
-      user = await User.create({
+      user = await RegisteredShopper.create({
         name: payload.name || payload.email.split("@")[0],
         email: payload.email,
-        role: "registered_shopper", // ensure this is a valid discriminator in your app
         isActive: true,
-        // 👇 new verification & auth provider fields
         authProvider: "google",
         emailVerified: true,
         emailVerifiedAt: new Date(),
         singpassVerified: false,
         corppassVerified: false,
-        // optional: mark provider if your schema supports it:
-        // authProvider: "google",
-        avatarUrl: payload.picture, // optional
+        avatarUrl: payload.picture || "", // optional
       });
     } else {
       // Existing user but unverified? Verify now.

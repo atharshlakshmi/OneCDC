@@ -13,6 +13,12 @@ const router = express.Router();
 router.get("/my-reviews", authenticate, authorize(UserRole.REGISTERED_SHOPPER), reviewController.getMyReviews);
 
 /**
+ * GET /api/reviews/flagged
+ * Get logged-in user's flagged reviews (warnings > 0 && isActive: false)
+ */
+router.get("/flagged", authenticate, authorize(UserRole.REGISTERED_SHOPPER), reviewController.getFlaggedReviews);
+
+/**
  * POST /api/reviews
  * Submit review (registered shopper only)
  */
@@ -58,5 +64,11 @@ router.put(
  * Delete own review
  */
 router.delete("/:catalogueId/:itemId/:reviewId", authenticate, authorize(UserRole.REGISTERED_SHOPPER), reviewController.deleteReview);
+
+/**
+ * GET /api/reviews/:reviewId
+ * Get a single review by its ID
+ */
+router.get("/:reviewId", reviewController.getReviewById);
 
 export default router;

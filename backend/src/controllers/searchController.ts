@@ -16,7 +16,7 @@ export const searchItems = asyncHandler(async (req: AuthRequest, res: Response) 
   const filters: SearchFilters = {
     query: query as string,
     category: category as any,
-    availability: availability === "true",
+    availability: availability === undefined ? undefined : availability === "true" ? true : availability === "false" ? false : undefined,
     ownerVerified: ownerVerified === undefined ? undefined : ownerVerified === "true" ? true : ownerVerified === "false" ? false : undefined,
     openNow: openNow === "true",
     location: lat && lng ? { lat: parseFloat(lat as string), lng: parseFloat(lng as string) } : undefined,

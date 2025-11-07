@@ -71,3 +71,26 @@ export const deleteReview = asyncHandler(async (req: AuthRequest, res: Response)
 
   res.status(200).json(result);
 });
+
+/**
+ * Get User's Flagged Reviews
+ * GET /api/reviews/flagged
+ */
+export const getFlaggedReviews = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const shopperId = req.user!.id;
+  const result = await reviewService.getFlaggedReviews(shopperId);
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
+
+/**
+ * Get a single review by ID
+ * GET /api/reviews/:reviewId
+ */
+export const getReviewById = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { reviewId } = req.params;
+  const review = await reviewService.getReviewById(reviewId);
+  res.status(200).json(review);
+});

@@ -115,58 +115,32 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response) =
  */
 export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.id;
-  const { name, gender, phone, address, avatarUrl } = req.body as {
-    name?: string;
-    gender?: string;
-    phone?: string;
-    address?: string;
-    avatarUrl?: string;
-  };
+  const { name, gender, phone, address } = req.body;
 
-  const patch: Record<string, string> = {};
+  const patch: Record<string, any> = {};
   if (name !== undefined) patch.name = String(name).trim();
   if (gender !== undefined) patch.gender = String(gender).trim();
   if (phone !== undefined) patch.phone = String(phone).trim();
   if (address !== undefined) patch.address = String(address).trim();
-  if (avatarUrl !== undefined) patch.avatarUrl = String(avatarUrl).trim();
+
+  // Handle avatar upload
+  if (req.file) {
+    const base64Data = req.file.buffer.toString("base64");
+    patch.avatarUrl = `data:${req.file.mimetype};base64,${base64Data}`;
+  }
 
   if (Object.keys(patch).length === 0) {
     const current = await authService.getUserProfile(userId);
     return res.status(200).json({ success: true, data: { user: current }, message: "No changes" });
   }
 
+  console.log('Patch object:', patch);
   const user = await authService.updateUserProfile(userId, patch);
 
   return res.status(200).json({
     success: true,
     data: { user },
     message: "Profile updated successfully",
-  });
-});
-
-/**
- * Upload Avatar
- * POST /api/auth/profile/avatar
- */
-export const uploadAvatar = asyncHandler(async (req: AuthRequest, res: Response) => {
-  if (!req.file) {
-    res.status(400).json({ success: false, message: "No file uploaded" });
-    return;
-  }
-
-  const userId = req.user!.id;
-
-  // Convert buffer to Base64 data URI
-  const base64Data = req.file.buffer.toString("base64");
-  const dataUri = `data:${req.file.mimetype};base64,${base64Data}`;
-
-  // Save Base64 string as avatarUrl
-  const user = await authService.updateUserProfile(userId, { avatarUrl: dataUri });
-
-  res.status(200).json({
-    success: true,
-    message: "Avatar updated successfully",
-    data: { url: dataUri, user },
   });
 });
 
