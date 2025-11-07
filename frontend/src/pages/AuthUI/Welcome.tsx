@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, ShoppingCart, Navigation, MapPin, Star } from "lucide-react";
+import logo from "@/assets/onecdc_logo.png";
 
 const Welcome: React.FC = () => {
   const navigate = useNavigate();
@@ -9,8 +10,8 @@ const Welcome: React.FC = () => {
   const features = [
     {
       icon: <Search size={32} className="text-amber-500" />,
-      title: "Discover Shops",
-      description: "Search and browse through a wide variety of local CDC shops near you.",
+      title: "Discover Items",
+      description: "Search and browse through a wide variety of items available in local CDC shops.",
     },
     {
       icon: <MapPin size={32} className="text-amber-500" />,
@@ -38,6 +39,7 @@ const Welcome: React.FC = () => {
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-amber-400 to-amber-500 text-white py-16 px-6 text-center">
+        <img src={logo} alt="OneCDC Logo" className="w-73 h-48 mx-auto mb-4" />
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Welcome to OneCDC!</h1>
         <p className="text-xl md:text-2xl font-light max-w-2xl mx-auto">
           Your one-stop platform for discovering and exploring CDC voucher-accepting shops
@@ -78,10 +80,10 @@ const Welcome: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                  Search for Shops
+                  Search for Items
                 </h4>
                 <p className="text-gray-600">
-                  Use our powerful search to find CDC voucher-accepting shops by name, category, or location.
+                  Use our powerful search to find CDC voucher-accepting shops based on items you want to buy. 
                 </p>
               </div>
             </div>
@@ -92,7 +94,7 @@ const Welcome: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                  Add to Your Cart
+                  Add Shops to Your Cart
                 </h4>
                 <p className="text-gray-600">
                   Select the shops you want to visit and add them to your shopping cart.

@@ -115,6 +115,7 @@ export const User: Model<IUser> = mongoose.model<IUser>("User", UserSchema);
  * Registered Shopper Schema
  */
 const RegisteredShopperSchema = new Schema<IRegisteredShopper>({
+  address: { type: String, trim: true },
   preferredLocation: {
     lat: { type: Number, min: -90, max: 90 },
     lng: { type: Number, min: -180, max: 180 },
