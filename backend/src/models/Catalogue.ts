@@ -24,9 +24,6 @@ const CatalogueSchema = new Schema<ICatalogue>(
  * Indexes
  */
 CatalogueSchema.index({ shop: 1 });
-CatalogueSchema.index({ "items.name": "text", "items.description": "text" });
-CatalogueSchema.index({ "items.availability": 1 });
-CatalogueSchema.index({ "items.cdcVoucherAccepted": 1 });
 
 /**
  * Catalogue Model

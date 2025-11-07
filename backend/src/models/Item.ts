@@ -14,7 +14,7 @@ const ItemSchema = new Schema<IItem>(
     },
     name: { type: String, required: true, trim: true, index: "text" },
     description: { type: String, required: true, trim: true, maxlength: 500 },
-    price: { type: Number, min: 0 },
+    price: { type: Number, required: true, min: 0 },
     availability: { type: Boolean, default: true },
     images: {
       type: [String],

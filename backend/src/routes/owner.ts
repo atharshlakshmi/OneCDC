@@ -91,6 +91,7 @@ router.put("/shops/:id/catalogue/:itemId", shopController.updateCatalogueItem);
  * DELETE /api/owner/shops/:id/catalogue/:itemId
  * Delete catalogue item
  */
-router.delete("/shops/:id/catalogue/:itemId", shopController.deleteCatalogueItem);
+router.delete('/shops/:id/catalogue/:itemId', shopController.deleteCatalogueItem);
+
 
 export default router;

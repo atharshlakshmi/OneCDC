@@ -1,4 +1,5 @@
-import { Shop, Catalogue, Owner, ModerationLog, Item } from "../models";
+import mongoose from 'mongoose';
+import { Shop, Catalogue, Item, Owner, ModerationLog } from "../models";
 import { AppError } from "../middleware";
 import logger from "../utils/logger";
 import * as mapsService from "./mapsService";
@@ -213,7 +214,7 @@ export const updateShop = async (shopId: string, ownerId: string, updates: any) 
     }
   });
 
-  shop.lastUpdatedBy = ownerId as any;
+  shop.lastUpdatedBy = new mongoose.Types.ObjectId(ownerId);
   await shop.save();
 
   logger.info(`Shop updated: ${shop.name} by owner ${ownerId}`);
@@ -271,27 +272,45 @@ export const addCatalogueItem = async (shopId: string, ownerId: string, itemData
     throw new AppError("Shop not found or unauthorized", 404);
   }
 
-  const catalogue = await Catalogue.findOne({ shop: shopId });
+  const catalogue = await Catalogue.findOne({ shop: shopId }).populate('items');
   if (!catalogue) {
     throw new AppError("Catalogue not found", 404);
   }
 
-  // Create a new Item document in the Item collection
+  // Check for duplicate item name in the catalogue
+  const existingItem = await Item.findOne({
+    _id: { $in: catalogue.items },
+    name: { $regex: new RegExp(`^${itemData.name}$`, 'i') }, // Case-insensitive exact match
+  });
+
+  if (existingItem) {
+    throw new AppError('An item with this name already exists in the catalogue', 400);
+  }
+
+  // Validate price
+  const priceValue = typeof itemData.price === 'number' ? itemData.price : parseFloat(itemData.price);
+  if (isNaN(priceValue) || priceValue < 0) {
+    throw new AppError('Valid price is required (must be a number >= 0)', 400);
+  }
+
+  // Create standalone Item document
   const newItem = await Item.create({
     catalogue: catalogue._id,
     name: itemData.name,
     description: itemData.description,
-    price: itemData.price,
+    price: priceValue,
     availability: itemData.availability !== undefined ? itemData.availability : true,
     images: itemData.images || [],
     category: itemData.category,
     cdcVoucherAccepted: itemData.cdcVoucherAccepted !== undefined ? itemData.cdcVoucherAccepted : true,
-    lastUpdatedBy: ownerId,
+    lastUpdatedBy: mongoose.Types.ObjectId.isValid(ownerId)
+      ? new mongoose.Types.ObjectId(ownerId)
+      : ownerId,
     lastUpdatedDate: new Date(),
     reviews: [],
   });
 
-  // Add the Item's ObjectId to the catalogue's items array
+  // Add item ID to catalogue
   catalogue.items.push(newItem._id as any);
   await catalogue.save();
 
@@ -331,7 +350,7 @@ export const updateCatalogueItem = async (shopId: string, itemId: string, ownerI
     }
   });
 
-  item.lastUpdatedBy = ownerId as any;
+  item.lastUpdatedBy = new mongoose.Types.ObjectId(ownerId);
   item.lastUpdatedDate = new Date();
 
   await item.save();

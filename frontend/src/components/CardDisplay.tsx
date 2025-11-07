@@ -12,6 +12,7 @@ interface CardDisplayProps {
   status?: string;
   date?: string;
   highlightColor?: string; // optional color accent
+  images?: string[]; // array of image URLs
   onEdit?: () => void;
   onDelete?: () => void;
   disableActions?: boolean;
@@ -27,6 +28,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
   status,
   date,
   highlightColor = "bg-white",
+  images,
   onEdit,
   onDelete,
   disableActions,
@@ -35,69 +37,65 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
   const BASE_URL = API_BASE.replace("/api", ""); // Get base URL without /api
 
-  return (
-    <div className={`w-full max-w-3xl rounded-2xl shadow-lg p-6 sm:p-8 flex flex-col gap-4 items-center text-center transition-all duration-200 hover:shadow-xl ${highlightColor}`}>
-      <h2 className="text-xl font-bold text-gray-800">{title}</h2>
-      {subtitle && <p className="text-gray-600 text-base">{subtitle}</p>}
+  const hasImages = images && images.length > 0;
 
-      {/* Availability */}
-      <div className="flex items-center justify-center gap-4 flex-wrap">
-        {availability !== undefined && (
-          <span
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
-              availability ? "bg-green-100 text-green-700 border-2 border-green-300" : "bg-red-100 text-red-700 border-2 border-red-300"
-            }`}
-          >
-            {availability ? "✓ Available" : "✗ Unavailable"}
-          </span>
+  return (
+    <div
+      className={`w-full sm:w-3/4 rounded-2xl shadow-lg p-4 sm:p-10 transition-all duration-200 ${highlightColor}`}
+    >
+      <div className={`flex ${hasImages ? 'flex-row gap-6' : 'flex-col'} items-start`}>
+        {/* Left side - Content */}
+        <div className={`flex flex-col gap-3 ${hasImages ? 'flex-1' : 'w-full items-center text-center'}`}>
+          <h2 className="text-lg font-semibold">{title}</h2>
+          {subtitle && <p className="text-gray-500 text-sm">{subtitle}</p>}
+          {content && <p className="text-gray-700">{content}</p>}
+          {details && <p className="text-gray-600 italic">{details}</p>}
+          {date && <p className="text-gray-400 text-sm">Date: {date}</p>}
+
+          {status && (
+            <p
+              className={`font-medium ${
+                resolved ? "text-green-600" : "text-yellow-600"
+              }`}
+            >
+              Status: {status}
+            </p>
+          )}
+
+          {!disableActions && !resolved && (onEdit || onDelete) && (
+            <div className="flex gap-3 mt-2">
+              {onEdit && (
+                <Button variant="outline" onClick={onEdit}>
+                  Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="destructive" onClick={onDelete}>
+                  Delete
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right side - Images */}
+        {hasImages && (
+          <div className="flex-1 flex flex-col gap-3">
+            {images.map((imageUrl, index) => (
+              <div key={index} className="w-full h-48 rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  src={imageUrl}
+                  alt={`Review image ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
-
-      {content && <p className="text-gray-700 text-base leading-relaxed">{content}</p>}
-
-      {/* Display photos if available */}
-      {photos && photos.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {photos.map((photo, index) => {
-            // Prepend base URL if photo is a relative path
-            const photoUrl = photo.startsWith("http") ? photo : `${BASE_URL}${photo}`;
-            console.log("Photo URL:", photoUrl); // Debug
-            return (
-              <img
-                key={index}
-                src={photoUrl}
-                alt={`Review photo ${index + 1}`}
-                className="w-24 h-24 object-cover rounded-lg border border-gray-200"
-                onError={(e) => {
-                  // Fallback for broken images
-                  console.error("Failed to load image:", photoUrl);
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {details && <p className="text-gray-600 italic">{details}</p>}
-      {date && <p className="text-gray-400 text-sm">Date: {date}</p>}
-
-      {status && <p className={`font-medium ${resolved ? "text-green-600" : "text-yellow-600"}`}>Status: {status}</p>}
-
-      {!disableActions && !resolved && (onEdit || onDelete) && (
-        <div className="flex gap-3 mt-2">
-          {onEdit && (
-            <Button variant="outline" onClick={onEdit}>
-              Edit
-            </Button>
-          )}
-          {onDelete && (
-            <Button variant="destructive" onClick={onDelete}>
-              Delete
-            </Button>
-          )}
-        </div>
-      )}
     </div>
   );
 };

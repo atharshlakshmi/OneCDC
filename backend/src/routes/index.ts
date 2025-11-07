@@ -7,11 +7,11 @@ import uploadRouter from "./upload";
 import reviewsRouter from "./reviews";
 import searchRouter from "./search";
 
-console.log("[ROUTES INDEX] loaded"); // <— add this
+console.log("[ROUTES INDEX] loaded");
 const router = express.Router();
 
 /**
- * Health check endpoint
+ * Mount all routers
  */
 router.use("/", apiV2Router); // exposes /api/v2/*
 router.use("/auth", authRouter); // exposes /api/auth/*

@@ -119,7 +119,7 @@ const categorizeItemWithHF = async (itemQuery: string): Promise<ShopCategory> =>
     const resultAny: any = await response.json();
     console.log("HF API Response:", JSON.stringify(resultAny));
 
-    // --- FIX: extract top label correctly ---
+    // Extract top label correctly
     let rawLabel = "";
     let topScore: number | null = null;
     if (Array.isArray(resultAny) && resultAny.length > 0 && typeof resultAny[0].label === "string") {
@@ -154,7 +154,6 @@ const categorizeItemWithHF = async (itemQuery: string): Promise<ShopCategory> =>
 /**
  * Categorize and suggest shops
  */
-// ...existing code...
 const categorizeAndSuggestShops = async (itemQuery: string, userLocation: { lat: number; lng: number }, pagination: PaginationOptions = { page: 1, limit: 20 }) => {
   try {
     console.log(`🔎 Starting categorizeAndSuggestShops for "${itemQuery}"`);
@@ -208,7 +207,6 @@ const categorizeAndSuggestShops = async (itemQuery: string, userLocation: { lat:
     };
   }
 };
-// ...existing code...
 
 /**
  * Search for Items
@@ -224,7 +222,7 @@ export const searchItems = async (
 
   console.log("❗❗❗❗ Starting item search", { filters, sortBy, userLocation });
 
-  // --- 1. Build item query ---
+  // Build item query
   const itemQuery: any = {};
 
   if (query && query.trim()) {
@@ -236,7 +234,7 @@ export const searchItems = async (
     itemQuery.availability = availability;
   }
 
-  // --- 2. Find items from items collection ---
+  // Find items from items collection
   const items = await Item.find(itemQuery).lean();
   console.log(`🧾 Found ${items.length} items from items collection`);
 
@@ -273,12 +271,19 @@ export const searchItems = async (
     };
   }
 
-  // --- 3. Get unique catalogue IDs from items ---
+  // Get unique catalogue IDs from items
   const catalogueIds = [...new Set(items.map((item) => item.catalogue.toString()))];
 
-  // --- 4. Find shops by catalogue IDs ---
+  // Find catalogues to get shop IDs
+  const catalogues = await Catalogue.find({ _id: { $in: catalogueIds } }).lean();
+  const catalogueToShopMap = new Map(catalogues.map((cat) => [cat._id.toString(), cat.shop.toString()]));
+
+  // Get unique shop IDs
+  const shopIds = [...new Set(catalogues.map((cat) => cat.shop.toString()))];
+
+  // Find shops by IDs with filters
   const shopQuery: any = {
-    catalogue: { $in: catalogueIds },
+    _id: { $in: shopIds },
     isActive: true,
   };
 
@@ -291,15 +296,18 @@ export const searchItems = async (
   }
 
   const shops = await Shop.find(shopQuery).lean();
-  console.log(`🏪 Found ${shops.length} shops matching catalogue IDs`);
+  console.log(`🏪 Found ${shops.length} shops matching filters`);
 
-  // --- 5. Create a map of catalogue ID -> shop ---
-  const catalogueToShopMap = new Map(shops.map((shop) => [shop.catalogue?.toString(), shop]));
+  // Create a map of shop ID -> shop
+  const shopMap = new Map(shops.map((shop) => [shop._id.toString(), shop]));
 
-  // --- 6. Build results by joining items with shops ---
+  // Build results by joining items with catalogues and shops
   let results = items
     .map((item) => {
-      const shop = catalogueToShopMap.get(item.catalogue.toString());
+      const shopId = catalogueToShopMap.get(item.catalogue.toString());
+      if (!shopId) return null;
+
+      const shop = shopMap.get(shopId);
       if (!shop) return null;
 
       const distance = calculateDistance(userLocation.lat, userLocation.lng, shop.location.coordinates[1], shop.location.coordinates[0]);
@@ -316,13 +324,14 @@ export const searchItems = async (
         operatingHours: shop.operatingHours,
         distance,
         item: { ...item, name: cleanName },
+        catalogueId: item.catalogue,
       };
     })
     .filter((result): result is NonNullable<typeof result> => result !== null);
 
   console.log(`🧾 Built ${results.length} item-shop pairs`);
 
-  // --- 7. Additional filters ---
+  // Additional filters
   if (maxDistance) {
     results = results.filter((r) => r.distance <= maxDistance);
   }
@@ -342,7 +351,7 @@ export const searchItems = async (
     });
   }
 
-  // --- 8. Sorting ---
+  // Sorting
   const sorters: Record<SortOption, (a: any, b: any) => number> = {
     [SortOption.DISTANCE]: (a, b) => a.distance - b.distance,
     [SortOption.ALPHABETICAL_ASC]: (a, b) => a.item.name.localeCompare(b.item.name),
@@ -353,7 +362,7 @@ export const searchItems = async (
 
   results.sort(sorters[sortBy]);
 
-  // --- 9. Pagination ---
+  // Pagination
   const total = results.length;
   const start = (pagination.page - 1) * pagination.limit;
   const paginatedResults = results.slice(start, start + pagination.limit).map((r) => ({
@@ -381,8 +390,10 @@ export const searchShops = async (filters: SearchFilters, sortBy: SortOption = S
   const { query, category, ownerVerified, openNow, location, maxDistance } = filters;
   const userLocation = location || getDefaultLocation();
 
-  // Build query
-  const queryObj: any = { isActive: true };
+  // Build query - include shops without isActive field (for backward compatibility)
+  const queryObj: any = {
+    $or: [{ isActive: true }, { isActive: { $exists: false } }],
+  };
 
   if (query) {
     // Match if any word starts with the query (case-insensitive)
@@ -413,6 +424,11 @@ export const searchShops = async (filters: SearchFilters, sortBy: SortOption = S
   // Calculate distances and filter
   const shopsWithDistance = allShops
     .map((shop) => {
+      // Handle shops without location data
+      if (!shop.location || !shop.location.coordinates || shop.location.coordinates.length < 2) {
+        return { ...shop, distance: 999999 }; // Place shops without location at the end
+      }
+
       const distance = calculateDistance(userLocation.lat, userLocation.lng, shop.location.coordinates[1], shop.location.coordinates[0]);
       return { ...shop, distance };
     })
@@ -476,7 +492,10 @@ export const searchShops = async (filters: SearchFilters, sortBy: SortOption = S
  * Get Shop Details
  */
 export const getShopById = async (shopId: string) => {
-  const shop = await Shop.findOne({ _id: shopId, isActive: true });
+  const shop = await Shop.findOne({
+    _id: shopId,
+    $or: [{ isActive: true }, { isActive: { $exists: false } }],
+  }).lean();
   if (!shop) {
     throw new AppError("Shop not found", 404);
   }
@@ -487,9 +506,10 @@ export const getShopById = async (shopId: string) => {
  * Get Shop Catalogue
  */
 export const getShopCatalogue = async (shopId: string) => {
-  const catalogue = await Catalogue.findOne({ shop: shopId }).populate("shop");
+  const catalogue = await Catalogue.findOne({ shop: shopId }).populate("shop").populate("items");
   if (!catalogue) {
     throw new AppError("Catalogue not found", 404);
   }
+
   return catalogue;
 };

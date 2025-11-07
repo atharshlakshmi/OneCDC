@@ -99,6 +99,7 @@ ShopSchema.index({ location: "2dsphere" });
 ShopSchema.index({ name: "text", description: "text" });
 ShopSchema.index({ category: 1 });
 ShopSchema.index({ owner: 1 });
+ShopSchema.index({ catalogue: 1 });
 ShopSchema.index({ isActive: 1 });
 ShopSchema.index({ verifiedByOwner: 1 });
 

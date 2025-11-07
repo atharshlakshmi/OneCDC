@@ -1,43 +1,6 @@
-import { Catalogue, Review, Shop } from "../models";
-import { AppError } from "../middleware";
-import logger from "../utils/logger";
-import mongoose from "mongoose";
-
-/**
- * Get User's Reviews
- */
-export const getMyReviews = async (shopperId: string) => {
-  // Query the Review collection directly and populate shop and catalogue
-  const reviews = await Review.find({
-    shopper: new mongoose.Types.ObjectId(shopperId),
-    isActive: true,
-  })
-    .populate("shop", "name")
-    .populate({
-      path: "catalogue",
-      select: "shop",
-      populate: {
-        path: "shop",
-        select: "name",
-      },
-    })
-    .sort({ createdAt: -1 })
-    .lean();
-
-  // Transform the data to match the expected format
-  const transformedReviews = reviews.map((review: any) => ({
-    _id: review._id,
-    itemName: review.item || "Unknown Item",
-    catalogueId: review.catalogue?._id || review.catalogue,
-    shopName: review.shop?.name || review.catalogue?.shop?.name || "Unknown Shop",
-    description: review.description,
-    images: review.images || [],
-    availability: review.availability,
-    createdAt: review.createdAt,
-  }));
-
-  return { data: transformedReviews };
-};
+import { Catalogue, Item, Review } from '../models';
+import { AppError } from '../middleware';
+import logger from '../utils/logger';
 
 /**
  * Submit Review (Use Case #2-3)
@@ -52,72 +15,86 @@ export const submitReview = async (
     availability: boolean;
   }
 ) => {
-  // Check if catalogue exists
-  const catalogue = await Catalogue.findById(catalogueId).populate("shop");
+  // Verify catalogue exists
+  const catalogue = await Catalogue.findById(catalogueId).populate('items');
   if (!catalogue) {
     throw new AppError("Catalogue not found", 404);
   }
 
-  // Get the shop from catalogue
-  const shop = await Shop.findById(catalogue.shop);
-  if (!shop) {
-    throw new AppError("Shop not found", 404);
+  // Find item by name in Item collection
+  const item = await Item.findOne({
+    _id: { $in: catalogue.items },
+    name: itemName
+  });
+  if (!item) {
+    throw new AppError('Item not found', 404);
   }
 
-  // Check if user already reviewed this item at this shop
-  const existingReview = await Review.findOne({
-    shopper: new mongoose.Types.ObjectId(shopperId),
-    catalogue: new mongoose.Types.ObjectId(catalogueId),
-    item: itemName,
-    isActive: true,
-  });
+  // Create review using standalone Review model
+  try {
+    const reviewDoc = {
+      shopper: shopperId,
+      item: itemName, // Using item name as identifier
+      catalogue: catalogueId,
+      shop: catalogue.shop,
+      description: reviewData.description,
+      images: reviewData.images || [],
+      availability: reviewData.availability,
+    };
 
-  if (existingReview) {
-    throw new AppError("You have already reviewed this item", 409);
+    logger.info(`Attempting to create review with data: ${JSON.stringify(reviewDoc)}`);
+
+    const review = await Review.create(reviewDoc);
+
+    logger.info(`Review submitted for item ${itemName} by shopper ${shopperId}`);
+
+    return {
+      success: true,
+      message: 'Review submitted successfully',
+      data: review
+    };
+  } catch (error: any) {
+    logger.error(`Failed to create review: ${error.message}`);
+    logger.error(`Error details: ${JSON.stringify(error)}`);
+
+    if (error.code === 11000) {
+      // Duplicate key error (unique constraint on item + shopper)
+      throw new AppError('You have already reviewed this item', 409);
+    }
+    throw error;
   }
-
-  // Create review
-  const review = new Review({
-    shopper: shopperId,
-    catalogue: catalogueId,
-    shop: shop._id,
-    item: itemName,
-    description: reviewData.description,
-    images: reviewData.images || [],
-    availability: reviewData.availability,
-    warnings: 0,
-    isActive: true,
-  });
-
-  await review.save();
-
-  logger.info(`Review submitted for item ${itemName} at shop ${shop._id} by shopper ${shopperId}`);
-
-  return { success: true, message: "Review submitted successfully", reviewId: review._id };
 };
 
 /**
  * Get Reviews for Item
  */
-export const getItemReviews = async (_catalogueId: string, itemName: string) => {
-  // Get all active reviews for this item name
-  const reviews = await Review.find({
-    item: itemName,
-    isActive: true,
-  })
-    .populate("shopper", "name")
-    .populate("shop", "name")
-    .sort({ createdAt: -1 })
-    .lean();
+export const getItemReviews = async (catalogueId: string, itemId: string) => {
+  // Verify catalogue exists
+  const catalogue = await Catalogue.findById(catalogueId);
+  if (!catalogue) {
+    throw new AppError('Catalogue not found', 404);
+  }
 
-  const totalReviews = reviews.length;
+  // Find item directly from Item collection
+  const item = await Item.findOne({
+    _id: itemId,
+    _id: { $in: catalogue.items }
+  }).populate('reviews.shopper', 'name');
+
+  if (!item) {
+    throw new AppError('Item not found', 404);
+  }
+
+  const activeReviews = item.reviews.filter((review: any) => review.isActive);
 
   return {
     item: {
-      name: itemName,
+      id: item._id,
+      name: item.name,
     },
-    reviews: reviews,
-    totalReviews: totalReviews,
+    reviews: activeReviews,
+    totalReviews: activeReviews.length,
+    averageRating: (item as any).averageRating || 0,
   };
 };
 
@@ -135,8 +112,22 @@ export const updateReview = async (
     availability?: boolean;
   }
 ) => {
-  // Find the review
-  const review = await Review.findById(reviewId);
+  // Verify catalogue exists
+  const catalogue = await Catalogue.findById(catalogueId);
+  if (!catalogue) {
+    throw new AppError('Catalogue not found', 404);
+  }
+
+  // Find item directly from Item collection
+  const item = await Item.findOne({
+    _id: itemId,
+    _id: { $in: catalogue.items }
+  });
+  if (!item) {
+    throw new AppError('Item not found', 404);
+  }
+
+  const review = (item.reviews as any).id(reviewId);
   if (!review) {
     throw new AppError("Review not found", 404);
   }
@@ -161,7 +152,7 @@ export const updateReview = async (
   if (updates.images !== undefined) review.images = updates.images;
   if (updates.availability !== undefined) review.availability = updates.availability;
 
-  await review.save();
+  await item.save();
 
   logger.info(`Review ${reviewId} updated by shopper ${shopperId}`);
 
@@ -171,9 +162,28 @@ export const updateReview = async (
 /**
  * Delete Own Review
  */
-export const deleteReview = async (shopperId: string, catalogueId: string, itemName: string, reviewId: string) => {
-  // Find the review
-  const review = await Review.findById(reviewId);
+export const deleteReview = async (
+  shopperId: string,
+  catalogueId: string,
+  itemId: string,
+  reviewId: string
+) => {
+  // Verify catalogue exists
+  const catalogue = await Catalogue.findById(catalogueId);
+  if (!catalogue) {
+    throw new AppError('Catalogue not found', 404);
+  }
+
+  // Find item directly from Item collection
+  const item = await Item.findOne({
+    _id: itemId,
+    _id: { $in: catalogue.items }
+  });
+  if (!item) {
+    throw new AppError('Item not found', 404);
+  }
+
+  const review = (item.reviews as any).id(reviewId);
   if (!review) {
     throw new AppError("Review not found", 404);
   }
@@ -190,7 +200,8 @@ export const deleteReview = async (shopperId: string, catalogueId: string, itemN
 
   // Soft delete
   review.isActive = false;
-  await review.save();
+
+  await item.save();
 
   logger.info(`Review ${reviewId} deleted by shopper ${shopperId}`);
 

@@ -1,12 +1,12 @@
-import { Report, ModerationLog, User, Shop, Catalogue } from '../models';
-import { ModerationAction, ReportStatus, UserRole } from '../types';
+import { Report, ModerationLog, User, Shop, Catalogue, Item, Review } from '../models';
+import { ModerationAction, ReportStatus, UserRole, IModerationLog, IUser } from '../types';
 import { AppError } from '../middleware';
 import logger from '../utils/logger';
+import config from '../config';
+import { Types } from 'mongoose';
 
-const SHOPPER_WARNING_THRESHOLD = parseInt(
-  process.env.SHOPPER_WARNING_THRESHOLD || '3'
-);
-const OWNER_REPORT_THRESHOLD = parseInt(process.env.OWNER_REPORT_THRESHOLD || '5');
+const SHOPPER_WARNING_THRESHOLD = config.moderation.shopper.warningThreshold;
+const OWNER_REPORT_THRESHOLD = config.moderation.owner.reportThreshold;
 
 /**
  * Moderate Review (Use Case #5-1)
@@ -27,25 +27,32 @@ export const moderateReview = async (
     throw new AppError('Report is not for a review', 400);
   }
 
-  // Find the review in catalogues
-  const catalogues = await Catalogue.find({});
-  let targetCatalogue: any = null;
+  // First, try to find the review in the standalone Review collection
+  let targetReview: any = await Review.findById(report.targetId);
+  let isStandaloneReview = !!targetReview;
   let targetItem: any = null;
-  let targetReview: any = null;
+  let itemName: string = '';
 
-  for (const catalogue of catalogues) {
-    for (const item of catalogue.items) {
+  // If not found in standalone collection, check nested reviews in Item documents
+  if (!targetReview) {
+    // Query all items that have reviews with matching ID
+    const items = await Item.find({
+      'reviews._id': report.targetId
+    });
+
+    for (const item of items) {
       const review = item.reviews.find(
         (r: any) => r._id.toString() === report.targetId.toString()
       );
       if (review) {
-        targetCatalogue = catalogue;
-        targetItem = item;
         targetReview = review;
+        targetItem = item;
+        itemName = item.name;
         break;
       }
     }
-    if (targetReview) break;
+  } else {
+    itemName = targetReview.item;
   }
 
   if (!targetReview) {
@@ -53,19 +60,27 @@ export const moderateReview = async (
   }
 
   if (action === 'remove') {
-    // Mark review as inactive
-    targetReview.isActive = false;
-    targetReview.warnings += 1;
-    await targetCatalogue.save();
+    // Mark review as inactive and add warning
+    if (isStandaloneReview) {
+      // Handle standalone review
+      targetReview.isActive = false;
+      targetReview.warnings += 1;
+      await targetReview.save();
+    } else {
+      // Handle nested review in Item document
+      targetReview.isActive = false;
+      targetReview.warnings += 1;
+      await targetItem.save();
+    }
 
     // Add warning to shopper
     const shopper = await User.findById(targetReview.shopper);
     if (shopper) {
       shopper.warnings.push({
         reason,
-        issuedBy: adminId as any,
+        issuedBy: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId as any,
         issuedAt: new Date(),
-        relatedReport: reportId as any,
+        relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId as any,
       });
       await shopper.save();
 
@@ -77,32 +92,73 @@ export const moderateReview = async (
       }
     }
 
-    // Log moderation action
-    await ModerationLog.create({
-      admin: adminId,
+    // Prepare moderation log data
+    const targetIdValue = targetReview._id;
+    const moderationLogData = {
+      admin: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId,
       action: ModerationAction.REMOVE_REVIEW,
-      targetType: 'review',
-      targetId: targetReview._id,
-      relatedReport: reportId,
-      reason,
-      details: `Review removed from item "${targetItem.name}"`,
-    });
+      targetType: 'review' as const,
+      targetId: Types.ObjectId.isValid(targetIdValue) ? new Types.ObjectId(targetIdValue) : targetIdValue,
+      relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId,
+      reason: reason.substring(0, 500), // Ensure max length
+      details: `Review removed from item "${itemName}"`.substring(0, 1000), // Ensure max length
+    };
+
+    logger.info(`Creating ModerationLog for REMOVE_REVIEW with data: ${JSON.stringify({
+      admin: moderationLogData.admin,
+      action: moderationLogData.action,
+      targetType: moderationLogData.targetType,
+      targetId: moderationLogData.targetId,
+      reasonLength: moderationLogData.reason.length
+    })}`);
+
+    try {
+      const removeLog = await ModerationLog.create(moderationLogData);
+      logger.info(`ModerationLog created for REMOVE_REVIEW: ${removeLog._id}`);
+    } catch (error: any) {
+      logger.error('Failed to create ModerationLog for REMOVE_REVIEW:', error);
+      logger.error('Validation errors:', error.errors);
+      throw new AppError(`Failed to create moderation log: ${error.message}`, 500);
+    }
+
+    // Update report status to REVIEW_REMOVED
+    report.status = ReportStatus.REVIEW_REMOVED;
   } else {
-    // Approve - just update report status
-    await ModerationLog.create({
-      admin: adminId,
+    // Prepare moderation log data
+    const targetIdValue = targetReview._id;
+    const moderationLogData = {
+      admin: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId,
       action: ModerationAction.APPROVE_REVIEW,
-      targetType: 'review',
-      targetId: targetReview._id,
-      relatedReport: reportId,
-      reason,
+      targetType: 'review' as const,
+      targetId: Types.ObjectId.isValid(targetIdValue) ? new Types.ObjectId(targetIdValue) : targetIdValue,
+      relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId,
+      reason: reason.substring(0, 500), // Ensure max length
       details: 'Review approved after investigation',
-    });
+    };
+
+    logger.info(`Creating ModerationLog for APPROVE_REVIEW with data: ${JSON.stringify({
+      admin: moderationLogData.admin,
+      action: moderationLogData.action,
+      targetType: moderationLogData.targetType,
+      targetId: moderationLogData.targetId,
+      reasonLength: moderationLogData.reason.length
+    })}`);
+
+    try {
+      const approveLog = await ModerationLog.create(moderationLogData);
+      logger.info(`ModerationLog created for APPROVE_REVIEW: ${approveLog._id}`);
+    } catch (error: any) {
+      logger.error('Failed to create ModerationLog for APPROVE_REVIEW:', error);
+      logger.error('Validation errors:', error.errors);
+      throw new AppError(`Failed to create moderation log: ${error.message}`, 500);
+    }
+
+    // Update report status to RESOLVED
+    report.status = ReportStatus.RESOLVED;
   }
 
-  // Update report status
-  report.status = ReportStatus.RESOLVED;
-  report.reviewedBy = adminId as any;
+  // Update common report fields
+  report.reviewedBy = Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId as any;
   report.reviewedAt = new Date();
   report.resolution = reason;
   await report.save();
@@ -147,9 +203,9 @@ export const moderateShop = async (
     if (owner) {
       owner.warnings.push({
         reason,
-        issuedBy: adminId as any,
+        issuedBy: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId as any,
         issuedAt: new Date(),
-        relatedReport: reportId as any,
+        relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId as any,
       });
       await owner.save();
 
@@ -162,31 +218,43 @@ export const moderateShop = async (
     }
 
     // Log moderation action
-    await ModerationLog.create({
-      admin: adminId,
-      action: ModerationAction.WARN_SHOP,
-      targetType: 'shop',
-      targetId: shop._id,
-      relatedReport: reportId,
-      reason,
-      details: `Warning issued to shop "${shop.name}"`,
-    });
+    try {
+      const warnLog = await ModerationLog.create({
+        admin: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId,
+        action: ModerationAction.WARN_SHOP,
+        targetType: 'shop' as const,
+        targetId: shop._id,
+        relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId,
+        reason: reason.substring(0, 500),
+        details: `Warning issued to shop "${shop.name}"`.substring(0, 1000),
+      });
+      logger.info(`ModerationLog created for WARN_SHOP: ${warnLog._id}`);
+    } catch (error: any) {
+      logger.error('Failed to create ModerationLog for WARN_SHOP:', error);
+      throw new AppError(`Failed to create moderation log: ${error.message}`, 500);
+    }
   } else {
     // Approve - shop is legitimate
-    await ModerationLog.create({
-      admin: adminId,
-      action: ModerationAction.APPROVE_SHOP,
-      targetType: 'shop',
-      targetId: shop._id,
-      relatedReport: reportId,
-      reason,
-      details: 'Shop approved after investigation',
-    });
+    try {
+      const approveLog = await ModerationLog.create({
+        admin: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId,
+        action: ModerationAction.APPROVE_SHOP,
+        targetType: 'shop' as const,
+        targetId: shop._id,
+        relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId,
+        reason: reason.substring(0, 500),
+        details: 'Shop approved after investigation',
+      });
+      logger.info(`ModerationLog created for APPROVE_SHOP: ${approveLog._id}`);
+    } catch (error: any) {
+      logger.error('Failed to create ModerationLog for APPROVE_SHOP:', error);
+      throw new AppError(`Failed to create moderation log: ${error.message}`, 500);
+    }
   }
 
   // Update report status
   report.status = ReportStatus.RESOLVED;
-  report.reviewedBy = adminId as any;
+  report.reviewedBy = Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId as any;
   report.reviewedAt = new Date();
   report.resolution = reason;
   await report.save();
@@ -240,14 +308,20 @@ export const removeUser = async (
   }
 
   // Log moderation action
-  await ModerationLog.create({
-    admin: adminId,
-    action: ModerationAction.REMOVE_USER,
-    targetType: 'user',
-    targetId: userId,
-    reason,
-    details: `User ${user.email} removed due to violations`,
-  });
+  try {
+    const removeUserLog = await ModerationLog.create({
+      admin: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId,
+      action: ModerationAction.REMOVE_USER,
+      targetType: 'user' as const,
+      targetId: Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId,
+      reason: reason.substring(0, 500),
+      details: `User ${user.email} removed due to violations`.substring(0, 1000),
+    });
+    logger.info(`ModerationLog created for REMOVE_USER: ${removeUserLog._id}`);
+  } catch (error: any) {
+    logger.error('Failed to create ModerationLog for REMOVE_USER:', error);
+    throw new AppError(`Failed to create moderation log: ${error.message}`, 500);
+  }
 
   logger.info(`User ${userId} removed by admin ${adminId}`);
 
@@ -257,8 +331,12 @@ export const removeUser = async (
 /**
  * Get Pending Reports
  */
-export const getPendingReports = async (targetType?: 'review' | 'shop') => {
-  const query: any = { status: ReportStatus.PENDING };
+export const getPendingReports = async (
+  targetType?: 'review' | 'shop'
+): Promise<any[]> => {
+  const query: { status: ReportStatus; targetType?: 'review' | 'shop' } = {
+    status: ReportStatus.PENDING,
+  };
   if (targetType) {
     query.targetType = targetType;
   }
@@ -268,25 +346,184 @@ export const getPendingReports = async (targetType?: 'review' | 'shop') => {
     .populate('reporter', 'name email')
     .limit(50);
 
+  // If fetching review reports, add review details
+  if (targetType === 'review') {
+    const reportsWithDetails = await Promise.all(
+      reports.map(async (report) => {
+        const reportObj = report.toObject();
+
+        // First, try to find the review in the standalone Review collection
+        let reviewDetails = null;
+        try {
+          const review = await Review.findById(report.targetId)
+            .populate('shopper', 'name email')
+            .populate('shop', 'name')
+            .populate('catalogue');
+
+          if (review) {
+            reviewDetails = {
+              _id: review._id,
+              rating: 0, // Standalone reviews don't have ratings in the current schema
+              comment: review.description,
+              availability: review.availability,
+              reviewer: {
+                name: (review.shopper as any)?.name || 'Unknown User',
+                email: (review.shopper as any)?.email || 'unknown@email.com',
+              },
+              itemName: review.item,
+              shopName: (review.shop as any)?.name || 'Unknown Shop',
+              images: review.images || [],
+              photos: review.images || [],
+            };
+          }
+        } catch (error) {
+          logger.debug(`Review ${report.targetId} not found in standalone collection, checking nested structure`);
+        }
+
+        // Fallback: If not found in standalone collection, check nested reviews in Item documents
+        if (!reviewDetails) {
+          // Query all items that have reviews with matching ID
+          const items = await Item.find({
+            'reviews._id': report.targetId
+          });
+
+          for (const item of items) {
+            const review = item.reviews.find(
+              (r: any) => r._id.toString() === report.targetId.toString()
+            );
+            if (review) {
+              // Get shopper details
+              const shopper = await User.findById(review.shopper).select('name email');
+
+              // Find the catalogue and shop for this item
+              const catalogue = await Catalogue.findOne({
+                items: item._id
+              }).populate('shop', 'name');
+
+              reviewDetails = {
+                _id: review._id,
+                rating: review.rating,
+                comment: review.comment,
+                availability: review.availability,
+                reviewer: {
+                  name: shopper?.name || 'Unknown User',
+                  email: shopper?.email || 'unknown@email.com',
+                },
+                itemName: item.name,
+                shopName: (catalogue?.shop as any)?.name || 'Unknown Shop',
+                images: review.photos || [],
+                photos: review.photos || [],
+              };
+              break;
+            }
+          }
+        }
+
+        return {
+          ...reportObj,
+          reviewDetails,
+        };
+      })
+    );
+
+    return reportsWithDetails;
+  }
+
+  // If fetching shop reports, add shop details
+  if (targetType === 'shop') {
+    const reportsWithDetails = await Promise.all(
+      reports.map(async (report) => {
+        const reportObj = report.toObject();
+        const shop = await Shop.findById(report.targetId).populate('owner', 'name email');
+
+        // Helper function to append API key to images
+        const appendApiKey = (images: string[]): string[] => {
+          const apiKey = config.googleMaps.apiKey;
+          if (!apiKey || !images) return images || [];
+
+          return images.map(imageUrl => {
+            if (!imageUrl) return imageUrl;
+            // Skip Base64 data URLs and blob URLs
+            if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+              return imageUrl;
+            }
+            // Check if URL already has key parameter
+            if (imageUrl.includes('key=')) return imageUrl;
+            // Append API key to HTTP/HTTPS URLs
+            if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+              return `${imageUrl}&key=${apiKey}`;
+            }
+            return imageUrl;
+          });
+        };
+
+        return {
+          ...reportObj,
+          shopDetails: shop ? {
+            _id: shop._id,
+            name: shop.name,
+            address: shop.address,
+            description: shop.description,
+            category: shop.category,
+            phone: shop.phone,
+            email: shop.email,
+            owner: shop.owner ? {
+              name: (shop.owner as any).name,
+              email: (shop.owner as any).email,
+            } : undefined,
+            reportCount: shop.reportCount,
+            warnings: shop.warnings,
+            images: appendApiKey(shop.images || []),
+          } : null,
+        };
+      })
+    );
+
+    return reportsWithDetails;
+  }
+
   return reports;
 };
 
 /**
  * Get Moderation Logs
  */
-export const getModerationLogs = async (limit: number = 100) => {
-  const logs = await ModerationLog.find()
-    .sort({ timestamp: -1 })
-    .limit(limit)
-    .populate('admin', 'name email');
+export const getModerationLogs = async (
+  limit: number = 100
+): Promise<IModerationLog[]> => {
+  try {
+    const logs = await ModerationLog.find()
+      .sort({ createdAt: -1, timestamp: -1 })
+      .limit(limit)
+      .populate('admin', 'name email')
+      .populate('relatedReport', '_id targetType')
+      .lean();
 
-  return logs;
+    logger.info(`Retrieved ${logs.length} moderation logs from database`);
+
+    // Log sample data for debugging
+    if (logs.length > 0) {
+      logger.debug(`Sample log: ${JSON.stringify({
+        action: logs[0].action,
+        admin: logs[0].admin,
+        targetType: logs[0].targetType,
+        timestamp: logs[0].timestamp
+      })}`);
+    }
+
+    return logs;
+  } catch (error: any) {
+    logger.error(`Error fetching moderation logs: ${error.message}`);
+    throw error;
+  }
 };
 
 /**
  * Get Users with Warnings
  */
-export const getUsersWithWarnings = async (minWarnings: number = 1) => {
+export const getUsersWithWarnings = async (
+  minWarnings: number = 1
+): Promise<IUser[]> => {
   const users = await User.find({
     isActive: true,
     'warnings.0': { $exists: true },

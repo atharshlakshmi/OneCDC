@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { apiFetch, authHeaders } from "../lib/api";
+import { apiFetch, authHeaders, API_BASE } from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import PasswordField from "../components/PasswordField";
+import { PASSWORD_MIN_LENGTH } from "../lib/constants";
+import { handleError } from "../lib/errorHandler";
+import type { User as UserType } from "../lib/types";
 
-type User = {
-  _id?: string;
-  name?: string;
-  email: string;
+type User = UserType & {
   authProvider?: string;
-  role?: string;
   gender?: string;
   phone?: string;
   address?: string;
   avatarUrl?: string;
   businessRegistrationNumber?: string; // owner-only
 };
+
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api";
 const resolveUrl = (u?: string) => {
@@ -27,6 +27,7 @@ const resolveUrl = (u?: string) => {
   // Otherwise, prepend the API base
   return `${API_BASE.replace(/\/api$/, "")}${u}`;
 };
+
 
 export default function ProfileDetails() {
   const { logout, user: ctxUser } = useAuth();
@@ -69,12 +70,12 @@ export default function ProfileDetails() {
     let active = true;
     (async () => {
       try {
-        const resp = await apiFetch("/auth/profile", { method: "GET" });
-        const data: any = resp?.data?.user ?? resp?.data ?? resp;
+        const resp = await apiFetch<{ data?: { user?: User }; user?: User }>("/auth/profile", { method: "GET" });
+        const data = (resp as { data?: { user?: User } })?.data?.user ?? (resp as { data?: User })?.data ?? resp;
 
         if (!active) return;
 
-        setUser(data);
+        setUser(data as User);
         setName(data.name ?? "");
         setGender(data.gender ?? "");
         setPhone(data.phone ?? "");
@@ -82,13 +83,15 @@ export default function ProfileDetails() {
         setAvatarUrl(data.avatarUrl ?? "");
         setAvatarPreview(resolveUrl(data.avatarUrl ?? ""));
         setBusinessRegistrationNumber(data.businessRegistrationNumber ?? "");
-      } catch (err: any) {
-        if (err?.status === 401) {
+      } catch (err) {
+        const error = err as { status?: number; message?: string };
+        if (error?.status === 401) {
           await logout();
           navigate("/login", { replace: true });
           return;
         }
-        setApiError(err?.message || "Failed to load profile");
+        handleError(err, "Profile fetch");
+        setApiError(error?.message || "Failed to load profile");
       } finally {
         if (active) setLoading(false);
       }
@@ -127,7 +130,7 @@ export default function ProfileDetails() {
       // 1) Change password first (if provided and local account)
       if (!isGoogleUser && (currentPassword || newPassword)) {
         if (!currentPassword || !newPassword) throw new Error("Please enter both current and new passwords");
-        if (newPassword.length < 8) throw new Error("New password must be at least 8 characters");
+        if (newPassword.length < PASSWORD_MIN_LENGTH) throw new Error(`New password must be at least ${PASSWORD_MIN_LENGTH} characters`);
         await apiFetch("/auth/password/change", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
