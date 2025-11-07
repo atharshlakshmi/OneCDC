@@ -112,33 +112,38 @@ export const verifyEmailWithToken = async (token: string): Promise<IUser> => {
   logger.info(`Email successfully verified for user: ${user.email}`);
 
   // Optional: Send welcome email
-  await sendMail({
-    to: user.email,
-    subject: 'Welcome to OneCDC!',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Email Verified Successfully!</h2>
-        <p>Hi ${user.name},</p>
-        <p>Your email has been verified. You can now enjoy all the features of OneCDC:</p>
-        <ul style="color: #666;">
-          <li>Search for shops accepting CDC vouchers</li>
-          <li>Add shops to your cart and plan efficient routes</li>
-          <li>Submit reviews for items and help the community</li>
-          <li>Track your shopping and voucher usage</li>
-        </ul>
-        <p style="margin: 30px 0;">
-          <a href="${config.server.frontendUrl}/login"
-             style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-            Get Started
-          </a>
-        </p>
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-        <p style="color: #999; font-size: 12px;">
-          OneCDC - Community Development Council Voucher Platform
-        </p>
-      </div>
-    `,
-  });
+  try {
+    await sendMail({
+      to: user.email,
+      subject: 'Welcome to OneCDC!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Email Verified Successfully!</h2>
+          <p>Hi ${user.name},</p>
+          <p>Your email has been verified. You can now enjoy all the features of OneCDC:</p>
+          <ul style="color: #666;">
+            <li>Search for shops accepting CDC vouchers</li>
+            <li>Add shops to your cart and plan efficient routes</li>
+            <li>Submit reviews for items and help the community</li>
+            <li>Track your shopping and voucher usage</li>
+          </ul>
+          <p style="margin: 30px 0;">
+            <a href="${config.server.frontendUrl}/login"
+               style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              Get Started
+            </a>
+          </p>
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+          <p style="color: #999; font-size: 12px;">
+            OneCDC - Community Development Council Voucher Platform
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    logger.error('Failed to send welcome email:', error);
+    // Continue anyway - verification is complete
+  }
 
   return user;
 };

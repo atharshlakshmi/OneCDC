@@ -38,8 +38,7 @@ router.post(
       .isIn(['approve', 'remove'])
       .withMessage('Action must be approve or remove'),
     body('reason')
-      .notEmpty()
-      .withMessage('Reason is required')
+      .optional()
       .isLength({ max: 500 })
       .withMessage('Reason must not exceed 500 characters'),
   ]),
@@ -54,11 +53,10 @@ router.post(
   '/moderate/shop/:reportId',
   validate([
     body('action')
-      .isIn(['approve', 'warn'])
-      .withMessage('Action must be approve or warn'),
+      .isIn(['approve', 'remove'])
+      .withMessage('Action must be approve or remove'),
     body('reason')
-      .notEmpty()
-      .withMessage('Reason is required')
+      .optional()
       .isLength({ max: 500 })
       .withMessage('Reason must not exceed 500 characters'),
   ]),
@@ -73,8 +71,7 @@ router.delete(
   '/users/:userId',
   validate([
     body('reason')
-      .notEmpty()
-      .withMessage('Reason is required')
+      .optional()
       .isLength({ max: 500 })
       .withMessage('Reason must not exceed 500 characters'),
   ]),

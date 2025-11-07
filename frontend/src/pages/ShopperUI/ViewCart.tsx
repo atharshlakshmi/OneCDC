@@ -338,7 +338,7 @@ const ViewCart: React.FC = () => {
       <div>
         <PageHeader title="Your Cart" />
         <div className="flex flex-col gap-5 items-center m-5 align-center justify-center min-h-[40vh]">
-          <h2 className="text-xl text-amber-400">Your cart is empty!</h2>
+          <h2 className="text-3xl font-bold text-amber-400">Your cart is empty!</h2>
           <p className="text-gray-600">Add some shops to start planning your route.</p>
           <Button onClick={() => navigate("/shopSearch")} className="bg-amber-400 hover:bg-amber-500 text-white">
             Browse Shops

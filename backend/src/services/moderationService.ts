@@ -15,7 +15,7 @@ export const moderateReview = async (
   adminId: string,
   reportId: string,
   action: 'approve' | 'remove',
-  reason: string
+  reason?: string
 ) => {
   // Get report
   const report = await Report.findById(reportId);
@@ -77,7 +77,7 @@ export const moderateReview = async (
     const shopper = await User.findById(targetReview.shopper);
     if (shopper) {
       shopper.warnings.push({
-        reason,
+        reason: `Review for item "${itemName}" was removed.`,
         issuedBy: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId as any,
         issuedAt: new Date(),
         relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId as any,
@@ -100,7 +100,6 @@ export const moderateReview = async (
       targetType: 'review' as const,
       targetId: Types.ObjectId.isValid(targetIdValue) ? new Types.ObjectId(targetIdValue) : targetIdValue,
       relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId,
-      reason: reason.substring(0, 500), // Ensure max length
       details: `Review removed from item "${itemName}"`.substring(0, 1000), // Ensure max length
     };
 
@@ -109,7 +108,6 @@ export const moderateReview = async (
       action: moderationLogData.action,
       targetType: moderationLogData.targetType,
       targetId: moderationLogData.targetId,
-      reasonLength: moderationLogData.reason.length
     })}`);
 
     try {
@@ -132,7 +130,6 @@ export const moderateReview = async (
       targetType: 'review' as const,
       targetId: Types.ObjectId.isValid(targetIdValue) ? new Types.ObjectId(targetIdValue) : targetIdValue,
       relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId,
-      reason: reason.substring(0, 500), // Ensure max length
       details: 'Review approved after investigation',
     };
 
@@ -141,7 +138,6 @@ export const moderateReview = async (
       action: moderationLogData.action,
       targetType: moderationLogData.targetType,
       targetId: moderationLogData.targetId,
-      reasonLength: moderationLogData.reason.length
     })}`);
 
     try {
@@ -160,7 +156,7 @@ export const moderateReview = async (
   // Update common report fields
   report.reviewedBy = Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId as any;
   report.reviewedAt = new Date();
-  report.resolution = reason;
+  report.resolution = reason || 'No reason provided';
   await report.save();
 
   logger.info(`Review ${targetReview._id} moderated by admin ${adminId}: ${action}`);
@@ -174,8 +170,8 @@ export const moderateReview = async (
 export const moderateShop = async (
   adminId: string,
   reportId: string,
-  action: 'approve' | 'warn',
-  reason: string
+  action: 'approve' | 'remove',
+  reason?: string
 ) => {
   // Get report
   const report = await Report.findById(reportId);
@@ -192,45 +188,37 @@ export const moderateShop = async (
     throw new AppError('Shop not found', 404);
   }
 
-  if (action === 'warn') {
-    // Increment shop warnings and report count
+  if (action === 'remove') {
+    // Deactivate shop and increment warning count
+    shop.isActive = false;
     shop.warnings += 1;
-    shop.reportCount += 1;
     await shop.save();
 
     // Add warning to owner
     const owner = await User.findById(shop.owner);
     if (owner) {
       owner.warnings.push({
-        reason,
+        reason: `Shop "${shop.name}" was removed.`,
         issuedBy: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId as any,
         issuedAt: new Date(),
         relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId as any,
       });
       await owner.save();
-
-      // Check if threshold reached
-      if (shop.reportCount >= OWNER_REPORT_THRESHOLD) {
-        logger.warn(
-          `Shop "${shop.name}" has reached report threshold (${shop.reportCount})`
-        );
-      }
     }
 
     // Log moderation action
     try {
-      const warnLog = await ModerationLog.create({
+      const removeLog = await ModerationLog.create({
         admin: Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId,
-        action: ModerationAction.WARN_SHOP,
+        action: ModerationAction.REMOVE_SHOP,
         targetType: 'shop' as const,
         targetId: shop._id,
         relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId,
-        reason: reason.substring(0, 500),
-        details: `Warning issued to shop "${shop.name}"`.substring(0, 1000),
+        details: `Shop "${shop.name}" removed after review.`.substring(0, 1000),
       });
-      logger.info(`ModerationLog created for WARN_SHOP: ${warnLog._id}`);
+      logger.info(`ModerationLog created for REMOVE_SHOP: ${removeLog._id}`);
     } catch (error: any) {
-      logger.error('Failed to create ModerationLog for WARN_SHOP:', error);
+      logger.error('Failed to create ModerationLog for REMOVE_SHOP:', error);
       throw new AppError(`Failed to create moderation log: ${error.message}`, 500);
     }
   } else {
@@ -242,7 +230,6 @@ export const moderateShop = async (
         targetType: 'shop' as const,
         targetId: shop._id,
         relatedReport: Types.ObjectId.isValid(reportId) ? new Types.ObjectId(reportId) : reportId,
-        reason: reason.substring(0, 500),
         details: 'Shop approved after investigation',
       });
       logger.info(`ModerationLog created for APPROVE_SHOP: ${approveLog._id}`);
@@ -256,7 +243,7 @@ export const moderateShop = async (
   report.status = ReportStatus.RESOLVED;
   report.reviewedBy = Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : adminId as any;
   report.reviewedAt = new Date();
-  report.resolution = reason;
+  report.resolution = reason || 'No reason provided';
   await report.save();
 
   logger.info(`Shop ${shop._id} moderated by admin ${adminId}: ${action}`);
@@ -270,7 +257,7 @@ export const moderateShop = async (
 export const removeUser = async (
   adminId: string,
   userId: string,
-  reason: string
+  reason?: string
 ) => {
   const user = await User.findById(userId);
   if (!user) {
@@ -314,7 +301,6 @@ export const removeUser = async (
       action: ModerationAction.REMOVE_USER,
       targetType: 'user' as const,
       targetId: Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId,
-      reason: reason.substring(0, 500),
       details: `User ${user.email} removed due to violations`.substring(0, 1000),
     });
     logger.info(`ModerationLog created for REMOVE_USER: ${removeUserLog._id}`);
@@ -525,9 +511,12 @@ export const getUsersWithWarnings = async (
   minWarnings: number = 1
 ): Promise<IUser[]> => {
   const users = await User.find({
-    isActive: true,
     'warnings.0': { $exists: true },
-  }).select('-passwordHash');
+  })
+    .select('-passwordHash')
+    .populate('warnings.issuedBy', 'name email')
+    .populate('warnings.relatedReport', '_id targetType status')
+    .lean();
 
   return users.filter((user) => user.warnings.length >= minWarnings);
 };

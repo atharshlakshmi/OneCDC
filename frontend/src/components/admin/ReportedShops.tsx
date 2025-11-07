@@ -55,25 +55,27 @@ const ReportedShops: React.FC = () => {
     }
   };
 
-  const handleModerate = async (reportId: string, action: "approve" | "warn") => {
-    const reason = prompt(
-      `Please enter a reason for ${action === "approve" ? "dismissing" : "warning"} this shop:`
-    );
-
-    if (!reason) {
-      toast.error("Reason is required");
-      return;
-    }
-
+  const handleRemoveShop = async (reportId: string) => {
     try {
       setActionLoading(reportId);
-      await apiPost(`/admin/moderate/shop/${reportId}`, { action, reason });
-      toast.success(
-        `Shop ${action === "approve" ? "report dismissed" : "warned"} successfully`
-      );
+      await apiPost(`/admin/moderate/shop/${reportId}`, { action: "remove" });
+      toast.success("Shop removed successfully");
       fetchReports(); // Refresh the list
     } catch (error: any) {
-      toast.error(error.message || "Failed to moderate shop");
+      toast.error(error.message || "Failed to remove shop");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleResolveReport = async (reportId: string) => {
+    try {
+      setActionLoading(reportId);
+      await apiPost(`/admin/moderate/shop/${reportId}`, { action: "approve" });
+      toast.success("Report resolved successfully");
+      fetchReports(); // Refresh the list
+    } catch (error: any) {
+      toast.error(error.message || "Failed to resolve report");
     } finally {
       setActionLoading(null);
     }
@@ -196,48 +198,46 @@ const ReportedShops: React.FC = () => {
             </div>
           )}
 
-          {/* Action Buttons */}
-          {report.status === "PENDING" && (
-            <div className="flex gap-3 mb-4">
-              <Button
-                onClick={() => handleModerate(report._id, "approve")}
-                disabled={actionLoading === report._id}
-                variant="outline"
-                size="sm"
-                className="flex-1"
-              >
-                {actionLoading === report._id ? "Processing..." : "Dismiss Report"}
-              </Button>
-              <Button
-                onClick={() => handleModerate(report._id, "warn")}
-                disabled={actionLoading === report._id}
-                variant="destructive"
-                size="sm"
-                className="flex-1"
-              >
-                {actionLoading === report._id
-                  ? "Processing..."
-                  : "Warn Shop Owner"}
-              </Button>
-            </div>
-          )}
-
-          {/* Status at bottom */}
-          <div className="pt-3 border-t border-gray-200">
+          {/* Status and Action Buttons */}
+          <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
             <p className="text-sm text-gray-500">
               Status:{" "}
               <span
                 className={`font-medium ${
-                  report.status === "PENDING"
+                  report.status === "PENDING" || report.status === "pending"
                     ? "text-yellow-600"
-                    : report.status === "RESOLVED"
+                    : report.status === "RESOLVED" || report.status === "resolved"
                     ? "text-green-600"
+                    : report.status === "SHOP_REMOVED" || report.status === "shop_removed"
+                    ? "text-red-600"
                     : "text-gray-600"
                 }`}
               >
-                {report.status}
+                {report.status.replace(/_/g, ' ').toUpperCase()}
               </span>
             </p>
+
+            {/* Action Buttons */}
+            {(report.status === "PENDING" || report.status === "pending") && (
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => handleRemoveShop(report._id)}
+                  disabled={actionLoading === report._id}
+                  className="bg-red-500 hover:bg-red-600 text-white shadow-lg"
+                  size="sm"
+                >
+                  {actionLoading === report._id ? "Processing..." : "Remove Shop"}
+                </Button>
+                <Button
+                  onClick={() => handleResolveReport(report._id)}
+                  disabled={actionLoading === report._id}
+                  className="bg-green-500 hover:bg-green-600 text-white shadow-lg"
+                  size="sm"
+                >
+                  {actionLoading === report._id ? "Processing..." : "Resolve Report"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       ))}

@@ -19,7 +19,7 @@ const ModerationLogSchema = new Schema<IModerationLog>(
     },
     targetId: { type: Schema.Types.ObjectId, required: true },
     relatedReport: { type: Schema.Types.ObjectId, ref: 'Report' },
-    reason: { type: String, required: true, trim: true, maxlength: 500 },
+    reason: { type: String, required: false, trim: true, maxlength: 500 },
     details: { type: String, trim: true, maxlength: 1000 },
     timestamp: { type: Date, default: Date.now },
   },

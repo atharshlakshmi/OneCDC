@@ -1,18 +1,17 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "react-feather";
-import { apiFetch } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { authStorage } from "../lib/storage";
 
 function NavBar() {
   const navigate = useNavigate();
-  const { user, isAuthed } = useAuth();
+  const { user, isAuthed, logout } = useAuth();
 
   const handleLogout = async () => {
-    try {
-      await apiFetch("/auth/logout", { method: "POST" }).catch(() => {});
-    } finally {
-      authStorage.clearAll();
+    const isAdmin = user?.role === "admin";
+    await logout();
+    if (isAdmin) {
+      navigate("/", { replace: true });
+    } else {
       navigate("/login", { replace: true });
     }
   };

@@ -37,6 +37,7 @@ import VerifyEmailSent from "./pages/AuthUI/VerifyEmailSent";
 import VerifyEmail from "./pages/AuthUI/VerifyEmail";
 import ForgotPassword from "./pages/AuthUI/ForgotPassword";
 import ResetPassword from "./pages/AuthUI/ResetPassword";
+import Welcome from "./pages/AuthUI/Welcome";
 import SeeReviews from "./pages/AdminUI/SeeReviews";
 import SeeReports from "./pages/AdminUI/SeeReports";
 import SeeViolations from "./pages/AdminUI/SeeViolations";
@@ -50,12 +51,20 @@ import { useImageBlobUrls, getImageDisplayUrl } from "./utils/imageUtils";
 
 // Guard: redirects authenticated users away from /login and /register
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
-  const { isAuthed, checked } = useAuth();
+  const { user, isAuthed, checked } = useAuth();
   const location = useLocation();
 
   if (!checked) return <div style={{ padding: 16 }}>Checking session…</div>;
 
   if (isAuthed) {
+    // Redirect based on user role
+    if (user?.role === "admin") {
+      return <Navigate to="/admin-dashboard" replace />;
+    } else if (user?.role === "owner") {
+      return <Navigate to="/profile/stores" replace />;
+    } else if (user?.role === "registered_shopper") {
+      return <Navigate to="/shopSearch" replace />;
+    }
     const from = (location.state as any)?.from || "/";
     return <Navigate to={from} replace />;
   }
@@ -125,12 +134,15 @@ export default function App() {
       fetchShops();
     }, []);
 
-    // Redirect admin users to dashboard (after hooks)
+    // Redirect users based on role (after hooks)
     if (user?.role === "admin") {
       return <Navigate to="/admin-dashboard" replace />;
     }
     if (user?.role === "owner") {
       return <Navigate to="/profile/stores" replace />;
+    }
+    if (user?.role === "registered_shopper") {
+      return <Navigate to="/shopSearch" replace />;
     }
 
     if (loading) {
@@ -230,6 +242,7 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/welcome" element={<Welcome />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>

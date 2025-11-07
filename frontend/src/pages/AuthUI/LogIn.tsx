@@ -87,7 +87,16 @@ export default function Login() {
       const { user, token } = resp?.data || {};
       if (user && token) {
         login(user, token, remember);
-        navigate(from, { replace: true });
+        // Redirect based on user role
+        if (user.role === "admin") {
+          navigate("/admin-dashboard", { replace: true });
+        } else if (user.role === "owner") {
+          navigate("/profile/stores", { replace: true });
+        } else if (user.role === "registered_shopper") {
+          navigate("/shopSearch", { replace: true });
+        } else {
+          navigate(from, { replace: true });
+        }
       } else {
         throw new Error("Invalid login response");
       }

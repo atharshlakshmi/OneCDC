@@ -79,7 +79,7 @@ const ModerationLogs: React.FC = () => {
     <div className="flex flex-col gap-4">
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2">
         <p className="text-sm text-gray-700">
-          <span className="font-semibold">Audit Trail:</span> All moderation actions
+          <span className="font-semibold">Moderation Logs:</span> All moderation actions
           are logged here for transparency and accountability.
         </p>
       </div>
@@ -136,13 +136,6 @@ const ModerationLogs: React.FC = () => {
               </p>
             </div>
           )}
-
-          {/* Reason */}
-          <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-700">
-              <span className="font-semibold">Reason:</span> {log.reason || '-'}
-            </p>
-          </div>
         </div>
       ))}
     </div>

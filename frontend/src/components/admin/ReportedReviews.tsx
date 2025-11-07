@@ -65,16 +65,9 @@ const ReportedReviews: React.FC = () => {
   };
 
   const handleRemoveReview = async (reportId: string) => {
-    const reason = prompt("Please enter a reason for removing this review:");
-
-    if (!reason) {
-      toast.error("Reason is required");
-      return;
-    }
-
     try {
       setActionLoading(reportId);
-      await apiPost(`/admin/moderate/review/${reportId}`, { action: "remove", reason });
+      await apiPost(`/admin/moderate/review/${reportId}`, { action: "remove" });
       toast.success("Review removed successfully");
       fetchReports(); // Refresh the list
     } catch (error: any) {
@@ -85,16 +78,9 @@ const ReportedReviews: React.FC = () => {
   };
 
   const handleResolveReport = async (reportId: string) => {
-    const reason = prompt("Please enter a reason for resolving this report:");
-
-    if (!reason) {
-      toast.error("Reason is required");
-      return;
-    }
-
     try {
       setActionLoading(reportId);
-      await apiPost(`/admin/moderate/review/${reportId}`, { action: "approve", reason });
+      await apiPost(`/admin/moderate/review/${reportId}`, { action: "approve" });
       toast.success("Report resolved successfully");
       fetchReports(); // Refresh the list
     } catch (error: any) {

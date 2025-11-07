@@ -66,7 +66,7 @@ export enum ModerationAction {
   APPROVE_REVIEW = "approve_review",
   WARN_USER = "warn_user",
   REMOVE_USER = "remove_user",
-  WARN_SHOP = "warn_shop",
+  REMOVE_SHOP = "remove_shop",
   APPROVE_SHOP = "approve_shop",
 }
 

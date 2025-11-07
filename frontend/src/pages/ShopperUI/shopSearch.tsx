@@ -211,32 +211,60 @@ const ShopSearch: React.FC = () => {
           <Link
             to={`/ViewShop/${shop._id}`}
             key={shop._id}
-            className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-start text-left mx-auto hover:shadow-xl transition-shadow"
+            className="w-full rounded-2xl bg-white shadow-lg overflow-hidden flex flex-row mx-auto hover:shadow-xl transition-shadow"
           >
-            {/* Shop Header */}
-            <div className="w-full">
-              <div className="flex justify-between items-start mb-2 w-full">
-                {/* Left: shop name + verified */}
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-amber-500">{shop.name}</h2>
-                  {shop.verifiedByOwner && <BadgeCheck className="text-green-700" size={20} />}
-                </div>
-
-                {/* Right: distance */}
-                {shop.distance !== undefined && <span className="text-sm text-gray-500 whitespace-nowrap">{shop.distance.toFixed(2)} km away</span>}
+            {/* Left Half - Content */}
+            <div className="w-1/2 p-8 sm:p-10 flex flex-col gap-3">
+              {/* Shop name + verified */}
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-amber-500">{shop.name}</h2>
+                {shop.verifiedByOwner && <BadgeCheck className="text-green-700" size={20} />}
               </div>
 
-              {shop.description && <p className="text-gray-600 mb-3">{shop.description}</p>}
+              {shop.description && <p className="text-gray-600">{shop.description}</p>}
 
-              <p className="text-sm text-gray-600">{shop.address}</p>
+              <div>
+                <p className="text-sm text-gray-600">{shop.address}</p>
+                {/* Distance below address */}
+                {shop.distance !== undefined && (
+                  <p className="text-sm text-gray-500 mt-1">{shop.distance.toFixed(2)} km away</p>
+                )}
+              </div>
 
               {shop.category && (
                 <div>
-                  <span className="inline-block px-3 py-1 mt-3 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                     {shop.category.replace("_", " ").charAt(0).toUpperCase() + shop.category.slice(1).replace("_", " ")}
                   </span>
                 </div>
               )}
+            </div>
+
+            {/* Right Half - Image Subcard */}
+            <div className="w-1/2 p-4 sm:p-6 flex items-center justify-center">
+              <div className="w-full h-48 rounded-xl overflow-hidden shadow-md">
+                {shop.images && shop.images.length > 0 ? (
+                  <img
+                    src={shop.images[0]}
+                    alt={shop.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full bg-gray-200">
+                    <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
             </div>
           </Link>
         ))}

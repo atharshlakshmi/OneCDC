@@ -6,7 +6,16 @@ import { toast } from "sonner";
 interface Warning {
   reason: string;
   issuedAt: Date;
-  issuedBy: string;
+  issuedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  } | string;
+  relatedReport?: {
+    _id: string;
+    targetType: string;
+    status: string;
+  };
 }
 
 interface User {
@@ -47,16 +56,9 @@ const UserManagement: React.FC = () => {
 
     if (!confirmed) return;
 
-    const reason = prompt("Please enter a reason for removing this user:");
-
-    if (!reason) {
-      toast.error("Reason is required");
-      return;
-    }
-
     try {
       setActionLoading(userId);
-      await apiDelete(`/admin/users/${userId}`, { reason });
+      await apiDelete(`/admin/users/${userId}`);
       toast.success(`User "${userName}" removed successfully`);
       fetchUsers(); // Refresh the list
     } catch (error: any) {
@@ -86,8 +88,8 @@ const UserManagement: React.FC = () => {
     <div className="flex flex-col gap-4">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-2">
         <p className="text-sm text-blue-800">
-          <span className="font-semibold">Note:</span> Users with 3 or more warnings
-          should be reviewed for removal.
+          <span className="font-semibold">Note:</span> Showing all users with at least 1 warning.
+          Users with 3 or more warnings should be reviewed for removal.
         </p>
       </div>
 
@@ -139,17 +141,30 @@ const UserManagement: React.FC = () => {
                 Warning History:
               </p>
               <div className="space-y-2">
-                {user.warnings.map((warning, index) => (
+                {[...user.warnings].reverse().map((warning, index) => (
                   <div
                     key={index}
                     className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
                   >
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Reason:</span> {warning.reason}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Issued on {new Date(warning.issuedAt).toLocaleDateString()}
-                    </p>
+                    {warning.relatedReport && (
+                        <p className="text-xs text-gray-600">
+                          <span className="font-semibold">Related Report:</span>{" "}
+                          {warning.relatedReport.targetType.toUpperCase()} (ID: {warning.relatedReport._id})
+                        </p>
+                      )}
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs text-gray-600">
+                        <span className="font-semibold">Issued by:</span>{" "}
+                        {typeof warning.issuedBy === 'object' && warning.issuedBy
+                          ? `${warning.issuedBy.name} (${warning.issuedBy.email})`
+                          : 'Admin'}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        <span className="font-semibold">Date:</span>{" "}
+                        {new Date(warning.issuedAt).toLocaleDateString()} at{" "}
+                        {new Date(warning.issuedAt).toLocaleTimeString()}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>

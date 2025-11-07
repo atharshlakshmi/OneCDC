@@ -25,6 +25,13 @@ interface CatalogueItem {
   cdcVoucherAccepted?: boolean;
 }
 
+interface OperatingHours {
+  dayOfWeek: number; // 0 = Sunday, 1 = Monday, etc.
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+}
+
 interface Shop {
   id: string;
   name: string;
@@ -32,6 +39,7 @@ interface Shop {
   address: string;
   contact_number: string;
   operating_hours: string;
+  operatingHours?: OperatingHours[];
   images?: string[];
   items: ShopItem[];
 }
@@ -60,6 +68,8 @@ const ViewShop: React.FC = () => {
       setLoading(true);
       try {
         const response = await apiGet<Shop>(`/shops/${id}`);
+        console.log("Shop data received:", response);
+        console.log("Operating hours array:", response.operatingHours);
         setShop(response);
       } catch (error: any) {
         console.error("Failed to fetch shop:", error);
@@ -199,11 +209,34 @@ const ViewShop: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 text-gray-800 text-left">
-                <Clock className="w-5 h-5 flex-shrink-0" />
-                <p>
-                  <strong>Operating Hours:</strong> {shop.operating_hours}
-                </p>
+              <div className="flex items-start gap-3 text-gray-800 text-left">
+                <Clock className="w-5 h-5 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <p className="font-bold mb-2">Operating Hours:</p>
+                  {shop.operatingHours && shop.operatingHours.length > 0 ? (
+                    <div className="space-y-1">
+                      {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((dayName, index) => {
+                        const dayHours = shop.operatingHours?.find((h) => h.dayOfWeek === index);
+                        return (
+                          <div key={index} className="flex gap-2 text-sm">
+                            <span className="font-medium w-24">{dayName}:</span>
+                            <span className="text-gray-600">
+                              {dayHours?.isClosed ? (
+                                "Closed"
+                              ) : dayHours ? (
+                                `${dayHours.openTime.replace(":", "")}-${dayHours.closeTime.replace(":", "")}H`
+                              ) : (
+                                "Hours not available"
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600">{shop.operating_hours || "Operating hours not available"}</p>
+                  )}
+                </div>
               </div>
 
               {/* Conditional buttons based on user role */}

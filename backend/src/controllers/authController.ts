@@ -23,19 +23,24 @@ export const registerShopper = asyncHandler(async (req: AuthRequest, res: Respon
   });
 
   // Send verification email (local accounts)
-  const token = makeEmailVerifyToken(result.user.id.toString());
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${encodeURIComponent(token)}`;
+  try {
+    const token = makeEmailVerifyToken(result.user.id.toString());
+    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${encodeURIComponent(token)}`;
 
-  await sendMail({
-    to: result.user.email,
-    subject: "Verify your OneCDC account",
-    html: `
-      <p>Hi ${result.user.name || "there"},</p>
-      <p>Thanks for signing up. Please verify your email by clicking the link below:</p>
-      <p><a href="${verifyUrl}" target="_blank" rel="noreferrer">Verify my email</a></p>
-      <p>If you didn’t create an account, you can ignore this email.</p>
-    `,
-  });
+    await sendMail({
+      to: result.user.email,
+      subject: "Verify your OneCDC account",
+      html: `
+        <p>Hi ${result.user.name || "there"},</p>
+        <p>Thanks for signing up. Please verify your email by clicking the link below:</p>
+        <p><a href="${verifyUrl}" target="_blank" rel="noreferrer">Verify my email</a></p>
+        <p>If you didn't create an account, you can ignore this email.</p>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send verification email:", error);
+    // Continue - user is registered
+  }
 
   res.status(201).json({
     success: true,
@@ -59,18 +64,23 @@ export const registerOwner = asyncHandler(async (req: AuthRequest, res: Response
     businessRegistrationNumber,
   });
 
-  const token = makeEmailVerifyToken(result.user.id.toString());
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${encodeURIComponent(token)}`;
+  try {
+    const token = makeEmailVerifyToken(result.user.id.toString());
+    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${encodeURIComponent(token)}`;
 
-  await sendMail({
-    to: result.user.email,
-    subject: "Verify your OneCDC account",
-    html: `
-      <p>Hi ${result.user.name || "there"},</p>
-      <p>Please verify your email by clicking the link below:</p>
-      <p><a href="${verifyUrl}" target="_blank" rel="noreferrer">Verify my email</a></p>
-    `,
-  });
+    await sendMail({
+      to: result.user.email,
+      subject: "Verify your OneCDC account",
+      html: `
+        <p>Hi ${result.user.name || "there"},</p>
+        <p>Please verify your email by clicking the link below:</p>
+        <p><a href="${verifyUrl}" target="_blank" rel="noreferrer">Verify my email</a></p>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send verification email:", error);
+    // Continue - user is registered
+  }
 
   res.status(201).json({
     success: true,

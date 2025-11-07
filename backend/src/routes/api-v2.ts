@@ -103,6 +103,7 @@ router.get("/shops", async (_req, res) => {
           address: shop.address,
           contact_number: shop.phone,
           operating_hours: formatOperatingHours(shop.operatingHours),
+          operatingHours: shop.operatingHours || [],
           images: appendApiKeyToImages(shop.images || []),
           items,
         };
@@ -158,6 +159,7 @@ router.get("/shops/:id", async (req, res) => {
       address: shop.address,
       contact_number: shop.phone,
       operating_hours: formatOperatingHours(shop.operatingHours),
+      operatingHours: shop.operatingHours || [],
       images: appendApiKeyToImages(shop.images || []),
       items,
     };

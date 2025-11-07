@@ -42,7 +42,16 @@ export default function GoogleLoginButton() {
 
           const { user, token } = data.data;
           login(user, token, true);
-          navigate(from, { replace: true }); // ✅ safe redirect
+          // Redirect based on user role
+          if (user.role === "admin") {
+            navigate("/admin-dashboard", { replace: true });
+          } else if (user.role === "owner") {
+            navigate("/profile/stores", { replace: true });
+          } else if (user.role === "registered_shopper") {
+            navigate("/shopSearch", { replace: true });
+          } else {
+            navigate(from, { replace: true });
+          }
         } catch (err) {
           console.error("Google login failed:", err);
           alert("Google login failed. Please try again.");

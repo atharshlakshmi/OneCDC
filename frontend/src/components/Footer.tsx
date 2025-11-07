@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
 
   let searchLink = {
     to: "/shopSearch",
-    label: "Store Search",
+    label: "Shop Search",
     icon: <ShoppingBag size="1.5rem" />,
   };
 
@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
   } else if (isItemSearch) {
     searchLink = {
       to: "/shopSearch",
-      label: "Store Search",
+      label: "Shop Search",
       icon: <ShoppingBag size="1.5rem" />,
     };
   }
@@ -64,8 +64,12 @@ const Footer: React.FC = () => {
 
         {/* Profile Icon (always visible on right) */}
         <Link
-          to="/profile"
-          className={`flex flex-col items-center text-sm gap-1 transition-all ml-auto ${location.pathname === "/profile" ? "text-gray-800" : "text-gray-400 hover:text-gray-800"}`}
+          to={user?.role === "admin" ? "/profile/details" : "/profile"}
+          className={`flex flex-col items-center text-sm gap-1 transition-all ml-auto ${
+            location.pathname === "/profile" || location.pathname === "/profile/details"
+              ? "text-gray-800"
+              : "text-gray-400 hover:text-gray-800"
+          }`}
         >
           <User size="1.5rem" />
           <span>Profile</span>
