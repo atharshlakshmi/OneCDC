@@ -213,7 +213,12 @@ const categorizeAndSuggestShops = async (itemQuery: string, userLocation: { lat:
 /**
  * Search for Items
  */
-export const searchItems = async (filters: SearchFilters, sortBy: SortOption = SortOption.DISTANCE, pagination: PaginationOptions = { page: 1, limit: 20 }) => {
+export const searchItems = async (
+  filters: SearchFilters,
+  sortBy: SortOption = SortOption.DISTANCE,
+  pagination: PaginationOptions = { page: 1, limit: 20 },
+  options: { allowFallback?: boolean } = { allowFallback: true }
+) => {
   const { query, category, availability, ownerVerified, location, maxDistance, openNow } = filters;
   const userLocation = location || getDefaultLocation();
 
@@ -236,6 +241,23 @@ export const searchItems = async (filters: SearchFilters, sortBy: SortOption = S
   console.log(`🧾 Found ${items.length} items from items collection`);
 
   if (!items.length && query?.trim()) {
+    console.log("⚙️ No items found for query; checking fallback settings...");
+
+    // If caller opts out of fallback (eg. suggestion dropdown), return empty
+    // results without invoking the LLM/shop-suggestion flow.
+    if (options.allowFallback === false) {
+      console.log("↩️ Fallback disabled by caller. Returning empty results.");
+      return {
+        results: [],
+        pagination: {
+          ...pagination,
+          total: 0,
+          pages: 0,
+        },
+        isFallback: false,
+      };
+    }
+
     console.log("⚙️ No items found, using LLM category suggestion...");
     const suggestion = await categorizeAndSuggestShops(query, userLocation, pagination);
     console.log(`🧾 Return: Fallback found ${suggestion.suggestedShops.length} shops in category ${suggestion.suggestedCategory}`);

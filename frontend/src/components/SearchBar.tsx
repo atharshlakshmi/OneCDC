@@ -2,22 +2,43 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { apiGet } from "../lib/api";
 
-// Define interfaces locally to avoid circular dependencies
-interface Shop {
-  _id: string;
-  name: string;
-  address: string;
-  verifiedByOwner?: boolean;
-}
-
-interface ItemSearchResult {
+export interface ItemSearchResult {
   shopId: string;
   shopName: string;
   shopAddress: string;
+  shopCategory: string;
+  shopLocation: {
+    type: "Point";
+    coordinates: [number, number];
+  };
+  shopPhone: string;
+  shopEmail?: string;
+  verifiedByOwner: boolean;
+  distance: number;
   item: {
     _id: string;
     name: string;
+    description: string;
+    price?: number;
+    availability: boolean;
+    images?: string[];
+    category?: string;
+    cdcVoucherAccepted?: boolean;
   };
+}
+
+interface Shop {
+  _id: string;
+  name: string;
+  description?: string;
+  address: string;
+  location: {
+    type: "Point";
+    coordinates: [number, number];
+  };
+  category: string;
+  verifiedByOwner: boolean;
+  distance: number;
 }
 
 type SearchSuggestion = Shop | ItemSearchResult;
@@ -64,8 +85,17 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
           limit: "5",
         });
 
-        const res = await apiGet<{ data: SearchSuggestion[] }>(`${endpoint}?${params}`);
-        setSuggestions(res.data || []);
+        // When calling the items endpoint from the compact suggestion dropdown,
+        // opt out of the server-side fallback (LLM/shop suggestion) so the
+        // dropdown only shows real item matches. The full ItemSearch page
+        // will still allow fallback.
+        if (endpoint === "/search/items") {
+          params.append("allowFallback", "false");
+        }
+        const res: any = await apiGet(`${endpoint}?${params}`);
+
+        // Normalized: both shops and items use either `data` or `results`.
+        setSuggestions(res.data || res.results || []);
         setShowSuggestions(true);
       } catch (err) {
         console.error("Error fetching suggestions:", err);

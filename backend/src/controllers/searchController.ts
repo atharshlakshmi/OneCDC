@@ -16,7 +16,7 @@ export const searchItems = asyncHandler(async (req: AuthRequest, res: Response) 
   const filters: SearchFilters = {
     query: query as string,
     category: category as any,
-    availability: availability === "true",
+    availability: availability === undefined ? undefined : availability === "true" ? true : availability === "false" ? false : undefined,
     ownerVerified: ownerVerified === undefined ? undefined : ownerVerified === "true" ? true : ownerVerified === "false" ? false : undefined,
     openNow: openNow === "true",
     location: lat && lng ? { lat: parseFloat(lat as string), lng: parseFloat(lng as string) } : undefined,
@@ -29,7 +29,12 @@ export const searchItems = asyncHandler(async (req: AuthRequest, res: Response) 
     limit: limit ? parseInt(limit as string) : 20,
   };
 
-  const result = await searchService.searchItems(filters, sort, pagination);
+  // allow callers to opt-out of the LLM/shop-suggestion fallback by passing
+  // `allowFallback=false` as a query param. Default is true for backward
+  // compatibility (ItemSearch page will still get fallback behavior).
+  const allowFallback = req.query.allowFallback === undefined ? true : String(req.query.allowFallback) === "true";
+
+  const result = await searchService.searchItems(filters, sort, pagination, { allowFallback });
 
   res.status(200).json({
     success: true,
