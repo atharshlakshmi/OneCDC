@@ -5,22 +5,16 @@ import { toast } from "sonner";
 interface ModerationLog {
   _id: string;
   action: string;
-  performedBy: {
+  admin?: {
     _id: string;
     name: string;
     email: string;
   };
-  targetUser?: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  targetReview?: string;
-  targetShop?: {
-    _id: string;
-    name: string;
-  };
+  targetType: string;
+  targetId: string;
+  relatedReport?: string;
   reason: string;
+  details?: string;
   timestamp: string;
 }
 
@@ -118,34 +112,27 @@ const ModerationLogs: React.FC = () => {
           <div className="mb-3">
             <p className="text-sm text-gray-700">
               <span className="font-semibold">Performed by:</span>{" "}
-              {log.performedBy.name} ({log.performedBy.email})
+              {log.admin ? `${log.admin.name} (${log.admin.email})` : 'Unknown Admin'}
             </p>
           </div>
 
           {/* Target Info */}
-          {log.targetUser && (
-            <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Target User:</span>{" "}
-                {log.targetUser.name} ({log.targetUser.email})
-              </p>
-            </div>
-          )}
+          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-gray-700">
+              <span className="font-semibold">Target Type:</span>{" "}
+              {log.targetType.charAt(0).toUpperCase() + log.targetType.slice(1)}
+            </p>
+            <p className="text-sm text-gray-700 mt-1">
+              <span className="font-semibold">Target ID:</span>{" "}
+              {log.targetId}
+            </p>
+          </div>
 
-          {log.targetShop && (
-            <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          {/* Details */}
+          {log.details && (
+            <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
               <p className="text-sm text-gray-700">
-                <span className="font-semibold">Target Shop:</span>{" "}
-                {log.targetShop.name}
-              </p>
-            </div>
-          )}
-
-          {log.targetReview && (
-            <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Target Review ID:</span>{" "}
-                {log.targetReview}
+                <span className="font-semibold">Details:</span> {log.details}
               </p>
             </div>
           )}
@@ -153,7 +140,7 @@ const ModerationLogs: React.FC = () => {
           {/* Reason */}
           <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
             <p className="text-sm text-gray-700">
-              <span className="font-semibold">Reason:</span> {log.reason}
+              <span className="font-semibold">Reason:</span> {log.reason || '-'}
             </p>
           </div>
         </div>

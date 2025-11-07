@@ -3,6 +3,7 @@ import SearchBar from "../../components/SearchBar";
 import { apiGet } from "../../lib/api";
 import { BadgeCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useImageBlobUrls, getImageDisplayUrl } from "../../utils/imageUtils";
 
 
 interface Shop {
@@ -12,6 +13,7 @@ interface Shop {
   ownerVerified: boolean;
   openNow: boolean;
   address: string;
+  images?: string[];
 }
 
 const StoreSearch: React.FC = () => {
@@ -21,6 +23,10 @@ const StoreSearch: React.FC = () => {
   const [filter, setFilter] = useState<"all" | "verified" | "open">("all");
   const [sortBy, setSortBy] = useState<"distance" | "name" | "rating">("distance");
   const [query, setQuery] = useState("");
+
+  // Collect all shop images for blob conversion
+  const allImages = results.flatMap(shop => shop.images || []);
+  const imageBlobUrls = useImageBlobUrls(allImages);
 
   // Function to fetch shops
   const fetchShops = async (q: string) => {
@@ -89,17 +95,50 @@ const StoreSearch: React.FC = () => {
         )}
        
        {results.map((shop) => (
-          <Link to={`/ViewShop/${shop.id}`} key={shop.id} className="w-full rounded-2xl bg-white shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto">
-            
-            <div className = "flex flex-row">
-              <h2 className="text-xl text-amber-400">{shop.name}</h2>
-              {shop.ownerVerified  ? (
-                <p className="text-green-700 font-medium absolute right-10"><BadgeCheck /></p>
+          <Link
+            to={`/ViewShop/${shop.id}`}
+            key={shop.id}
+            className="w-full max-w-4xl rounded-2xl bg-amber-400 shadow-lg overflow-hidden flex flex-row hover:bg-amber-500 transition-colors relative"
+          >
+            {/* Left Half - Image */}
+            <div className="w-1/2 h-48 sm:h-56 bg-amber-300 flex items-center justify-center">
+              {shop.images && shop.images.length > 0 ? (
+                <img
+                  src={getImageDisplayUrl(shop.images[0], imageBlobUrls)}
+                  alt={shop.name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <></>
+                <div className="flex items-center justify-center w-full h-full bg-amber-300">
+                  <svg
+                    className="w-16 h-16 text-amber-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
+                  </svg>
+                </div>
               )}
-            </div> 
-            <p>{shop.address}</p>
+            </div>
+
+            {/* Right Half - Text */}
+            <div className="w-1/2 p-6 sm:p-8 flex flex-col justify-center relative">
+              {shop.ownerVerified && (
+                <div className="absolute top-4 right-4">
+                  <BadgeCheck className="text-green-600 w-6 h-6" />
+                </div>
+              )}
+              <h2 className="text-xl sm:text-2xl text-white font-bold mb-2">
+                {shop.name}
+              </h2>
+              <p className="text-white text-sm sm:text-base">{shop.address}</p>
+            </div>
           </Link>
         ))}
       </div>

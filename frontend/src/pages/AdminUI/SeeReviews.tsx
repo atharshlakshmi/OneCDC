@@ -32,6 +32,7 @@ const SeeReviews: React.FC = () => {
               subtitle={shop?.name}
               rating={review.rating}
               content={review.comment}
+              images={review.photos || review.images}
               onEdit={() => handleEdit(review.id)}
               onDelete={() => handleDelete(review.id)}
             />

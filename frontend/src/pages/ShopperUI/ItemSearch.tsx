@@ -9,7 +9,7 @@ import { DEFAULT_LOCATION } from "../../lib/constants";
 import '../../index.css'
 
 interface Item {
-  _id: string;
+  itemId: string; // Using name as identifier
   name: string;
   price?: number;
   category?: string;
@@ -77,7 +77,7 @@ const ItemSearch: React.FC = () => {
 
         // Transform the response to match our Item interface
         const transformedItems = (response.data || []).map((item: any) => ({
-          _id: item.item._id,
+          itemId: item.item.itemId || item.item.name,
           name: item.item.name,
           price: item.item.price,
           category: item.item.category,
@@ -198,8 +198,8 @@ const ItemSearch: React.FC = () => {
         ) : (
           items.map((item) => (
             <Link
-              to={`/ViewItem/${item._id}`}
-              key={item._id}
+              to={`/ViewItem/${item.itemId}`}
+              key={item.itemId}
               className="w-full rounded-3xl bg-amber-400 shadow-lg p-8 sm:p-10 flex flex-col gap-4 items-center text-center mx-auto hover:bg-amber-500 transition-colors"
             >
               <h2 className="text-xl text-white font-semibold">{item.name}</h2>

@@ -31,7 +31,7 @@ export async function apiFetch<T = Record<string, unknown>>(
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
-    credentials: "include", // ✅ include cookies for auth
+    credentials: "include", // include cookies for auth
   });
 
   // Try parse JSON even on errors
@@ -54,7 +54,7 @@ export async function apiFetch<T = Record<string, unknown>>(
   return data as T;
 }
 
-// ✅ Convenience wrappers
+// Convenience wrappers
 export const apiGet = <T = Record<string, unknown>>(
   endpoint: string,
   init?: RequestInit

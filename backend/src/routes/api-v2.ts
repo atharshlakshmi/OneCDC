@@ -1,13 +1,51 @@
 import express from 'express';
 import * as searchService from '../services/searchService';
-import * as reviewService from '../services/reviewService';
 import logger from '../utils/logger';
-import { IShop, ICatalogue, IItem } from '../types';
 import { Types } from 'mongoose';
 
 const router = express.Router();
 
 logger.info('[API-V2] Router file loaded');
+
+/**
+ * Helper function to append Google Maps API key to image URLs
+ * Only applies to HTTP/HTTPS URLs (Google Maps), not Base64 data URLs
+ */
+function appendApiKeyToImages(images: string[]): string[] {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey || !images) return images || [];
+
+  return images.map(imageUrl => {
+    if (!imageUrl) return imageUrl;
+    // Skip Base64 data URLs and blob URLs - only process HTTP/HTTPS URLs
+    if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    // Check if the URL already has the key parameter
+    if (imageUrl.includes('key=')) return imageUrl;
+    // Only append API key to HTTP/HTTPS URLs (Google Maps)
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return `${imageUrl}&key=${apiKey}`;
+    }
+    // Return unchanged if not a recognized format
+    return imageUrl;
+  });
+}
+
+/**
+ * Helper function to capitalize category
+ */
+function capitalizeCategory(category: string | undefined): string | undefined {
+  if (!category) return category;
+
+  return category
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+    .split('&')
+    .map(word => word.trim().charAt(0).toUpperCase() + word.trim().slice(1))
+    .join(' & ');
+}
 
 /**
  * GET /api/
@@ -47,9 +85,22 @@ router.get('/shops', async (_req, res) => {
     // Format for backward compatibility with frontend
     const formattedShops = await Promise.all(
       results.map(async (shop: any) => {
-        const catalogue = await searchService.getShopCatalogue(
-          shop._id.toString()
-        );
+        let items: Array<{ id: string; name: string; price: string }> = [];
+
+        // Try to get catalogue, but don't fail if it doesn't exist
+        try {
+          const catalogue = await searchService.getShopCatalogue(
+            shop._id.toString()
+          );
+          items = catalogue.items.map((item: any) => ({
+            id: item._id.toString(),
+            name: item.name,
+            price: `$${item.price || 0}`,
+          }));
+        } catch (error) {
+          // Shop has no catalogue yet, return empty items array
+          logger.debug(`Shop ${shop._id} has no catalogue`);
+        }
 
         return {
           id: shop._id.toString(),
@@ -58,11 +109,8 @@ router.get('/shops', async (_req, res) => {
           address: shop.address,
           contact_number: shop.phone,
           operating_hours: formatOperatingHours(shop.operatingHours),
-          items: catalogue.items.map((item: any) => ({
-            id: item._id.toString(),
-            name: item.name,
-            price: `$${item.price || 0}`,
-          })),
+          images: appendApiKeyToImages(shop.images || []),
+          items,
         };
       })
     );
@@ -83,22 +131,41 @@ router.get('/shops/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Validate MongoDB ObjectId format
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json({
+        error: 'Invalid shop ID format',
+        message: 'The provided ID is not a valid MongoDB ObjectId. Please use a valid shop ID from the database.'
+      });
+      return;
+    }
+
     // Use searchService
     const shop = await searchService.getShopById(id);
-    const catalogue = await searchService.getShopCatalogue(id);
+
+    // Try to get catalogue, but don't fail if it doesn't exist
+    let items: Array<{ id: string; name: string; price: string }> = [];
+    try {
+      const catalogue = await searchService.getShopCatalogue(id);
+      items = catalogue.items.map((item: any) => ({
+        id: item._id.toString(),
+        name: item.name,
+        price: `$${item.price || 0}`,
+      }));
+    } catch (error) {
+      // Shop has no catalogue yet, return empty items array
+      logger.debug(`Shop ${id} has no catalogue`);
+    }
 
     const formattedShop = {
-      id: (shop._id as Types.ObjectId).toString(),
+      id: shop._id.toString(),
       name: shop.name,
       details: shop.description,
       address: shop.address,
       contact_number: shop.phone,
       operating_hours: formatOperatingHours(shop.operatingHours),
-      items: catalogue.items.map((item: any) => ({
-        id: item._id.toString(),
-        name: item.name,
-        price: `$${item.price || 0}`,
-      })),
+      images: appendApiKeyToImages(shop.images || []),
+      items,
     };
 
     res.status(200).json(formattedShop);
@@ -116,34 +183,60 @@ router.get('/shops/:id', async (req, res) => {
 
 /**
  * GET /api/items/:id
- * Get item by ID
+ * Get item by name (using name as identifier)
  */
 router.get('/items/:id', async (req, res) => {
-  logger.info(`[API-V2] Item by ID endpoint hit: ${req.params.id}`);
+  logger.info(`[API-V2] Item by name endpoint hit: ${req.params.id}`);
   try {
-    const { Catalogue } = await import('../models');
+    const { Item, Catalogue, User } = await import('../models');
     const { id } = req.params;
 
-    const catalogue = await Catalogue.findOne({ 'items._id': id }).lean();
-
-    if (!catalogue) {
-      res.status(404).json({ error: 'Item not found' });
-      return;
-    }
-
-    const item = (catalogue as any).items.find(
-      (i: any) => i._id.toString() === id
-    );
+    // Find item by name in Item collection
+    const item = await Item.findOne({ name: id }).lean();
 
     if (!item) {
       res.status(404).json({ error: 'Item not found' });
       return;
     }
 
+    // Find the catalogue containing this item
+    const catalogue = await Catalogue.findOne({ items: item._id })
+      .populate('shop')
+      .lean();
+
+    if (!catalogue) {
+      res.status(404).json({ error: 'Item catalogue not found' });
+      return;
+    }
+
+    const shop = catalogue.shop as any;
+
+    // Get user name for lastUpdatedBy
+    let lastUpdatedByName = 'Unknown';
+    if (item.lastUpdatedBy) {
+      try {
+        const user = await User.findById(item.lastUpdatedBy).lean();
+        if (user) {
+          lastUpdatedByName = user.name || user.email || 'Unknown';
+        }
+      } catch (error) {
+        logger.debug('Could not fetch user for lastUpdatedBy');
+      }
+    }
+
     const formattedItem = {
-      id: item._id.toString(),
+      id: item.name, // Use name as identifier
       name: item.name,
-      price: `$${item.price || 0}`,
+      description: item.description,
+      price: item.price || 0,
+      availability: item.availability,
+      images: appendApiKeyToImages(item.images || []),
+      category: capitalizeCategory(item.category),
+      lastUpdatedBy: lastUpdatedByName,
+      lastUpdatedDate: item.lastUpdatedDate,
+      catalogueId: (catalogue._id as Types.ObjectId).toString(),
+      shopId: shop._id.toString(),
+      shopName: shop.name,
     };
 
     res.status(200).json(formattedItem);
@@ -155,44 +248,63 @@ router.get('/items/:id', async (req, res) => {
 
 /**
  * GET /api/items/:id/reviews
- * Get reviews for an item
+ * Get reviews for an item from both standalone Review model and nested reviews in Item
  */
 router.get('/items/:id/reviews', async (req, res) => {
   logger.info(`[API-V2] Item reviews endpoint hit: ${req.params.id}`);
   try {
-    const { Catalogue } = await import('../models');
+    const { Review, Item, User } = await import('../models');
     const { id } = req.params;
 
-    // Find catalogue containing this item
-    const catalogue = await Catalogue.findOne({ 'items._id': id });
+    const allReviews: any[] = [];
 
-    if (!catalogue) {
-      res.status(404).json({ error: 'Item not found' });
-      return;
-    }
+    // Get reviews from standalone Review collection
+    const standaloneReviews = await Review.find({ item: id, isActive: true })
+      .populate('shopper', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
 
-    // Use reviewService to get reviews
-    const reviewData = await reviewService.getItemReviews(
-      catalogue._id.toString(),
-      id
+    allReviews.push(
+      ...standaloneReviews.map((review: any) => ({
+        id: review._id.toString(),
+        itemId: id,
+        shopperName: review.shopper?.name || 'Anonymous',
+        shopperId: review.shopper?._id?.toString(),
+        description: review.description,
+        availability: review.availability,
+        images: appendApiKeyToImages(review.images || []),
+        createdAt: review.createdAt,
+      }))
     );
 
-    const formattedReviews = reviewData.reviews.map((review: any) => ({
-      id: review._id.toString(),
-      itemId: id,
-      rating: review.rating,
-      comment: review.comment,
-    }));
+    // Also check for nested reviews in Item document
+    const item = await Item.findOne({ name: id }).lean();
+    if (item && item.reviews && item.reviews.length > 0) {
+      const activeNestedReviews = item.reviews.filter((r: any) => r.isActive);
 
-    res.status(200).json(formattedReviews);
-  } catch (error: any) {
-    logger.error('[API-V2] Error fetching reviews:', error);
+      for (const review of activeNestedReviews) {
+        // Get shopper details
+        const shopper = await User.findById(review.shopper).select('name').lean();
 
-    if (error.statusCode === 404) {
-      res.status(404).json({ error: 'Item not found' });
-      return;
+        allReviews.push({
+          id: review._id.toString(),
+          itemId: id,
+          shopperName: shopper?.name || 'Anonymous',
+          shopperId: review.shopper.toString(),
+          description: review.comment, // Note: nested reviews use 'comment' field
+          availability: review.availability,
+          images: appendApiKeyToImages(review.photos || []), // Note: nested reviews use 'photos' field
+          createdAt: review.timestamp,
+        });
+      }
     }
 
+    // Sort all reviews by date (most recent first)
+    allReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.status(200).json(allReviews);
+  } catch (error: any) {
+    logger.error('[API-V2] Error fetching reviews:', error);
     res.status(500).json({ error: 'Failed to fetch reviews' });
   }
 });

@@ -1,4 +1,5 @@
-import { Shop, Catalogue, Owner } from '../models';
+import mongoose from 'mongoose';
+import { Shop, Catalogue, Item, Owner } from '../models';
 import { AppError } from '../middleware';
 import logger from '../utils/logger';
 
@@ -26,8 +27,8 @@ export const createShop = async (ownerId: string, shopData: any) => {
   // Create shop
   const shop = await Shop.create({
     ...shopData,
-    owner: ownerId,
-    lastUpdatedBy: ownerId,
+    owner: new mongoose.Types.ObjectId(ownerId),
+    lastUpdatedBy: new mongoose.Types.ObjectId(ownerId),
   });
 
   // Create empty catalogue
@@ -79,7 +80,7 @@ export const updateShop = async (
     }
   });
 
-  shop.lastUpdatedBy = ownerId as any;
+  shop.lastUpdatedBy = new mongoose.Types.ObjectId(ownerId);
   await shop.save();
 
   logger.info(`Shop updated: ${shop.name} by owner ${ownerId}`);
@@ -119,7 +120,7 @@ export const getShopCatalogue = async (shopId: string, ownerId?: string) => {
     throw new AppError('Unauthorized', 403);
   }
 
-  const catalogue = await Catalogue.findOne({ shop: shopId });
+  const catalogue = await Catalogue.findOne({ shop: shopId }).populate('items');
   if (!catalogue) {
     throw new AppError('Catalogue not found', 404);
   }
@@ -141,30 +142,144 @@ export const addCatalogueItem = async (
     throw new AppError('Shop not found or unauthorized', 404);
   }
 
-  const catalogue = await Catalogue.findOne({ shop: shopId });
+  const catalogue = await Catalogue.findOne({ shop: shopId }).populate('items');
   if (!catalogue) {
     throw new AppError('Catalogue not found', 404);
   }
 
-  const newItem = {
+  // Check for duplicate item name in the catalogue
+  const existingItem = await Item.findOne({
+    _id: { $in: catalogue.items },
+    name: { $regex: new RegExp(`^${itemData.name}$`, 'i') }, // Case-insensitive exact match
+  });
+
+  if (existingItem) {
+    throw new AppError('An item with this name already exists in the catalogue', 400);
+  }
+
+  // Validate price
+  const priceValue = typeof itemData.price === 'number' ? itemData.price : parseFloat(itemData.price);
+  if (isNaN(priceValue) || priceValue < 0) {
+    throw new AppError('Valid price is required (must be a number >= 0)', 400);
+  }
+
+  // Create standalone Item document
+  const newItem = await Item.create({
+    catalogue: catalogue._id,
     name: itemData.name,
     description: itemData.description,
-    price: itemData.price,
+    price: priceValue,
     availability: itemData.availability !== undefined ? itemData.availability : true,
     images: itemData.images || [],
     category: itemData.category,
     cdcVoucherAccepted: itemData.cdcVoucherAccepted !== undefined ? itemData.cdcVoucherAccepted : true,
-    lastUpdatedBy: ownerId,
+    lastUpdatedBy: mongoose.Types.ObjectId.isValid(ownerId)
+      ? new mongoose.Types.ObjectId(ownerId)
+      : ownerId,
     lastUpdatedDate: new Date(),
     reviews: [],
-  };
+  });
 
-  catalogue.items.push(newItem as any);
+  // Add item ID to catalogue
+  catalogue.items.push(newItem._id as any);
   await catalogue.save();
 
   logger.info(`Item added to catalogue: ${itemData.name} in shop ${shopId}`);
 
-  return catalogue;
+  return catalogue.populate('items');
+};
+
+/**
+ * Add Catalogue Item by Shopper
+ * Allows shoppers to add items to any shop's catalogue
+ */
+export const addCatalogueItemByShopper = async (
+  shopId: string,
+  shopperId: string,
+  itemData: any
+) => {
+  // Verify shop exists and is active
+  const shop = await Shop.findOne({ _id: shopId, isActive: true });
+  if (!shop) {
+    throw new AppError('Shop not found', 404);
+  }
+
+  // Get or create catalogue for the shop
+  let catalogue = await Catalogue.findOne({ shop: shopId }).populate('items');
+  if (!catalogue) {
+    // Create catalogue if it doesn't exist
+    catalogue = await Catalogue.create({
+      shop: shopId,
+      items: [],
+    });
+  }
+
+  // Check for duplicate item name in the catalogue
+  const existingItem = await Item.findOne({
+    _id: { $in: catalogue.items },
+    name: { $regex: new RegExp(`^${itemData.name}$`, 'i') }, // Case-insensitive exact match
+  });
+
+  if (existingItem) {
+    throw new AppError('An item with this name already exists in the catalogue', 400);
+  }
+
+  // Validate price
+  const priceValue = typeof itemData.price === 'number' ? itemData.price : parseFloat(itemData.price);
+  if (isNaN(priceValue) || priceValue < 0) {
+    throw new AppError('Valid price is required (must be a number >= 0)', 400);
+  }
+
+  // Prepare item document data
+  const itemDocument = {
+    catalogue: catalogue._id,
+    name: itemData.name,
+    description: itemData.description,
+    price: priceValue,
+    availability: itemData.availability !== undefined ? itemData.availability : true,
+    images: itemData.images || [],
+    category: itemData.category,
+    cdcVoucherAccepted: itemData.cdcVoucherAccepted !== undefined ? itemData.cdcVoucherAccepted : true,
+    lastUpdatedBy: mongoose.Types.ObjectId.isValid(shopperId)
+      ? new mongoose.Types.ObjectId(shopperId)
+      : shopperId,
+    lastUpdatedDate: new Date(),
+    reviews: [],
+  };
+
+  // Log the document being created for debugging
+  logger.info('Creating item document:', JSON.stringify(itemDocument, null, 2));
+
+  // Create standalone Item document
+  let newItem;
+  try {
+    newItem = await Item.create(itemDocument);
+  } catch (error: any) {
+    logger.error('Item creation failed:', error);
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.keys(error.errors).map(key =>
+        `${key}: ${error.errors[key].message}`
+      );
+      throw new AppError(`Validation failed: ${validationErrors.join(', ')}`, 400);
+    }
+    throw error;
+  }
+
+  // Add item ID to catalogue
+  logger.info(`Adding item ${newItem._id} to catalogue`);
+  catalogue.items.push(newItem._id as any);
+
+  try {
+    await catalogue.save();
+    logger.info(`Item added to catalogue by shopper: ${itemData.name} in shop ${shopId}`);
+  } catch (error: any) {
+    logger.error('Catalogue save failed:', error);
+    // Clean up the created item if catalogue save fails
+    await Item.deleteOne({ _id: newItem._id });
+    throw new AppError(`Failed to add item to catalogue: ${error.message}`, 500);
+  }
+
+  return catalogue.populate('items');
 };
 
 /**
@@ -186,7 +301,11 @@ export const updateCatalogueItem = async (
     throw new AppError('Catalogue not found', 404);
   }
 
-  const item = catalogue.items.id(itemId);
+  // Find item in Item collection
+  const item = await Item.findOne({
+    _id: itemId,
+    _id: { $in: catalogue.items }
+  });
   if (!item) {
     throw new AppError('Item not found', 404);
   }
@@ -208,14 +327,14 @@ export const updateCatalogueItem = async (
     }
   });
 
-  item.lastUpdatedBy = ownerId as any;
+  item.lastUpdatedBy = new mongoose.Types.ObjectId(ownerId);
   item.lastUpdatedDate = new Date();
 
-  await catalogue.save();
+  await item.save();
 
   logger.info(`Item updated: ${item.name} in shop ${shopId}`);
 
-  return catalogue;
+  return catalogue.populate('items');
 };
 
 /**
@@ -236,14 +355,19 @@ export const deleteCatalogueItem = async (
     throw new AppError('Catalogue not found', 404);
   }
 
-  const item = catalogue.items.id(itemId);
-  if (!item) {
+  // Verify item exists in catalogue
+  if (!catalogue.items.includes(itemId as any)) {
     throw new AppError('Item not found', 404);
   }
 
-  // Remove item
-  (catalogue.items as any).pull(itemId);
+  // Remove item ID from catalogue
+  catalogue.items = catalogue.items.filter(
+    (id: any) => id.toString() !== itemId
+  ) as any;
   await catalogue.save();
+
+  // Delete the Item document
+  await Item.findByIdAndDelete(itemId);
 
   logger.info(`Item deleted: ${itemId} from shop ${shopId}`);
 

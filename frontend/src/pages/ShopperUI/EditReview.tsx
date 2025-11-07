@@ -28,7 +28,18 @@ const EditReview: React.FC = () => {
   // --- Handlers ---
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
-      setPhoto(e.target.files[0]);
+      const file = e.target.files[0];
+
+      // Validate file type (only jpg, jpeg, png)
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+
+      if (!allowedTypes.includes(file.type)) {
+        toast.error("Only JPG, JPEG, and PNG images are allowed");
+        e.target.value = ''; // Clear the input
+        return;
+      }
+
+      setPhoto(file);
     }
   };
 
@@ -116,7 +127,10 @@ const EditReview: React.FC = () => {
         {status === "Available" && (
           <div>
             <label className="block text-gray-700 font-medium mb-2">
-              Upload Photo/Video
+              Upload Photo
+              <span className="text-sm text-gray-500 ml-2">
+                (JPG/JPEG/PNG only)
+              </span>
             </label>
 
             <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-4 bg-gray-50 hover:bg-gray-100 transition">
@@ -130,11 +144,11 @@ const EditReview: React.FC = () => {
                 <label className="flex flex-col items-center cursor-pointer">
                   <div className="text-3xl text-gray-400">⬆</div>
                   <p className="text-sm text-gray-500 mt-1">
-                    Click to upload a photo or video
+                    Click to upload a photo
                   </p>
                   <input
                     type="file"
-                    accept="image/*,video/*"
+                    accept="image/jpeg,image/jpg,image/png"
                     onChange={handlePhotoChange}
                     hidden
                   />

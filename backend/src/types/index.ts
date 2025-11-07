@@ -52,6 +52,7 @@ export enum ReportStatus {
   REVIEWED = "reviewed",
   RESOLVED = "resolved",
   DISMISSED = "dismissed",
+  REVIEW_REMOVED = "review_removed",
 }
 
 /**
@@ -148,6 +149,7 @@ export interface IShop extends Document {
   images: string[];
   operatingHours: IOperatingHours[];
   owner: Types.ObjectId;
+  catalogue?: Types.ObjectId;
   verifiedByOwner: boolean;
   reportCount: number;
   warnings: number;
@@ -168,20 +170,21 @@ export interface IOperatingHours {
 }
 
 /**
- * Catalogue Interface
+ * Catalogue Interface - Now stores Item ID references
  */
 export interface ICatalogue extends Document {
   shop: Types.ObjectId;
-  items: Types.DocumentArray<IItem>;
+  items: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
- * Item Interface
+ * Item Interface - Now a standalone document
  */
-export interface IItem {
+export interface IItem extends Document {
   _id: Types.ObjectId;
+  catalogue: Types.ObjectId;
   name: string;
   description: string;
   price?: number;
@@ -191,7 +194,9 @@ export interface IItem {
   cdcVoucherAccepted: boolean;
   lastUpdatedDate: Date;
   lastUpdatedBy: Types.ObjectId;
-  reviews: IReview[];
+  reviews: Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**

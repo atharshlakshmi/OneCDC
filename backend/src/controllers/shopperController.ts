@@ -5,6 +5,7 @@ import * as cartService from '../services/cartService';
 import * as reviewService from '../services/reviewService';
 import * as reportService from '../services/reportService';
 import * as mapsService from '../services/mapsService';
+import * as shopService from '../services/shopService';
 
 /**
  * Shopper Controller
@@ -126,6 +127,32 @@ export const generateRoute = asyncHandler(
   }
 );
 
+// ========== CATALOGUE OPERATIONS ==========
+
+/**
+ * Add Catalogue Item
+ * POST /api/shopper/shops/:id/catalogue
+ */
+export const addCatalogueItem = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const shopperId = req.user!.id;
+    const { id } = req.params;
+    const itemData = req.body;
+
+    const catalogue = await shopService.addCatalogueItemByShopper(
+      id,
+      shopperId,
+      itemData
+    );
+
+    res.status(201).json({
+      success: true,
+      data: catalogue,
+      message: 'Item added to catalogue',
+    });
+  }
+);
+
 // ========== REVIEW OPERATIONS ==========
 
 /**
@@ -135,7 +162,7 @@ export const generateRoute = asyncHandler(
 export const submitReview = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const shopperId = req.user!.id;
-    const { catalogueId, itemId, rating, comment, photos, availability } =
+    const { catalogueId, itemId, description, images, availability } =
       req.body;
 
     const result = await reviewService.submitReview(
@@ -143,9 +170,8 @@ export const submitReview = asyncHandler(
       catalogueId,
       itemId,
       {
-        rating,
-        comment,
-        photos,
+        description,
+        images,
         availability,
       }
     );

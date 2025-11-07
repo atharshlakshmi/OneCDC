@@ -13,7 +13,7 @@ export const config = {
 
   // Database Configuration
   database: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/onecdc',
+    uri: process.env.MONGODB_URI,
   },
 
   // JWT Configuration

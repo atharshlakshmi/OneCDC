@@ -76,6 +76,7 @@ const ShopSchema = new Schema<IShop>(
     },
     operatingHours: { type: [OperatingHoursSchema], default: [] },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    catalogue: { type: Schema.Types.ObjectId, ref: "Catalogue" },
     verifiedByOwner: { type: Boolean, default: false },
     reportCount: { type: Number, default: 0, min: 0 },
     warnings: { type: Number, default: 0, min: 0 },
@@ -94,6 +95,7 @@ ShopSchema.index({ location: "2dsphere" });
 ShopSchema.index({ name: "text", description: "text" });
 ShopSchema.index({ category: 1 });
 ShopSchema.index({ owner: 1 });
+ShopSchema.index({ catalogue: 1 });
 ShopSchema.index({ isActive: 1 });
 ShopSchema.index({ verifiedByOwner: 1 });
 

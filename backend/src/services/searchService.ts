@@ -1,7 +1,38 @@
-import { Shop, Catalogue } from '../models';
+import { Shop, Catalogue, Item } from '../models';
 import { SearchFilters, SortOption, PaginationOptions } from '../types';
 import { calculateDistance, getDefaultLocation } from '../utils/distance';
 import { AppError } from '../middleware';
+
+/**
+ * Helper function to append Google Maps API key to image URLs
+ */
+function appendApiKeyToImages(images: string[]): string[] {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey || !images) return images || [];
+
+  return images.map(imageUrl => {
+    if (!imageUrl) return imageUrl;
+    // Check if the URL already has the key parameter
+    if (imageUrl.includes('key=')) return imageUrl;
+    // Append the API key
+    return `${imageUrl}&key=${apiKey}`;
+  });
+}
+
+/**
+ * Helper function to capitalize category
+ */
+function capitalizeCategory(category: string | undefined): string | undefined {
+  if (!category) return category;
+
+  return category
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+    .split('&')
+    .map(word => word.trim().charAt(0).toUpperCase() + word.trim().slice(1))
+    .join(' & ');
+}
 
 /**
  * Search for Items (Use Case #1-1)
@@ -17,10 +48,19 @@ export const searchItems = async (
   // Build aggregation pipeline
   const pipeline: any[] = [];
 
-  // Match shops by filters
-  const shopMatch: any = { isActive: true };
-  if (category) shopMatch.category = category;
-  if (ownerVerified !== undefined) shopMatch.verifiedByOwner = ownerVerified;
+  // Match shops by filters - include shops without isActive field (for backward compatibility)
+  const shopMatch: any = {};
+  const activeConditions = [{ isActive: true }, { isActive: { $exists: false } }];
+
+  if (category || ownerVerified !== undefined) {
+    shopMatch.$and = [
+      { $or: activeConditions }
+    ];
+    if (category) shopMatch.$and.push({ category });
+    if (ownerVerified !== undefined) shopMatch.$and.push({ verifiedByOwner: ownerVerified });
+  } else {
+    shopMatch.$or = activeConditions;
+  }
 
   pipeline.push({ $match: shopMatch });
 
@@ -37,16 +77,28 @@ export const searchItems = async (
   pipeline.push({ $unwind: '$catalogue' });
   pipeline.push({ $unwind: '$catalogue.items' });
 
+  // Lookup Item documents
+  pipeline.push({
+    $lookup: {
+      from: 'items',
+      localField: 'catalogue.items',
+      foreignField: '_id',
+      as: 'item',
+    },
+  });
+
+  pipeline.push({ $unwind: '$item' });
+
   // Filter items
   const itemMatch: any = {};
   if (query) {
     itemMatch.$or = [
-      { 'catalogue.items.name': { $regex: query, $options: 'i' } },
-      { 'catalogue.items.description': { $regex: query, $options: 'i' } },
+      { 'item.name': { $regex: query, $options: 'i' } },
+      { 'item.description': { $regex: query, $options: 'i' } },
     ];
   }
   if (availability !== undefined) {
-    itemMatch['catalogue.items.availability'] = availability;
+    itemMatch['item.availability'] = availability;
   }
 
   if (Object.keys(itemMatch).length > 0) {
@@ -102,10 +154,10 @@ export const searchItems = async (
       sortStage = { distance: 1 };
       break;
     case SortOption.ALPHABETICAL_ASC:
-      sortStage = { 'catalogue.items.name': 1 };
+      sortStage = { 'item.name': 1 };
       break;
     case SortOption.ALPHABETICAL_DESC:
-      sortStage = { 'catalogue.items.name': -1 };
+      sortStage = { 'item.name': -1 };
       break;
     default:
       sortStage = { distance: 1 };
@@ -125,11 +177,24 @@ export const searchItems = async (
       shopAddress: '$address',
       shopCategory: '$category',
       distance: 1,
-      item: '$catalogue.items',
+      item: '$item',
+      catalogueId: '$catalogue._id',
     },
   });
 
   const results = await Shop.aggregate(pipeline);
+
+  // Append API key to item images and ensure each item has necessary fields
+  const resultsWithApiKeys = results.map(result => ({
+    ...result,
+    item: {
+      ...result.item,
+      itemId: result.item?.name || '', // Use name as identifier
+      catalogueId: result.catalogueId,
+      category: capitalizeCategory(result.item?.category),
+      images: appendApiKeyToImages(result.item?.images || [])
+    }
+  }));
 
   // Get total count
   const countPipeline = pipeline.slice(0, -3); // Remove skip, limit, project
@@ -138,7 +203,7 @@ export const searchItems = async (
   const total = countResult.length > 0 ? countResult[0].total : 0;
 
   return {
-    results,
+    results: resultsWithApiKeys,
     pagination: {
       page: pagination.page,
       limit: pagination.limit,
@@ -160,8 +225,10 @@ export const searchShops = async (
     filters;
   const userLocation = location || getDefaultLocation();
 
-  // Build query
-  const queryObj: any = { isActive: true };
+  // Build query - include shops without isActive field (for backward compatibility)
+  const queryObj: any = {
+    $or: [{ isActive: true }, { isActive: { $exists: false } }],
+  };
 
   if (query) {
     queryObj.$text = { $search: query };
@@ -182,13 +249,18 @@ export const searchShops = async (
   // Calculate distances and filter
   const shopsWithDistance = allShops
     .map((shop) => {
+      // Handle shops without location data
+      if (!shop.location || !shop.location.coordinates || shop.location.coordinates.length < 2) {
+        return { ...shop, distance: 999999, images: appendApiKeyToImages(shop.images || []) }; // Place shops without location at the end
+      }
+
       const distance = calculateDistance(
         userLocation.lat,
         userLocation.lng,
         shop.location.coordinates[1],
         shop.location.coordinates[0]
       );
-      return { ...shop, distance };
+      return { ...shop, distance, images: appendApiKeyToImages(shop.images || []) };
     })
     .filter((shop) => !maxDistance || shop.distance <= maxDistance);
 
@@ -249,20 +321,41 @@ export const searchShops = async (
  * Get Shop Details
  */
 export const getShopById = async (shopId: string) => {
-  const shop = await Shop.findOne({ _id: shopId, isActive: true });
+  const shop = await Shop.findOne({
+    _id: shopId,
+    $or: [{ isActive: true }, { isActive: { $exists: false } }],
+  }).lean();
   if (!shop) {
     throw new AppError('Shop not found', 404);
   }
-  return shop;
+  // Append API key to images
+  return {
+    ...shop,
+    images: appendApiKeyToImages(shop.images || [])
+  };
 };
 
 /**
  * Get Shop Catalogue
  */
 export const getShopCatalogue = async (shopId: string) => {
-  const catalogue = await Catalogue.findOne({ shop: shopId }).populate('shop');
+  const catalogue = await Catalogue.findOne({ shop: shopId })
+    .populate('shop')
+    .populate('items')
+    .lean();
   if (!catalogue) {
     throw new AppError('Catalogue not found', 404);
   }
-  return catalogue;
+
+  // Append API key to item images and capitalize category
+  const itemsWithApiKeys = (catalogue.items as any[]).map((item: any) => ({
+    ...item,
+    category: capitalizeCategory(item.category),
+    images: appendApiKeyToImages(item.images || [])
+  }));
+
+  return {
+    ...catalogue,
+    items: itemsWithApiKeys
+  };
 };

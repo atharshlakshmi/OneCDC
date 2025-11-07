@@ -63,6 +63,31 @@ router.post(
   shopperController.generateRoute
 );
 
+// ========== CATALOGUE ROUTES ==========
+
+/**
+ * POST /api/shopper/shops/:id/catalogue
+ * Add item to shop catalogue
+ */
+router.post(
+  '/shops/:id/catalogue',
+  validate([
+    body('name').notEmpty().withMessage('Item name is required'),
+    body('description').notEmpty().withMessage('Description is required'),
+    body('price').isFloat({ min: 0 }).withMessage('Valid price is required'),
+    body('category').notEmpty().withMessage('Category is required'),
+    body('availability')
+      .optional()
+      .isBoolean()
+      .withMessage('Availability must be a boolean'),
+    body('cdcVoucherAccepted')
+      .optional()
+      .isBoolean()
+      .withMessage('CDC voucher accepted must be a boolean'),
+  ]),
+  shopperController.addCatalogueItem
+);
+
 // ========== REVIEW ROUTES ==========
 
 /**
@@ -74,20 +99,17 @@ router.post(
   reviewLimiter,
   validate([
     body('catalogueId').isMongoId().withMessage('Valid catalogue ID is required'),
-    body('itemId').isMongoId().withMessage('Valid item ID is required'),
-    body('rating')
-      .isInt({ min: 1, max: 5 })
-      .withMessage('Rating must be between 1 and 5'),
-    body('comment')
+    body('itemId').isString().notEmpty().withMessage('Item name is required'),
+    body('description')
       .notEmpty()
-      .withMessage('Comment is required')
+      .withMessage('Description is required')
       .isLength({ max: 1000 })
-      .withMessage('Comment must not exceed 1000 characters'),
+      .withMessage('Description must not exceed 1000 characters'),
     body('availability').isBoolean().withMessage('Availability must be a boolean'),
-    body('photos')
+    body('images')
       .optional()
       .isArray({ max: 5 })
-      .withMessage('Maximum 5 photos allowed'),
+      .withMessage('Maximum 5 images allowed'),
   ]),
   shopperController.submitReview
 );

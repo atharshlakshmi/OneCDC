@@ -25,8 +25,8 @@ export const searchItems = asyncHandler(
     const filters: SearchFilters = {
       query: query as string,
       category: category as any,
-      availability: availability === 'true',
-      ownerVerified: ownerVerified === 'true',
+      availability: availability !== undefined ? availability === 'true' : undefined,
+      ownerVerified: ownerVerified !== undefined ? ownerVerified === 'true' : undefined,
       location:
         lat && lng
           ? { lat: parseFloat(lat as string), lng: parseFloat(lng as string) }
@@ -72,8 +72,8 @@ export const searchShops = asyncHandler(
     const filters: SearchFilters = {
       query: query as string,
       category: category as any,
-      ownerVerified: ownerVerified === 'true',
-      openNow: openNow === 'true',
+      ownerVerified: ownerVerified !== undefined ? ownerVerified === 'true' : undefined,
+      openNow: openNow !== undefined ? openNow === 'true' : undefined,
       location:
         lat && lng
           ? { lat: parseFloat(lat as string), lng: parseFloat(lng as string) }
