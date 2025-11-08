@@ -43,6 +43,7 @@ interface Shop {
   images?: string[];
   items: ShopItem[];
   category?: string;
+  verifiedByOwner?: boolean;
 }
 
 interface Catalogue {
@@ -302,8 +303,12 @@ const ViewShop: React.FC = () => {
                     </div>
                     <div className="flex flex-col items-end gap-3">
                       {item.price != null && <p className="text-xl font-bold text-amber-600">${Number(item.price).toFixed(2)}</p>}
-                      <span className={`px-4 py-2 rounded-full text-sm font-medium ${item.availability ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                        {item.availability ? "Available" : "Out of Stock"}
+                      <span
+                        className={`px-4 py-2 rounded-full text-sm font-medium ${
+                          shop.verifiedByOwner === false ? "bg-yellow-100 text-yellow-800" : item.availability ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {shop.verifiedByOwner === false ? "May be available" : item.availability ? "Available" : "Out of Stock"}
                       </span>
                     </div>
                   </div>

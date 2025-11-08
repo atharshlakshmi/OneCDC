@@ -162,6 +162,7 @@ router.get("/shops/:id", async (req, res) => {
       operatingHours: shop.operatingHours || [],
       images: appendApiKeyToImages(shop.images || []),
       category: shop.category, // Include shop category
+      verifiedByOwner: shop.verifiedByOwner, // Include verification status
       items,
     };
 
