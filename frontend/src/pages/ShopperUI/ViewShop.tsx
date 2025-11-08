@@ -42,6 +42,7 @@ interface Shop {
   operatingHours?: OperatingHours[];
   images?: string[];
   items: ShopItem[];
+  category?: string;
 }
 
 interface Catalogue {
@@ -151,10 +152,13 @@ const ViewShop: React.FC = () => {
   // Function to add shop to cart
   const addShopToCart = async () => {
     try {
+      // Debug: Log the shop object to see what data is available
+      console.log("Shop object:", shop);
+      console.log("Shop category:", shop.category);
+
       // Call backend API to add shop to cart
       const response = await apiPost("/cart/add", {
         shopId: shop.id,
-        itemTag: "general", // You can customize this tag based on your needs
       });
 
       // Check if shop was already in cart
@@ -221,13 +225,7 @@ const ViewShop: React.FC = () => {
                           <div key={index} className="flex gap-2 text-sm">
                             <span className="font-medium w-24">{dayName}:</span>
                             <span className="text-gray-600">
-                              {dayHours?.isClosed ? (
-                                "Closed"
-                              ) : dayHours ? (
-                                `${dayHours.openTime.replace(":", "")}-${dayHours.closeTime.replace(":", "")}H`
-                              ) : (
-                                "Hours not available"
-                              )}
+                              {dayHours?.isClosed ? "Closed" : dayHours ? `${dayHours.openTime.replace(":", "")}-${dayHours.closeTime.replace(":", "")}H` : "Hours not available"}
                             </span>
                           </div>
                         );

@@ -145,6 +145,11 @@ export default function App() {
       return <Navigate to="/shopSearch" replace />;
     }
 
+    // Redirect non-authenticated users to shop search
+    if (!user) {
+      return <Navigate to="/shopSearch" replace />;
+    }
+
     if (loading) {
       return (
         <div className="flex items-center justify-center min-h-screen">

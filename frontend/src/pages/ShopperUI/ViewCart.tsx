@@ -434,14 +434,6 @@ const ViewCart: React.FC = () => {
               {/* Address */}
               <p className="text-sm text-gray-600">{item.shop.address}</p>
 
-              {/* Items to buy */}
-              {item.itemTags.length > 0 && (
-                <div className="text-sm text-gray-700">
-                  <span className="font-medium">Items: </span>
-                  {item.itemTags.join(", ")}
-                </div>
-              )}
-
               {/* Remove Button */}
               <Button
                 onClick={(e) => {

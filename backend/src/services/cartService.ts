@@ -18,14 +18,14 @@ export const getCart = async (shopperId: string) => {
 /**
  * Add Shop to Cart (Use Case #2-1)
  */
-export const addShopToCart = async (shopperId: string, shopId: string, itemTag: string) => {
+export const addShopToCart = async (shopperId: string, shopId: string, itemTag?: string) => {
   let cart = await ShoppingCart.findOne({ shopper: shopperId });
 
   if (!cart) {
     cart = await ShoppingCart.create({ shopper: shopperId, items: [] });
   }
 
-  const result: any = await cart.addShopWithTag(shopId, itemTag);
+  const result: any = await cart.addShopWithTag(shopId, itemTag || "general");
 
   logger.info(`Shop ${shopId} ${result.alreadyInCart ? "updated in" : "added to"} cart for shopper ${shopperId}`);
 

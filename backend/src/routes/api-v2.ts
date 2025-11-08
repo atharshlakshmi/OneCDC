@@ -161,6 +161,7 @@ router.get("/shops/:id", async (req, res) => {
       operating_hours: formatOperatingHours(shop.operatingHours),
       operatingHours: shop.operatingHours || [],
       images: appendApiKeyToImages(shop.images || []),
+      category: shop.category, // Include shop category
       items,
     };
 
