@@ -1,4 +1,4 @@
-# OneCDC Frontend
+﻿# OneCDC Frontend
 
 React-based frontend application for OneCDC - A CDC voucher shop finder and review platform for Singapore.
 
@@ -91,23 +91,27 @@ frontend/
 ### Architecture Patterns
 
 **Custom Hooks:**
+
 - `useApi()` - Data fetching with loading/error states
 - `useApiMutation()` - Data mutations with state management
 - `useFormValidation()` - Reusable form validation
 - `useLocalStorage()` - State synchronized with localStorage
 
 **Centralized Utilities:**
+
 - `lib/constants.ts` - All configuration constants (no magic strings/numbers)
 - `lib/storage.ts` - Type-safe localStorage/sessionStorage wrappers
 - `lib/errorHandler.ts` - Standardized error handling
 - `lib/types.ts` - Comprehensive TypeScript interfaces
 
 **State Management:**
+
 - AuthContext for global authentication state
 - Local state with hooks for component-specific data
 - localStorage for cart and session persistence
 
 **UI Patterns:**
+
 - Radix UI for accessible, unstyled components
 - Tailwind CSS for utility-first styling
 - Sonner for non-blocking toast notifications
@@ -118,12 +122,14 @@ frontend/
 The application adapts based on user role:
 
 **Guest Users:**
+
 - Search functionality (stores and items)
 - View shops and catalogues
 - Read reviews
 - No authentication required
 
 **Registered Shoppers:**
+
 - All guest features
 - Shopping cart (stored in localStorage)
 - Submit and manage reviews
@@ -131,12 +137,14 @@ The application adapts based on user role:
 - Profile management
 
 **Shop Owners:**
+
 - Manage shop details
 - CRUD operations on catalogue items
 - View reviews on their items
 - Profile management
 
 **Admins:**
+
 - Moderate reported content
 - Manage users
 - View moderation logs
@@ -152,6 +160,7 @@ The application adapts based on user role:
 ### Installation
 
 1. **Install dependencies**
+
    ```bash
    cd frontend
    npm install
@@ -160,6 +169,7 @@ The application adapts based on user role:
 2. **Configure environment variables**
 
    Create `.env.local` file:
+
    ```env
    VITE_API_BASE_URL=http://localhost:5000/api
    VITE_APP_ENV=development
@@ -167,6 +177,7 @@ The application adapts based on user role:
    ```
 
 3. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -176,17 +187,20 @@ The application adapts based on user role:
 ## Available Scripts
 
 ### Development
+
 ```bash
 npm run dev        # Start Vite dev server with HMR
 ```
 
 ### Production Build
+
 ```bash
 npm run build      # TypeScript compile + Vite build
 npm run preview    # Preview production build locally
 ```
 
 ### Code Quality
+
 ```bash
 npm run lint       # Run ESLint on TypeScript files
 ```
@@ -203,7 +217,7 @@ VITE_API_BASE_URL=http://localhost:5000/api
 VITE_APP_ENV=development
 
 # Google OAuth Client ID (required for Google Sign-In)
-VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleusercontent.com
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
 
 **Important:** All environment variables must start with `VITE_` to be exposed to the client.
@@ -213,17 +227,20 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 ### Authentication Components
 
 **`context/AuthContext.tsx`**
+
 - Manages global authentication state
 - Provides `user`, `isAuthed`, `login`, `logout`, `updateUser`
 - Persists auth token and user data to localStorage
 - Used throughout app via `useAuth()` hook
 
 **`pages/AuthUI/LogIn.tsx`**
+
 - Email/password login
 - Google OAuth login
 - Redirects to intended page after login
 
 **`pages/AuthUI/Register.tsx`**
+
 - Separate registration for shoppers and owners
 - Email/password registration
 - Google OAuth registration
@@ -232,11 +249,13 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 ### Navigation Components
 
 **`components/NavBar.tsx`**
+
 - OneCDC logo linking to home
 - Shopping cart icon (shoppers only)
 - Logout button (authenticated users)
 
 **`components/Footer.tsx`**
+
 - Role-based navigation
 - Shoppers/Guests: Toggle between Store Search and Item Search
 - All users: Home button (center, floating)
@@ -246,12 +265,14 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 ### Search Components
 
 **`pages/ShopperUI/StoreSearch.tsx`**
+
 - Search shops by name, category, location
 - Filter by operating hours, verified status
 - Distance-based sorting with geolocation
 - Results displayed as clickable cards
 
 **`pages/ShopperUI/ItemSearch.tsx`**
+
 - Search items across all shops
 - Filter by availability, category
 - Shows which shop carries each item
@@ -260,6 +281,7 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 ### Shop & Item Views
 
 **`pages/ShopperUI/ViewShop.tsx`**
+
 - Tabbed interface: Details and Catalogue
 - Shop information (address, hours, contact)
 - Add shop to cart (shoppers only)
@@ -267,6 +289,7 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 - Edit shop details (owners only)
 
 **`pages/ShopperUI/ViewItem.tsx`**
+
 - Tabbed interface: Details and Reviews
 - Item information and pricing
 - Review item button (shoppers only)
@@ -276,12 +299,14 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 ### Review Components
 
 **`pages/ShopperUI/AddReview.tsx`**
+
 - Star rating (1-5)
 - Comment text area
 - Availability toggle
 - Form validation
 
 **`pages/ShopperUI/SeeReviews.tsx`**
+
 - List all user's reviews
 - Edit and delete options
 - Navigation to reviewed items
@@ -289,6 +314,7 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 ### Cart Components
 
 **`pages/ShopperUI/ViewCart.tsx`**
+
 - List all shops in cart
 - Remove shops from cart
 - Generate optimal route button
@@ -297,11 +323,13 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 ### Owner Components
 
 **`pages/OwnerUI/EditShop.tsx`**
+
 - Update shop details
 - Operating hours management
 - Contact information
 
 **`pages/OwnerUI/AddItem.tsx` / `EditItem.tsx`**
+
 - CRUD operations on catalogue items
 - Price and availability management
 - CDC voucher acceptance flag
@@ -311,27 +339,27 @@ VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleu
 ### API Client (`lib/api.ts`)
 
 ```typescript
-import { apiFetch, authHeaders, API_BASE } from '@/lib/api';
+import { apiFetch, authHeaders, API_BASE } from "@/lib/api";
 
 // GET request
-const data = await apiFetch('/search/shops?query=grocery');
+const data = await apiFetch("/search/shops?query=grocery");
 
 // POST with authentication
-const response = await apiFetch('/reviews', {
-  method: 'POST',
+const response = await apiFetch("/reviews", {
+  method: "POST",
   headers: authHeaders(),
-  body: JSON.stringify({ rating: 5, comment: 'Great!' })
+  body: JSON.stringify({ rating: 5, comment: "Great!" }),
 });
 ```
 
 ### Storage Utilities (`lib/storage.ts`)
 
 ```typescript
-import { authStorage, cartStorage } from '@/lib/storage';
+import { authStorage, cartStorage } from "@/lib/storage";
 
 // Auth storage
 const token = authStorage.getToken();
-authStorage.setToken('new-token');
+authStorage.setToken("new-token");
 const user = authStorage.getUserData<User>();
 authStorage.setUserData(userData);
 authStorage.clearAll();
@@ -345,7 +373,7 @@ cartStorage.clearCart();
 ### Error Handling (`lib/errorHandler.ts`)
 
 ```typescript
-import { handleError, getErrorMessage } from '@/lib/errorHandler';
+import { handleError, getErrorMessage } from "@/lib/errorHandler";
 
 try {
   // API call
@@ -358,12 +386,7 @@ try {
 ### Constants (`lib/constants.ts`)
 
 ```typescript
-import {
-  PASSWORD_MIN_LENGTH,
-  EMAIL_REGEX,
-  USER_ROLES,
-  DEFAULT_LOCATION
-} from '@/lib/constants';
+import { PASSWORD_MIN_LENGTH, EMAIL_REGEX, USER_ROLES, DEFAULT_LOCATION } from "@/lib/constants";
 
 // Use in validation
 if (password.length < PASSWORD_MIN_LENGTH) {
@@ -383,6 +406,7 @@ if (user?.role === USER_ROLES.REGISTERED_SHOPPER) {
 The project uses Tailwind CSS v4 with custom configurations:
 
 **Common Patterns:**
+
 ```tsx
 // Card
 <div className="rounded-2xl bg-white shadow-lg p-8">
@@ -414,37 +438,47 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
   </TabsList>
   <TabsContent value="details">...</TabsContent>
   <TabsContent value="reviews">...</TabsContent>
-</Tabs>
+</Tabs>;
 ```
 
 ## Common Issues & Solutions
 
 ### Issue: API calls failing with CORS errors
+
 **Solution:**
+
 - Ensure backend is running on port 5000
 - Check `FRONTEND_URL` in backend `.env` is `http://localhost:5173`
 - Verify `VITE_API_BASE_URL` in frontend `.env.local`
 
 ### Issue: Google Sign-In button not appearing
+
 **Solution:**
+
 - Verify `VITE_GOOGLE_CLIENT_ID` is set in `.env.local`
 - Check Google Console has `http://localhost:5173` in authorized origins
 - Ensure Google client ID matches between frontend and backend
 
 ### Issue: Search results not showing
+
 **Solution:**
+
 - Check backend is seeded with data: `cd backend && npm run seed:frontend`
 - Verify browser location permissions are granted
 - Check browser console for API errors
 
 ### Issue: localStorage not persisting
+
 **Solution:**
+
 - Check browser settings allow localStorage
 - Verify not in private/incognito mode
 - Clear browser cache and reload
 
 ### Issue: TypeScript errors after pulling changes
+
 **Solution:**
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install
