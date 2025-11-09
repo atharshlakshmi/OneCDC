@@ -148,14 +148,14 @@ export default function ManageCatalogue() {
           Back to My Stores
         </button>
 
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2 text-gray-800">Manage Catalogue</h1>
             {shop && <p className="text-gray-600">{shop.name}</p>}
           </div>
           <button
             onClick={() => navigate(`/AddItem/${shopId}`)}
-            className="flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-white px-6 py-3 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+            className="flex items-center justify-center gap-2 bg-amber-400 hover:bg-amber-500 text-white px-6 py-3 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg w-full sm:w-auto"
           >
             <Plus size={20} />
             Add Item
