@@ -145,9 +145,9 @@ export default function App() {
       return <Navigate to="/shopSearch" replace />;
     }
 
-    // Redirect non-authenticated users to shop search
+    // Redirect non-authenticated users to welcome page
     if (!user) {
-      return <Navigate to="/shopSearch" replace />;
+      return <Navigate to="/welcome" replace />;
     }
 
     if (loading) {
@@ -206,17 +206,59 @@ export default function App() {
   return (
     <BrowserRouter>
       <Layout>
-        <NavBar />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Home />} />
 
-          <Route path="/ViewShop/:id" element={<ViewShop />} />
-          <Route path="/ViewItem/:id" element={<ViewItem />} />
+          {/* Welcome page without navbar */}
+          <Route path="/welcome" element={<Welcome />} />
 
-          <Route path="/shopSearch" element={<ShopSearch />} />
-          <Route path="/itemSearch" element={<ItemSearch />} />
-          <Route path="/ActionSuccess" element={<ActionSuccess />} />
+          <Route
+            path="/ViewShop/:id"
+            element={
+              <>
+                <NavBar />
+                <ViewShop />
+              </>
+            }
+          />
+          <Route
+            path="/ViewItem/:id"
+            element={
+              <>
+                <NavBar />
+                <ViewItem />
+              </>
+            }
+          />
+
+          <Route
+            path="/shopSearch"
+            element={
+              <>
+                <NavBar />
+                <ShopSearch />
+              </>
+            }
+          />
+          <Route
+            path="/itemSearch"
+            element={
+              <>
+                <NavBar />
+                <ItemSearch />
+              </>
+            }
+          />
+          <Route
+            path="/ActionSuccess"
+            element={
+              <>
+                <NavBar />
+                <ActionSuccess />
+              </>
+            }
+          />
           {/* Auth routes (redirect authed users away) */}
           <Route
             path="/login"
@@ -247,31 +289,198 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/welcome" element={<Welcome />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<ProfileHome />} />
-            <Route path="/profile/details" element={<ProfileDetails />} />
-            <Route path="/profile/reviews" element={<ProfileReviews />} />
-            <Route path="/profile/reports" element={<ProfileReports />} />
-            <Route path="/profile/stores" element={<ProfileStores />} />
-            <Route path="/profile/flagged-stores" element={<ProfileFlaggedStores />} />
-            <Route path="/ViewCart" element={<ViewCart />} />
-            <Route path="/route" element={<ViewRoute />} />
-            <Route path="/SeeReviews" element={<SeeReviews />} />
-            <Route path="/SeeReports" element={<SeeReports />} />
-            <Route path="/SeeViolations" element={<SeeViolations />} />
-            <Route path="/AddReview" element={<AddReview />} />
-            <Route path="/ReportShop" element={<ReportShop />} />
-            <Route path="/ReportReview" element={<AddReport />} />
-            <Route path="/ManageCatalogue/:shopId" element={<ManageCatalogue />} />
-            <Route path="/AddItem/:shopId" element={<AddItem />} />
-            <Route path="/EditItem/:shopId/:itemId" element={<EditItem />} />
-            <Route path="/EditReview" element={<EditReview />} />
-            <Route path="/EditReport" element={<EditReport />} />
-            <Route path="/EditShop" element={<EditShop />} />
-            <Route path="/AddShop" element={<AddShop />} />
+            <Route
+              path="/profile"
+              element={
+                <>
+                  <NavBar />
+                  <ProfileHome />
+                </>
+              }
+            />
+            <Route
+              path="/profile/details"
+              element={
+                <>
+                  <NavBar />
+                  <ProfileDetails />
+                </>
+              }
+            />
+            <Route
+              path="/profile/reviews"
+              element={
+                <>
+                  <NavBar />
+                  <ProfileReviews />
+                </>
+              }
+            />
+            <Route
+              path="/profile/reports"
+              element={
+                <>
+                  <NavBar />
+                  <ProfileReports />
+                </>
+              }
+            />
+            <Route
+              path="/profile/stores"
+              element={
+                <>
+                  <NavBar />
+                  <ProfileStores />
+                </>
+              }
+            />
+            <Route
+              path="/profile/flagged-stores"
+              element={
+                <>
+                  <NavBar />
+                  <ProfileFlaggedStores />
+                </>
+              }
+            />
+            <Route
+              path="/ViewCart"
+              element={
+                <>
+                  <NavBar />
+                  <ViewCart />
+                </>
+              }
+            />
+            <Route
+              path="/route"
+              element={
+                <>
+                  <NavBar />
+                  <ViewRoute />
+                </>
+              }
+            />
+            <Route
+              path="/SeeReviews"
+              element={
+                <>
+                  <NavBar />
+                  <SeeReviews />
+                </>
+              }
+            />
+            <Route
+              path="/SeeReports"
+              element={
+                <>
+                  <NavBar />
+                  <SeeReports />
+                </>
+              }
+            />
+            <Route
+              path="/SeeViolations"
+              element={
+                <>
+                  <NavBar />
+                  <SeeViolations />
+                </>
+              }
+            />
+            <Route
+              path="/AddReview"
+              element={
+                <>
+                  <NavBar />
+                  <AddReview />
+                </>
+              }
+            />
+            <Route
+              path="/ReportShop"
+              element={
+                <>
+                  <NavBar />
+                  <ReportShop />
+                </>
+              }
+            />
+            <Route
+              path="/ReportReview"
+              element={
+                <>
+                  <NavBar />
+                  <AddReport />
+                </>
+              }
+            />
+            <Route
+              path="/ManageCatalogue/:shopId"
+              element={
+                <>
+                  <NavBar />
+                  <ManageCatalogue />
+                </>
+              }
+            />
+            <Route
+              path="/AddItem/:shopId"
+              element={
+                <>
+                  <NavBar />
+                  <AddItem />
+                </>
+              }
+            />
+            <Route
+              path="/EditItem/:shopId/:itemId"
+              element={
+                <>
+                  <NavBar />
+                  <EditItem />
+                </>
+              }
+            />
+            <Route
+              path="/EditReview"
+              element={
+                <>
+                  <NavBar />
+                  <EditReview />
+                </>
+              }
+            />
+            <Route
+              path="/EditReport"
+              element={
+                <>
+                  <NavBar />
+                  <EditReport />
+                </>
+              }
+            />
+            <Route
+              path="/EditShop"
+              element={
+                <>
+                  <NavBar />
+                  <EditShop />
+                </>
+              }
+            />
+            <Route
+              path="/AddShop"
+              element={
+                <>
+                  <NavBar />
+                  <AddShop />
+                </>
+              }
+            />
           </Route>
 
           {/* Admin-only routes */}
@@ -279,6 +488,7 @@ export default function App() {
             path="/admin-dashboard"
             element={
               <AdminRoute>
+                <NavBar />
                 <AdminDashboard />
               </AdminRoute>
             }

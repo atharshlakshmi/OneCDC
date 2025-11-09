@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "react-feather";
 import { useAuth } from "../context/AuthContext";
+import onecdcLogo from "../assets/onecdc_logo.png";
 
 function NavBar() {
   const navigate = useNavigate();
@@ -20,11 +21,8 @@ function NavBar() {
     <nav className="flex justify-between items-center bg-blue-900 text-white px-6 py-4 shadow-md">
       {/* Left: Logo */}
       <div className="navbar-left">
-        <Link
-          to="/"
-          className="text-xl font-bold text-white no-underline hover:opacity-90 transition-opacity"
-        >
-          OneCDC
+        <Link to="/" className="flex items-center text-white no-underline hover:opacity-90 transition-opacity">
+          <img src={onecdcLogo} alt="OneCDC" className="h-20 -ml-4" />
         </Link>
       </div>
 
