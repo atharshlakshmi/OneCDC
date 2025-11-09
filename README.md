@@ -135,7 +135,7 @@ OneCDC/
 
 ````
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -150,7 +150,7 @@ OneCDC/
 1. **Clone the repository**
    ```bash
    git clone https://github.com/atharshlakshmi/OneCDC.git
-   cd onecdcTIMTEST
+   cd <your folder>
 ````
 
 2. **Install dependencies for both frontend and backend**
