@@ -38,28 +38,6 @@ interface AuthResponse {
 }
 
 /**
- * Mock Singpass Verification
- * In production, this would call the actual Singpass API
- * @deprecated This is a mock implementation. Will be replaced with actual Singpass integration.
- */
-// @ts-ignore - Mock implementation for future use
-const verifySingpass = async (nric: string): Promise<boolean> => {
-  logger.info(`Mock Singpass verification for NRIC: ${nric}`);
-  // In production: call actual Singpass API
-  return true;
-};
-
-/**
- * Mock Corppass Verification
- * In production, this would call the actual Corppass API
- */
-const verifyCorppass = async (uen: string): Promise<boolean> => {
-  logger.info(`Mock Corppass verification for UEN: ${uen}`);
-  // In production: call actual Corppass API
-  return true;
-};
-
-/**
  * Register Shopper (Use Case #6-1)
  */
 export const registerShopper = async (
@@ -133,14 +111,6 @@ export const registerOwner = async (
   });
   if (existingOwner) {
     throw new AppError('Business registration number already registered', 409);
-  }
-
-  // Verify with Corppass (mock)
-  const corppassVerified = await verifyCorppass(
-    data.businessRegistrationNumber
-  );
-  if (!corppassVerified) {
-    throw new AppError('Corppass verification failed', 400);
   }
 
   // Hash password

@@ -49,9 +49,6 @@ export const reportReview = async (reporterId: string, reviewId: string, categor
     logger.warn(`Could not find review ${reviewId} to increment report count.`);
   }
 
-  // TODO: Notify all admins of new report
-  // This would typically send an email or push notification to admins
-
   return report;
 };
 

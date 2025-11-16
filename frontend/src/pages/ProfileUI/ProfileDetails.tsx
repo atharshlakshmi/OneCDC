@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { apiFetch, authHeaders } from "../lib/api";
+import { useAuth } from "../../context/AuthContext";
+import { apiFetch, authHeaders } from "../../lib/api";
 import { useNavigate } from "react-router-dom";
-import PasswordField from "../components/PasswordField";
+import PasswordField from "../../components/PasswordField";
 
 type User = {
   _id?: string;

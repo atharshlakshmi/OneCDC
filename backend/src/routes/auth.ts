@@ -106,7 +106,7 @@ router.get("/profile", authenticate, authController.getProfile);
 router.put(
   "/profile",
   authenticate,
-  upload.single("avatar"), // ✅ accept multipart form-data with avatar field
+  upload.single("avatar"), 
   authController.updateProfile
 );
 

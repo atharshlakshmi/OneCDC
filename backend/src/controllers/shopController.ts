@@ -21,7 +21,6 @@ export const getOwnerShops = asyncHandler(
 );
 
 /**
-<<<<<<< HEAD
  * Get Single Shop
  * GET /api/owner/shops/:id
  */
@@ -57,8 +56,7 @@ export const getFlaggedShops = asyncHandler(
 );
 
 /**
-=======
->>>>>>> origin/lakshmi
+
  * Create Shop
  * POST /api/owner/shops
  */

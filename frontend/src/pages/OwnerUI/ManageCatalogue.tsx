@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { apiFetch } from "../lib/api";
+import { useAuth } from "../../context/AuthContext";
+import { apiFetch } from "../../lib/api";
 import { Plus, Package, Edit, Trash2, ArrowLeft, AlertCircle } from "lucide-react";
 
 interface CatalogueItem {
