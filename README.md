@@ -2,6 +2,228 @@
 
 A comprehensive web application that helps users discover and manage Community Development Council (CDC) voucher-accepting shops in Singapore. Users can search for shops and items, read reviews, plan shopping routes, and owners can manage their shop catalogues.
 
+## Quick Start
+
+### Prerequisites
+
+- **Node.js** v18 or higher
+- **npm** v9 or higher
+- **MongoDB Atlas account** (or local MongoDB)
+- **Google Maps API key** (for route generation)
+- **Google OAuth 2.0 credentials** (for Google Sign-In)
+
+### Quick Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/softwarelab3/2006-STA1-52.git
+   cd OneCDC
+   ```
+
+2. **Install backend dependencies**
+   ```bash
+   cd backend
+   npm install
+   ```
+
+3. **Install frontend dependencies**
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
+### Backend Setup
+
+1. Copy the example environment file:
+   ```bash
+   cd backend
+   cp .env.example .env
+   ```
+
+2. Open the `.env` file and fill in your actual values using the instructions below.
+
+### Backend Environment Variables
+
+The `.env.example` file in the `backend/` directory contains all the required and optional variables. After copying it to `.env`, update the following variables with your actual credentials:
+
+#### 1. MongoDB Configuration
+
+```env
+MONGODB_URI=mongodb://localhost:27017/onecdc
+```
+
+**How to get it:**
+- **Local Development:** Install MongoDB locally and use the connection string above
+- **MongoDB Atlas (Cloud):**
+  1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+  2. Create a free account and sign in
+  3. Create a new cluster (free tier available)
+  4. Click "Connect" → "Connect your application"
+  5. Copy the connection string (e.g., `mongodb+srv://username:password@cluster.mongodb.net/onecdc`) into `backend/.env`
+  6. Replace `<password>` with your database user password
+  7. Replace `<dbname>` with `onecdc` or your preferred database name
+
+#### 2. JWT Secret
+
+```env
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRE=7d
+```
+
+**How to get it:**
+- Generate a random secure string (recommended: at least 32 characters)
+- Use a password generator or run: `openssl rand -base64 32`
+
+#### 3. Google OAuth Configuration
+
+```env
+GOOGLE_CLIENT_ID= ...
+GOOGLE_CLIENT_SECRET= ...
+```
+
+**How to get it:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the **Google+ API**:
+   - Navigate to "APIs & Services" → "Library"
+   - Search for "Google+ API" and enable it
+4. Create OAuth 2.0 credentials:
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "OAuth 2.0 Client ID"
+   - Configure the OAuth consent screen if prompted
+   - Select "Web application" as application type
+   - Add authorized JavaScript origins:
+     - `http://localhost:5173` (frontend dev)
+     - `http://localhost:5000` (backend dev)
+   - Add authorized redirect URIs:
+     - `http://localhost:5173/auth/google/callback`
+     - `http://localhost:5000/api/auth/google/callback`
+   - Click "Create"
+5. Copy the **Client ID** and **Client Secret** into `backend/.env`
+
+#### 4. Google Maps API Key
+
+```env
+GOOGLE_MAPS_API_KEY= ...
+```
+
+**How to get it:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Use the same project as your OAuth credentials (or create a new one)
+3. Enable required APIs:
+   - Navigate to "APIs & Services" → "Library"
+   - Search for and enable:
+     - **Maps JavaScript API**
+     - **Places API**
+     - **Geocoding API**
+     - **Distance Matrix API**
+4. Create API credentials:
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "API Key"
+   - Copy the generated API key
+5. (Optional but recommended) Restrict the API key:
+   - Click on the API key to edit
+   - Under "API restrictions", select "Restrict key"
+   - Select the APIs you enabled above
+   - Under "Application restrictions", add your domain/localhost
+
+#### 5. Hugging Face API (for search features)
+
+```env
+HF_TOKEN= ...
+```
+
+**How to get it:**
+1. Go to [Hugging Face](https://huggingface.co/)
+2. Create a free account and sign in
+3. Go to [Settings → Access Tokens](https://huggingface.co/settings/tokens)
+4. Click "New token"
+5. Give it a name and select "read" permissions
+6. Copy the token (starts with `hf_`)
+
+#### Optional Variables
+
+```env
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+
+# JWT Configuration
+JWT_EXPIRES_IN=7d
+
+# Default Location (Singapore)
+DEFAULT_LAT=1.3016
+DEFAULT_LNG=103.9056
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+REVIEW_RATE_LIMIT_WINDOW_MS=3600000
+REVIEW_RATE_LIMIT_MAX=5
+REPORT_RATE_LIMIT_WINDOW_MS=3600000
+REPORT_RATE_LIMIT_MAX=10
+
+# File Upload
+MAX_FILE_SIZE=5242880
+MAX_FILES=5
+
+# Thresholds
+SHOPPER_WARNING_THRESHOLD=3
+OWNER_REPORT_THRESHOLD=5
+```
+
+### Your .env File
+
+After copying `backend/.env.example` to `backend/.env`, your file will contain all the variables listed above. Simply replace the placeholder values with your actual credentials following the instructions provided for each variable.
+
+### Frontend Setup
+
+1. Copy the example environment file:
+   ```bash
+   cd frontend
+   cp .env.example .env
+   ```
+
+2. Open the `.env` file and fill in your actual values using the instructions below.
+
+### Frontend Environment Variables
+
+After copying `frontend/.env.example` to `frontend/.env`, you'll have:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+VITE_GOOGLE_CLIENT_ID= ... # TO CHANGE
+VITE_GOOGLE_MAPS_API_KEY= ... # TO CHANGE
+```
+
+Copy the **Client ID** and **Client Secret** from `backend/.env` into `frontend/.env` file 
+
+### Running the Application
+
+#### Start Backend (Terminal 1)
+```bash
+cd backend
+npm run dev
+```
+Backend runs on: `http://localhost:5000`
+
+#### Start Frontend (Terminal 2)
+```bash
+cd frontend
+npm run dev
+```
+Frontend runs on: `http://localhost:5173`
+
+### Accessing the Application
+
+1. Open browser to `http://localhost:5173`
+2. You'll see the home page with search functionality
+3. Try these test accounts (if seeded):
+   - **Shopper:** Check seeded user credentials
+   - **Owner:** Check seeded owner credentials
+   - **Admin:** Check seeded admin credentials
+
 ## Features Overview
 
 ### For All Users (Guest & Registered)
@@ -72,232 +294,6 @@ OneCDC/
 - **HTTP Client:** Axios, Fetch API
 - **Notifications:** Sonner (toast notifications)
 
-## Quick Start
-
-### Prerequisites
-
-- **Node.js** v18 or higher
-- **npm** v9 or higher
-- **MongoDB Atlas account** (or local MongoDB)
-- **Google Maps API key** (for route generation)
-- **Google OAuth 2.0 credentials** (for Google Sign-In)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd OneCDC
-   ```
-
-2. **Install backend dependencies**
-   ```bash
-   cd backend
-   npm install
-   ```
-
-3. **Install frontend dependencies**
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-### Configuration
-
-#### 1. Backend Configuration
-
-Generate `JWT_SECRET` key using: 
-```
-# 32 bytes (256 bits) hex secret
-openssl rand -hex 32
-# put the output into .env
-```
-
-Create `/backend/.env` file:
-
-```env
-# Server Configuration
-PORT=5000
-NODE_ENV=development
-
-# Database
-MONGODB_URI="mongodb+srv://kchen031_db_user:c0TUOXEcXo1eRLwn@cluster0.yg9wbmw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-min-32-characters-change-in-production (copy from above)
-JWT_EXPIRE=7d
-
-# CORS
-FRONTEND_URL=http://localhost:5173the 
-
-# Google Client ID
-GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=...
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-
-# Warning Thresholds 
-SHOPPER_WARNING_THRESHOLD=3
-OWNER_REPORT_THRESHOLD=5
-
-# File size limit
-MAX_FILE_SIZE=5242880
-
-# Default Location (Singapore)
-DEFAULT_LAT=1.3521
-DEFAULT_LNG=103.8198
-
-# Google Maps API (not implemented yet)
-# GOOGLE_MAPS_API_KEY=your-google-maps-api-key
-```
-
-#### 2. Frontend Configuration
-
-Create `/frontend/.env.local` file:
-
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
-VITE_APP_ENV=development
-VITE_GOOGLE_CLIENT_ID=528326458371-5ljkvl01018ful5opd5b579fbbsbet8i.apps.googleusercontent.com
-```
-
-### Database Setup
-
-Seed the database with sample data:
-
-```bash
-cd backend
-npm run seed:frontend
-```
-
-This creates:
-- Sample shops with geolocation data
-- Items in each shop catalogue
-- Sample reviews with ratings
-- Test user accounts (shopper, owner, admin)
-
-### Running the Application
-
-#### Start Backend (Terminal 1)
-```bash
-cd backend
-npm run dev
-```
-Backend runs on: `http://localhost:5000`
-
-#### Start Frontend (Terminal 2)
-```bash
-cd frontend
-npm run dev
-```
-Frontend runs on: `http://localhost:5173`
-
-### Accessing the Application
-
-1. Open browser to `http://localhost:5173`
-2. You'll see the home page with search functionality
-3. Try these test accounts (if seeded):
-   - **Shopper:** Check seeded user credentials
-   - **Owner:** Check seeded owner credentials
-   - **Admin:** Check seeded admin credentials
-
-## User Guide
-
-### Guest Users (No Login Required)
-
-**Search for Shops:**
-1. Navigate to "Store Search" from footer menu
-2. Use search bar or filters (category, open now, etc.)
-3. Click on a shop to view details
-4. Switch to "Catalogue" tab to see items
-
-**Search for Items:**
-1. Navigate to "Item Search" from footer menu
-2. Search by item name or category
-3. Results show item details and which shop carries it
-4. Click to view full item details and reviews
-
-### Registered Shoppers
-
-**Creating an Account:**
-1. Click "Sign Up" on login page
-2. Choose "Register as Shopper"
-3. Fill in details or use "Sign in with Google"
-4. Verify email if required
-
-**Using Shopping Cart:**
-1. Browse shops and add to cart using "Add Shop to Cart" button
-2. Click shopping cart icon in navbar
-3. View all shops in cart
-4. Generate most efficient route to visit all shops
-5. Remove shops as needed
-
-**Submitting Reviews:**
-1. Navigate to an item page
-2. Click "Review Item" button
-3. Rate 1-5 stars and write comment
-4. Indicate if item is currently available
-5. Submit review
-
-**Managing Reviews:**
-1. Go to Profile > See Reviews
-2. View all your submitted reviews
-3. Click "Edit" to update review
-4. Click "Delete" to remove review
-
-**Reporting Content:**
-- **Report Review:** Click "Report" on any review
-- **Report Shop:** Click "Report Shop" on shop details page
-- Provide reason for report
-- Admins will moderate the report
-
-### Shop Owners
-
-**Registering as Owner:**
-1. Click "Sign Up" on login page
-2. Choose "Register as Owner"
-3. Provide business details (UEN, business name)
-4. Verify business credentials
-
-**Managing Shop Details:**
-1. Navigate to your shop page
-2. Click "Edit Shop Details"
-3. Update:
-   - Shop name and description
-   - Operating hours
-   - Contact number
-   - Address (geocoded automatically)
-   - Category
-4. Save changes
-
-**Managing Catalogue:**
-1. Go to shop page > Catalogue tab
-2. Click "Add New Item" to create items
-3. For each item specify:
-   - Item name and description
-   - Price
-   - Availability status
-   - Whether CDC vouchers are accepted
-4. Edit or delete items as needed
-
-### Administrators
-
-**Moderating Reports:**
-1. Login with admin account
-2. Navigate to Admin Dashboard
-3. View reported reviews and shops
-4. For each report:
-   - Review content and context
-   - Issue warning to user
-   - Remove content if necessary
-   - Dismiss report if unfounded
-
-**Managing Users:**
-1. View users with warnings
-2. Remove users who exceed thresholds
-3. Review moderation logs
 
 ## API Endpoints
 
